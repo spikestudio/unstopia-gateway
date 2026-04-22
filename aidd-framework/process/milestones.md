@@ -73,7 +73,7 @@
 
 | カテゴリ | 項目 | チェックリスト |
 |---------|------|--------------|
-| スコープ | ストーリー一覧が Epic として構造化され、MoSCoW 優先度が合意済み | [g1](../checklists/g1-phase-definition.md) |
+| スコープ | ストーリー一覧が Epic として構造化され、優先度（MUST/WON'T）が合意済み | [g1](../checklists/g1-phase-definition.md) |
 | 成功基準 | ビジネス成果指標として定義（計測可能・期限付き・合意済み）。Impact Mapping で Epic との関係を整理 | [g1](../checklists/g1-phase-definition.md) |
 | 非機能要件 | 目標値が記載されている | [g1](../checklists/g1-phase-definition.md) |
 | ドメイン分析 | BC 識別・コンテキストマップ・サブドメイン分類が完了。Epic が BC 内に閉じている | [g1](../checklists/g1-phase-definition.md) |

@@ -9,7 +9,7 @@
 
 | プロジェクト概念 | GitHub 管理単位 | 粒度 |
 |---------------|---------------|------|
-| **Phase** | **Phase Issue + Milestone** | ビジネス成果の単位 |
+| **Phase** | **Milestone** | ビジネス成果の単位 |
 | **Epic** | **Epic Issue + PR** | 検証可能な機能の単位 |
 | **Task** | **Task Issue（sub-issue）+ Commit** | 実装作業の単位 |
 
@@ -173,8 +173,8 @@ Phase/Epic パイプラインに属さない単発作業を `/aidd-adhoc` で処
 | Task 作業開始 | `gh issue edit <番号> --add-label "status:in-progress"` | AI（`/aidd-impl` 開始時） |
 | Task 作業完了 | Epic PR の `Closes #N` で自動 close（Task Issue のみ） | GitHub ネイティブ機能 |
 | マイルストーン通過記録 | Issue コメント（`✅ G{N} 通過 (日付)`） | `/aidd-next` |
-| Epic 完了 | Epic Issue close + Phase Issue / Milestone 進捗更新 | `/aidd-next` |
-| Phase 完了 | Phase Issue close + Milestone close | `/aidd-next` |
+| Epic 完了 | Epic Issue close + Milestone 進捗確認 | `/aidd-next` |
+| Phase 完了 | Milestone close | `/aidd-next` |
 | Gate 通過記録 | PR ラベル（`gate:reviewed` / `gate:briefed` / `gate:approved`）+ PR 証跡コメント | AI（各スキル） |
 
 ### Merge Guard（Gate ラベルによるマージ制御）

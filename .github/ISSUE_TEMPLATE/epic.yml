@@ -3,14 +3,6 @@ description: Epic の追跡
 labels: ["epic"]
 body:
   - type: input
-    id: phase-issue
-    attributes:
-      label: 親 Phase Issue
-      description: "Phase Issue の番号（#NNN）。作成後に Phase の sub-issue として紐付ける"
-      placeholder: "#42"
-    validations:
-      required: true
-  - type: input
     id: epic-doc
     attributes:
       label: Epic 仕様書

@@ -12,7 +12,7 @@ AIDD-FW のオーケストレータースキルは、Claude Code の `subagent_t
 Agent(subagent_type="aidd-analyst", prompt="...")
 ```
 
-- `subagent_type` に指定する値は `.claude/agents/` 内のファイル名（拡張子なし）
+- `subagent_type` に指定する値はエージェント定義ファイルのファイル名（拡張子なし）
 - Claude Code がエージェント定義ファイルを読み込み、そのペルソナとして動作する
 - 1 メッセージ内に複数の Agent 呼び出しを記述すると並行起動される
 
@@ -20,13 +20,13 @@ Agent(subagent_type="aidd-analyst", prompt="...")
 
 | ペルソナ | ファイル | 専門性 | 判断ベース |
 |---------|--------|--------|-----------|
-| aidd-analyst | `.claude/agents/aidd-analyst.md` | 業務・ドメイン分析 | Phase 定義書、Epic 仕様書、プロジェクト憲章、用語集 |
-| aidd-architect | `.claude/agents/aidd-architect.md` | 設計判断・トレードオフ評価 | ADR、技術スタック、アーキテクチャ概要、規約 |
-| aidd-builder | `.claude/agents/aidd-builder.md` | 実装・構築 | 規約、設計成果物、技術スタック、既存コードパターン |
+| aidd-analyst | `agents/aidd-analyst.md`（プラグイン） | 業務・ドメイン分析 | Phase 定義書、Epic 仕様書、プロジェクト憲章、用語集 |
+| aidd-architect | `agents/aidd-architect.md`（プラグイン） | 設計判断・トレードオフ評価 | ADR、技術スタック、アーキテクチャ概要、規約 |
+| aidd-builder | `agents/aidd-builder.md`（プラグイン） | 実装・構築 | 規約、設計成果物、技術スタック、既存コードパターン |
 
 ### 配置方法
 
-`/aidd-setup fw` を実行すると、`agents/aidd-*.md`（プラグインソース）から `.claude/agents/aidd-*.md`（プロジェクト）にコピーされる。`aidd-` プレフィックス付きファイルのみ上書きし、プロジェクト独自ペルソナは触らない。
+Claude Code はインストール済みプラグインの `agents/` ディレクトリを自動認識する（優先度 5）。プロジェクトへのコピーは不要。プロジェクト独自のエージェントを追加したい場合は `.claude/agents/` に配置する（優先度 3 でプラグインより優先される）。
 
 ## 制約事項
 
@@ -85,9 +85,9 @@ Agent(subagent_type="aidd-analyst", prompt="...")
 Agent(prompt="あなたは aidd-analyst（業務・ドメイン分析の専門家）です。以下を分析してください。...")
 ```
 
-### ペルソナ未配置
+### ペルソナ未認識
 
-`.claude/agents/` にペルソナファイルが存在しない場合も同様にフォールバックする。`/aidd-setup fw` を実行すればペルソナが配置される。
+プラグインが正しくインストールされていない場合も同様にフォールバックする。`/plugin install aidd-fw` でプラグインを再インストールすれば認識される。
 
 ### タイムアウト
 
