@@ -160,6 +160,23 @@ function ChatPage() {
     setTimeout(() => setCopiedField(null), 1500);
   }, []);
 
+  const triggerOnboarding = useCallback(() => {
+    api
+      .createStubSession({
+        greeting: `Hey! \u{1F44B} Say hi when you're ready to get started.`,
+        title: "Welcome",
+      })
+      .then((session) => {
+        const id = String((session as Record<string, unknown>).id);
+        stubSessionRef.current = true;
+        setSelectedId(id);
+        qc.invalidateQueries({ queryKey: queryKeys.sessions.all });
+      })
+      .catch(() => {
+        // Silently fail — user can still start a normal chat
+      });
+  }, [qc]);
+
   // Auto-trigger onboarding on first visit
   useEffect(() => {
     if (onboardingTriggered.current) return;
@@ -181,23 +198,6 @@ function ChatPage() {
         .catch(() => {});
     }
   }, [searchParams, triggerOnboarding]);
-
-  function triggerOnboarding() {
-    api
-      .createStubSession({
-        greeting: `Hey! \u{1F44B} Say hi when you're ready to get started.`,
-        title: "Welcome",
-      })
-      .then((session) => {
-        const id = String((session as Record<string, unknown>).id);
-        stubSessionRef.current = true;
-        setSelectedId(id);
-        qc.invalidateQueries({ queryKey: queryKeys.sessions.all });
-      })
-      .catch(() => {
-        // Silently fail — user can still start a normal chat
-      });
-  }
 
   // Update tab label/status when session meta changes
   const { updateTabStatus } = chatTabs;

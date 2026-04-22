@@ -19,9 +19,9 @@ export function MediaPreview({ attachments, onRemove }: MediaPreviewProps) {
         overflowY: "hidden",
       }}
     >
-      {attachments.map((att, i) => (
+      {attachments.map((att) => (
         <div
-          key={i}
+          key={att.fileId ?? att.url}
           style={{
             position: "relative",
             width: 56,
@@ -104,7 +104,7 @@ export function MediaPreview({ attachments, onRemove }: MediaPreviewProps) {
 
           {/* Remove button */}
           <button
-            onClick={() => onRemove(i)}
+            onClick={() => onRemove(attachments.indexOf(att))}
             aria-label="Remove attachment"
             style={{
               position: "absolute",

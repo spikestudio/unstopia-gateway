@@ -208,9 +208,9 @@ function TableBlock({ headerLine, rows, keyProp }: { headerLine: string; rows: s
         <table className="border-collapse text-[length:var(--text-footnote)] leading-[1.6] w-full min-w-max">
           <thead>
             <tr className="bg-[var(--fill-tertiary)]">
-              {headers.map((h, hi) => (
+              {headers.map((h) => (
                 <th
-                  key={hi}
+                  key={h}
                   className="text-left py-2.5 px-4 font-semibold text-[var(--text-primary)] border-b border-[var(--separator)] max-w-[280px] break-words"
                 >
                   {inlineFormat(h)}
@@ -220,10 +220,13 @@ function TableBlock({ headerLine, rows, keyProp }: { headerLine: string; rows: s
           </thead>
           <tbody>
             {bodyRows.map((row, ri) => (
-              <tr key={ri} className={ri % 2 === 1 ? "bg-[var(--fill-quaternary,transparent)]" : "bg-transparent"}>
-                {row.map((cell, ci) => (
+              <tr
+                key={row.join("|")}
+                className={ri % 2 === 1 ? "bg-[var(--fill-quaternary,transparent)]" : "bg-transparent"}
+              >
+                {row.map((cell) => (
                   <td
-                    key={ci}
+                    key={cell}
                     className={`py-2.5 px-4 text-[var(--text-primary)] max-w-[280px] break-words ${ri < bodyRows.length - 1 ? "border-b border-[var(--separator)]" : ""}`}
                   >
                     {inlineFormat(cell)}
@@ -422,8 +425,8 @@ function renderMedia(media: MediaAttachment[], isUser: boolean) {
 
   return (
     <>
-      {images.map((m, mi) => (
-        <div key={`img-${mi}`} className="mt-[var(--space-2)] rounded-[var(--radius-lg)] overflow-hidden max-w-[280px]">
+      {images.map((m) => (
+        <div key={m.url} className="mt-[var(--space-2)] rounded-[var(--radius-lg)] overflow-hidden max-w-[280px]">
           <img
             src={m.url}
             alt={m.name || "Image"}
@@ -432,13 +435,13 @@ function renderMedia(media: MediaAttachment[], isUser: boolean) {
           />
         </div>
       ))}
-      {audio.map((m, mi) => (
-        <div key={`audio-${mi}`} className="mt-[var(--space-2)]">
+      {audio.map((m) => (
+        <div key={m.url} className="mt-[var(--space-2)]">
           <VoiceMessage src={m.url} duration={m.duration || 0} waveform={m.waveform || []} isUser={isUser} />
         </div>
       ))}
-      {files.map((m, mi) => (
-        <div key={`file-${mi}`} className="mt-[var(--space-2)]">
+      {files.map((m) => (
+        <div key={m.url} className="mt-[var(--space-2)]">
           <FileAttachment name={m.name || "File"} size={m.size} mimeType={m.mimeType} url={m.url} isUser={isUser} />
         </div>
       ))}

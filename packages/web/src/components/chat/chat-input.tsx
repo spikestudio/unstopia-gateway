@@ -121,7 +121,7 @@ export function ChatInput({
   onInterrupt,
   onNewSession,
   onStatusRequest,
-  skillsVersion,
+  skillsVersion: _skillsVersion,
   events,
   droppedFiles,
   onDroppedFilesConsumed,

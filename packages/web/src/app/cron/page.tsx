@@ -118,7 +118,7 @@ function RecentRuns({ jobId }: { jobId: string }) {
         Recent Runs
       </div>
       <div className="flex flex-col gap-1">
-        {runs.map((run, i) => {
+        {runs.map((run) => {
           const ts = run.ts || run.startedAt || "";
           const status = run.status || "unknown";
           const statusDot =
@@ -132,7 +132,7 @@ function RecentRuns({ jobId }: { jobId: string }) {
 
           return (
             <div
-              key={`${ts}-${i}`}
+              key={`${ts}-${status}-${run.durationMs ?? "?"}`}
               className="flex items-center gap-[var(--space-2)] text-[length:var(--text-caption2)] min-h-[22px] py-0.5"
             >
               <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: statusDot }} />

@@ -173,14 +173,15 @@ export function OnboardingWizard({ forceOpen, onClose }: OnboardingWizardProps) 
       >
         {/* Step indicator dots */}
         <div className="flex justify-center gap-2 pt-[var(--space-4)] px-[var(--space-4)]">
-          {Array.from({ length: TOTAL_STEPS }).map((_, i) => (
+          {Array.from({ length: TOTAL_STEPS }, (_, stepNum) => stepNum).map((stepNum) => (
             <div
-              key={i}
+              key={`step-dot-${stepNum}`}
               className="h-2 rounded-full transition-all duration-200"
               style={{
-                width: i === step ? 24 : 8,
-                background: i === step ? "var(--accent)" : i < step ? "var(--accent)" : "var(--fill-tertiary)",
-                opacity: i < step ? 0.5 : 1,
+                width: stepNum === step ? 24 : 8,
+                background:
+                  stepNum === step ? "var(--accent)" : stepNum < step ? "var(--accent)" : "var(--fill-tertiary)",
+                opacity: stepNum < step ? 0.5 : 1,
               }}
             />
           ))}
