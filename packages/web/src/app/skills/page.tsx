@@ -1,7 +1,7 @@
 "use client";
 
 import { Zap } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSettings } from "@/app/settings-provider";
 import { PageLayout } from "@/components/page-layout";
 import { Card, CardContent } from "@/components/ui/card";
@@ -28,6 +28,13 @@ export default function SkillsPage() {
   const [skillContent, setSkillContent] = useState<string | null>(null);
   const [contentLoading, setContentLoading] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const markdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (markdownRef.current && skillContent) {
+      markdownRef.current.innerHTML = renderMarkdown(skillContent);
+    }
+  }, [skillContent]);
 
   useEffect(() => {
     api
@@ -151,10 +158,8 @@ export default function SkillsPage() {
                 <p className="text-[length:var(--text-body)] text-[var(--text-tertiary)]">Loading...</p>
               ) : skillContent ? (
                 <div
+                  ref={markdownRef}
                   className="text-[length:var(--text-body)] leading-[1.7] text-[var(--text-secondary)]"
-                  dangerouslySetInnerHTML={{
-                    __html: renderMarkdown(skillContent),
-                  }}
                 />
               ) : null}
             </div>
