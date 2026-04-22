@@ -1,11 +1,11 @@
 # セキュリティ例外記録
 
-最終更新: 2026-04-23  
+最終更新: 2026-04-23（node-cron 4.x 更新後）  
 audit 実行時: `pnpm audit` (npm registry)
 
 ## 概要
 
-`pnpm.overrides` による修正で 30 件 → 6 件に削減済み。  
+`pnpm.overrides` + `node-cron` 3→4 アップグレードにより 30 件 → 4 件に削減済み。  
 以下は技術的制約により現時点で修正不能な脆弱性の記録。
 
 ---
@@ -61,10 +61,10 @@ audit 実行時: `pnpm audit` (npm registry)
 | CVE | GHSA-w5hq-g745-h8pq |
 | 深刻度 | moderate |
 | 修正バージョン | >=14.0.0 |
-| 依存パス | `packages/jimmy > node-cron@3.0.3 > uuid@8.3.2` および `packages/jimmy > node-telegram-bot-api > request > uuid@8.3.2` |
-| 修正不能の理由 | 修正バージョンは uuid 14.x（メジャー番号 8→14、API 破壊的変更）。`node-cron` および `request` が uuid 8.x API に依存しており上書きで破壊される。 |
-| 緩和策 | uuid は内部スケジューリング ID 生成に使用。外部からの `buf` パラメータ付き uuid 呼び出しは行っていない（CVE の攻撃条件に該当しない）。 |
-| 解消条件 | `node-cron` が uuid 14.x 対応版に更新された時点で override 追加可能。 |
+| 依存パス | `packages/jimmy > node-telegram-bot-api@0.67.0 > @cypress/request@3.0.10 > uuid@8.3.2` |
+| 修正不能の理由 | 修正バージョンは uuid 14.x（メジャー番号 8→14、API 破壊的変更）。`@cypress/request@3.0.10` が uuid 8.x API に依存しており上書きで破壊される。node-cron 経由のパスは node-cron 4.x 更新で解消済み。 |
+| 緩和策 | uuid は HTTP リクエストの内部 boundary 生成に使用。外部からの `buf` パラメータ付き uuid 呼び出しは行っていない（CVE の攻撃条件に該当しない）。 |
+| 解消条件 | `node-telegram-bot-api` を `grammy` 等に置き換えることで `@cypress/request` ごと除去可能。 |
 
 ---
 
@@ -83,3 +83,4 @@ audit 実行時: `pnpm audit` (npm registry)
 | protobufjs (baileys chain) | 7.5.4 | >=7.5.5 | critical |
 | request>form-data | 2.3.3 | ^2.5.4 | critical |
 | request>qs | 6.x古版 | ^6.14.1 | moderate |
+| node-cron | 3.0.3 | 4.2.1 | — (uuid 依存を完全除去) |

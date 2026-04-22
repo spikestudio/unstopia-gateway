@@ -1,11 +1,11 @@
-import cron from "node-cron";
+import cron, { type ScheduledTask } from "node-cron";
 import type { SessionManager } from "../sessions/manager.js";
 import { logger } from "../shared/logger.js";
 import type { Connector, CronJob, JinnConfig } from "../shared/types.js";
 import { loadJobs, saveJobs } from "./jobs.js";
 import { runCronJob } from "./runner.js";
 
-let tasks: cron.ScheduledTask[] = [];
+let tasks: ScheduledTask[] = [];
 let currentSessionManager: SessionManager;
 let currentConfig: JinnConfig;
 let currentConnectors: Map<string, Connector>;
