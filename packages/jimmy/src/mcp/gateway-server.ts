@@ -234,10 +234,10 @@ async function handleTool(name: string, args: Record<string, unknown>): Promise<
     }
 
     case "list_sessions": {
-      const sessions = (await apiGet("/api/sessions")) as any[];
-      const filtered = args.status ? sessions.filter((s: any) => s.status === args.status) : sessions;
+      const sessions = (await apiGet("/api/sessions")) as Record<string, unknown>[];
+      const filtered = args.status ? sessions.filter((s) => s.status === args.status) : sessions;
       // Return a summary, not the full data
-      const summary = filtered.map((s: any) => ({
+      const summary = filtered.map((s) => ({
         id: s.id,
         employee: s.employee,
         engine: s.engine,
@@ -273,7 +273,7 @@ async function handleTool(name: string, args: Record<string, unknown>): Promise<
     }
 
     case "list_employees": {
-      const org = (await apiGet("/api/org")) as any;
+      const org = (await apiGet("/api/org")) as unknown;
       return JSON.stringify(org);
     }
 
@@ -299,11 +299,11 @@ async function handleTool(name: string, args: Record<string, unknown>): Promise<
 
     case "trigger_cron_job": {
       // Resolve job ID (allow passing name or id)
-      const jobs = (await apiGet("/api/cron")) as any[];
-      const job = jobs.find((j: any) => j.id === args.jobId || j.name === args.jobId);
+      const jobs = (await apiGet("/api/cron")) as Record<string, unknown>[];
+      const job = jobs.find((j) => j.id === args.jobId || j.name === args.jobId);
       if (!job) return JSON.stringify({ error: `Job "${args.jobId}" not found` });
       // Actually trigger the job via the gateway REST API (fire-and-forget)
-      apiPost(`/api/cron/${job.id}/trigger`, {}).catch(() => {});
+      apiPost(`/api/cron/${job.id as string}/trigger`, {}).catch(() => {});
       return JSON.stringify({ triggered: true, jobId: job.id, message: `Cron job "${job.name}" triggered manually` });
     }
 

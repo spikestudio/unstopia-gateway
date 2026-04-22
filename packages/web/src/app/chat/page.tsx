@@ -288,8 +288,9 @@ function ChatPage() {
           setShowMoreMenu(false);
           qc.invalidateQueries({ queryKey: queryKeys.sessions.all });
         }
-      } catch (err: any) {
-        window.alert(`Duplicate failed: ${err.message || "Unknown error"}`);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "Unknown error";
+        window.alert(`Duplicate failed: ${message}`);
       }
     },
     [chatTabs, duplicateSessionMutation, qc],

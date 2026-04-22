@@ -26,7 +26,13 @@ import {
 } from "../sessions/registry.js";
 import { loadConfig } from "../shared/config.js";
 import { configureLogger, logger } from "../shared/logger.js";
-import type { Connector, JinnConfig } from "../shared/types.js";
+import type {
+  Connector,
+  JinnConfig,
+  SlackConnectorConfig,
+  TelegramConnectorConfig,
+  WhatsAppConnectorConfig,
+} from "../shared/types.js";
 import { initStt } from "../stt/stt.js";
 import { type ApiContext, handleApiRequest, resumePendingWebQueueItems } from "./api.js";
 import { ensureFilesDir } from "./files.js";
@@ -323,7 +329,7 @@ export async function startGateway(config: JinnConfig): Promise<GatewayCleanup> 
             break;
           }
           case "slack": {
-            const slackConfig = { ...typeConfig, id } as any;
+            const slackConfig = { ...typeConfig, id } as SlackConnectorConfig;
             const slack = new SlackConnector(slackConfig);
             slack.onMessage((msg) => {
               const routeOpts: RouteOptions = {};
@@ -340,7 +346,7 @@ export async function startGateway(config: JinnConfig): Promise<GatewayCleanup> 
             break;
           }
           case "whatsapp": {
-            const whatsapp = new WhatsAppConnector({ ...typeConfig } as any);
+            const whatsapp = new WhatsAppConnector({ ...typeConfig } as WhatsAppConnectorConfig);
             whatsapp.onMessage((msg) => {
               const routeOpts: RouteOptions = {};
               if (employee) {
@@ -356,7 +362,7 @@ export async function startGateway(config: JinnConfig): Promise<GatewayCleanup> 
             break;
           }
           case "telegram": {
-            const telegramConfig = { ...typeConfig, id } as any;
+            const telegramConfig = { ...typeConfig, id } as TelegramConnectorConfig;
             const tg = new TelegramConnector(telegramConfig);
             tg.onMessage((msg) => {
               const routeOpts: RouteOptions = {};
@@ -448,7 +454,7 @@ export async function startGateway(config: JinnConfig): Promise<GatewayCleanup> 
               break;
             }
             case "slack": {
-              const slackConfig = { ...typeConfig, id } as any;
+              const slackConfig = { ...typeConfig, id } as SlackConnectorConfig;
               const slack = new SlackConnector(slackConfig);
               slack.onMessage((msg) => {
                 const routeOpts: RouteOptions = {};
@@ -465,7 +471,7 @@ export async function startGateway(config: JinnConfig): Promise<GatewayCleanup> 
               break;
             }
             case "whatsapp": {
-              const whatsapp = new WhatsAppConnector({ ...typeConfig } as any);
+              const whatsapp = new WhatsAppConnector({ ...typeConfig } as WhatsAppConnectorConfig);
               whatsapp.onMessage((msg) => {
                 const routeOpts: RouteOptions = {};
                 if (employee) {
@@ -481,7 +487,7 @@ export async function startGateway(config: JinnConfig): Promise<GatewayCleanup> 
               break;
             }
             case "telegram": {
-              const telegramConfig = { ...typeConfig, id } as any;
+              const telegramConfig = { ...typeConfig, id } as TelegramConnectorConfig;
               const tg = new TelegramConnector(telegramConfig);
               tg.onMessage((msg) => {
                 const routeOpts: RouteOptions = {};

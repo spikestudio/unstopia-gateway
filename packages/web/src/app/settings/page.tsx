@@ -477,10 +477,10 @@ export default function SettingsPage() {
   useEffect(() => {
     api
       .getOrg()
-      .then((org: any) => {
+      .then((org) => {
         if (org?.employees) {
           setEmployees(
-            org.employees.map((e: any) =>
+            org.employees.map((e) =>
               typeof e === "string"
                 ? { name: e, displayName: e }
                 : { name: e.name, displayName: e.displayName || e.name },
@@ -1238,7 +1238,7 @@ export default function SettingsPage() {
                 <div className="text-[length:var(--text-caption2)] text-[var(--text-tertiary)] mb-[var(--space-3)]">
                   Add multiple connector instances of the same type, each bound to a specific employee.
                 </div>
-                {(config.connectors?.instances || []).map((instance: any, idx: number) => (
+                {(config.connectors?.instances || []).map((instance, idx) => (
                   <div
                     key={instance.id || idx}
                     className="mb-[var(--space-4)] p-[var(--space-3)] rounded-[var(--radius-md)] border border-[var(--separator)] bg-[var(--bg-secondary)]"

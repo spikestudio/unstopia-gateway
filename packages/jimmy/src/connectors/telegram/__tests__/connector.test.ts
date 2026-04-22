@@ -10,7 +10,7 @@ const mockStopPolling = vi.fn().mockResolvedValue(undefined);
 const mockOn = vi.fn();
 
 vi.mock("node-telegram-bot-api", () => {
-  const MockBot = vi.fn(function (this: any) {
+  const MockBot = vi.fn(function (this: Record<string, unknown>) {
     this.sendMessage = mockSendMessage;
     this.editMessageText = mockEditMessageText;
     this.getMe = mockGetMe;

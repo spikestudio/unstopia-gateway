@@ -2,7 +2,7 @@ import { CronConnector } from "../connectors/cron/index.js";
 import { findEmployee, scanOrg } from "../gateway/org.js";
 import type { SessionManager } from "../sessions/manager.js";
 import { logger } from "../shared/logger.js";
-import type { Connector, CronJob, JinnConfig } from "../shared/types.js";
+import type { Connector, CronJob, Employee, JinnConfig } from "../shared/types.js";
 import { appendRunLog } from "./jobs.js";
 
 export async function runCronJob(
@@ -20,7 +20,7 @@ export async function runCronJob(
     logger.debug(`Cron job "${job.name}" targets employee "${job.employee}" directly (skipping COO delegation).`);
   }
 
-  let employee;
+  let employee: Employee | undefined;
   if (job.employee) {
     const orgRegistry = scanOrg();
     employee = findEmployee(job.employee, orgRegistry);
