@@ -1,0 +1,81 @@
+# Taskfile.yml — プロジェクトタスク定義
+# https://taskfile.dev
+version: '3'
+
+tasks:
+  # ===== 開発 =====
+  dev:
+    desc: 開発サーバー起動
+    cmds:
+      - echo "TODO: 開発サーバーの起動コマンドを設定してください"
+
+  # ===== ビルド =====
+  build:
+    desc: ビルド
+    cmds:
+      - echo "TODO: ビルドコマンドを設定してください"
+
+  # ===== テスト =====
+  test:
+    desc: テスト実行
+    cmds:
+      - echo "TODO: テストコマンドを設定してください"
+
+  # ===== リント（/aidd-setup ci で自動生成） =====
+  lint:
+    desc: リント実行
+    cmds: []
+
+  lint:fix:
+    desc: 自動修正可能なリントエラーを修正
+    cmds: []
+
+  # ===== CI ローカル =====
+  ci:local:
+    desc: ローカル CI チェックを手動実行（lefthook 経由）
+    cmds:
+      - lefthook run pre-commit
+      - lefthook run pre-push
+
+  hooks:install:
+    desc: Git フックをインストール
+    cmds:
+      - lefthook install
+
+  # ===== Worktree =====
+  wt:create:
+    desc: "Worktree を作成し環境を初期化（例: task wt:create BRANCH=feature/ES-001-slug）"
+    vars:
+      BRANCH: '{{.BRANCH}}'
+      WT_ROOT:
+        sh: echo "/tmp/$(basename $(pwd))"
+    cmds:
+      - git fetch origin main
+      - git worktree add {{.WT_ROOT}}-{{.BRANCH}} -b {{.BRANCH}} origin/main
+      - direnv allow {{.WT_ROOT}}-{{.BRANCH}}
+      - mise trust {{.WT_ROOT}}-{{.BRANCH}}/.mise.toml
+      - cmd: cd {{.WT_ROOT}}-{{.BRANCH}} && mise install
+        ignore_error: true
+      - echo "✅ worktree ready: {{.WT_ROOT}}-{{.BRANCH}}"
+
+  wt:remove:
+    desc: "Worktree とブランチを削除（例: task wt:remove BRANCH=feature/ES-001-slug）"
+    vars:
+      BRANCH: '{{.BRANCH}}'
+      WT_ROOT:
+        sh: echo "/tmp/$(basename $(pwd))"
+    cmds:
+      - git worktree remove --force {{.WT_ROOT}}-{{.BRANCH}}
+      - git branch -D {{.BRANCH}}
+      - echo "✅ worktree removed: {{.BRANCH}}"
+
+  # ===== インフラ =====
+  infra:up:
+    desc: データストアを起動（docker compose 等）
+    cmds:
+      - echo "TODO: 起動コマンドを設定してください"
+
+  infra:down:
+    desc: データストアを停止
+    cmds:
+      - echo "TODO: 停止コマンドを設定してください"
