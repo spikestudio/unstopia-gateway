@@ -53,6 +53,12 @@ function handleError(err: Error) {
 }
 ```
 
+## ネイティブモジュール禁止事項
+
+| 禁止事項 | 理由 | 代替手段 |
+|---------|------|---------|
+| システム Node.js で `pnpm install` を直接実行 | `better-sqlite3` / `classic-level` 等のネイティブモジュールがシステム Node.js でコンパイルされ、mise Node.js 22 でロードできなくなる | `mise exec -- pnpm install` または `task install` を使う |
+
 ## プロセス禁止事項
 
 | 禁止事項 | 強度 |

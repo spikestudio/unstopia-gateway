@@ -71,9 +71,15 @@ tasks:
     cmds:
       - pnpm status
 
-  setup:
-    desc: 初回セットアップ（ビルド + jinn setup）
+  install:
+    desc: 依存関係インストール（mise の Node.js 22 を使用。直接 pnpm install は NG）
     cmds:
+      - mise exec -- pnpm install
+
+  setup:
+    desc: 初回セットアップ（install → ビルド + jinn setup）
+    cmds:
+      - task: install
       - pnpm setup
 
   # ===== Worktree =====

@@ -16,9 +16,9 @@ pre-commit:
       run: actionlint {staged_files}
 
 pre-push:
+  parallel: true
   jobs:
     - name: build
       run: pnpm build
-    # unit-tests: 既存の better-sqlite3 ネイティブモジュールエラー修正後に有効化
-    # - name: unit-tests
-    #   run: pnpm test
+    - name: unit-tests
+      run: mise exec -- pnpm --filter jinn-cli test
