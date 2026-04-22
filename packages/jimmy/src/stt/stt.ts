@@ -143,7 +143,7 @@ export async function downloadModel(model: string, onProgress: (progress: number
 
   const filename = MODEL_FILES[model]!;
   const destPath = path.join(STT_MODELS_DIR, filename);
-  const tmpPath = destPath + ".downloading";
+  const tmpPath = `${destPath}.downloading`;
   const expectedSize = EXPECTED_SIZES[model] || 466_000_000;
 
   try {
@@ -209,7 +209,7 @@ export async function downloadModel(model: string, onProgress: (progress: number
  * whisper-cli requires this format.
  */
 async function convertToWav(inputPath: string): Promise<string> {
-  const wavPath = inputPath.replace(/\.[^.]+$/, "") + ".wav";
+  const wavPath = `${inputPath.replace(/\.[^.]+$/, "")}.wav`;
   await execFileAsync(
     FFMPEG,
     [

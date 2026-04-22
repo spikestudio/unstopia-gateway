@@ -44,7 +44,7 @@ export function EmployeePicker({ employees, value, onChange }: EmployeePickerPro
   // Reset highlight when filter changes
   useEffect(() => {
     setHighlightIdx(0);
-  }, [search]);
+  }, []);
 
   // Focus search when opening
   useEffect(() => {

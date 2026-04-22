@@ -30,6 +30,9 @@
         "noAssignInExpressions": "warn",
         "noImplicitAnyLet": "warn"
       },
+      "security": {
+        "noDangerouslySetInnerHtml": "warn"
+      },
       "style": {
         "noNonNullAssertion": "warn",
         "useConst": "error",
@@ -49,6 +52,16 @@
         "useLiteralKeys": "warn",
         "useOptionalChain": "warn"
       }
+    }
+  },
+  "css": {
+    "parser": {
+      "allowWrongLineComments": true,
+      "cssModules": false,
+      "tailwindDirectives": true
+    },
+    "linter": {
+      "enabled": false
     }
   },
   "javascript": {

@@ -136,7 +136,7 @@ describe("formatResponse", () => {
   });
 
   it("still chunks long messages after conversion", () => {
-    const longText = "## Title\n\n" + "word ".repeat(1000);
+    const longText = `## Title\n\n${"word ".repeat(1000)}`;
     const result = formatResponse(longText);
     expect(result.length).toBeGreaterThan(1);
     expect(result[0].startsWith("*Title*")).toBe(true);

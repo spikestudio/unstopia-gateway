@@ -139,7 +139,7 @@ export function resolveOrgHierarchy(registry: Map<string, Employee>): OrgHierarc
     const parent = parentMap.get(name);
     if (parent !== null && parent !== undefined && registry.has(parent)) {
       if (!childrenMap.has(parent)) childrenMap.set(parent, []);
-      childrenMap.get(parent)!.push(name);
+      childrenMap.get(parent)?.push(name);
     }
   }
 

@@ -127,7 +127,7 @@ export class ClaudeEngine implements InterruptibleEngine {
     if (opts.systemPrompt) args.push("--append-system-prompt", opts.systemPrompt);
     let prompt = opts.prompt;
     if (opts.attachments?.length) {
-      prompt += "\n\nAttached files:\n" + opts.attachments.map((a) => `- ${a}`).join("\n");
+      prompt += `\n\nAttached files:\n${opts.attachments.map((a) => `- ${a}`).join("\n")}`;
     }
     // Prompt MUST come before --mcp-config because --mcp-config is variadic
     // and would consume the prompt as another config path

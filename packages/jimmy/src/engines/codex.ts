@@ -39,10 +39,10 @@ export class CodexEngine implements InterruptibleEngine {
   async run(opts: EngineRunOpts): Promise<EngineResult> {
     let prompt = opts.prompt;
     if (opts.systemPrompt) {
-      prompt = opts.systemPrompt + "\n\n---\n\n" + prompt;
+      prompt = `${opts.systemPrompt}\n\n---\n\n${prompt}`;
     }
     if (opts.attachments?.length) {
-      prompt += "\n\nAttached files:\n" + opts.attachments.map((a) => `- ${a}`).join("\n");
+      prompt += `\n\nAttached files:\n${opts.attachments.map((a) => `- ${a}`).join("\n")}`;
     }
 
     const bin = opts.bin || "codex";

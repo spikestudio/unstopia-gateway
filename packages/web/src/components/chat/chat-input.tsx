@@ -152,7 +152,7 @@ export function ChatInput({
   const stt = useStt(events, (text) => {
     // Called when timeout auto-stops recording and transcription completes
     if (text) {
-      setValue((prev) => (prev ? prev + " " + text : text));
+      setValue((prev) => (prev ? `${prev} ${text}` : text));
     }
   });
 
@@ -208,14 +208,14 @@ export function ChatInput({
         setSlashCommands([...BUILTIN_COMMANDS, ...skillCommands]);
       })
       .catch(() => {});
-  }, [skillsVersion]);
+  }, []);
 
   const handleMentionSelect = useCallback(
     (name: string) => {
       const atIdx = value.lastIndexOf("@");
       if (atIdx !== -1) {
         const before = value.slice(0, atIdx);
-        setValue(before + "@" + name + " ");
+        setValue(`${before}@${name} `);
       }
       setShowMentions(false);
       textareaRef.current?.focus();
@@ -226,14 +226,14 @@ export function ChatInput({
   const handleCommandSelect = useCallback((cmd: SlashCommand) => {
     if (cmd.needsEmployee) {
       // Insert command + @ to trigger mention autocomplete
-      setValue("/" + cmd.name + " @");
+      setValue(`/${cmd.name} @`);
       setShowCommands(false);
       // Trigger mention dropdown
       setMentionFilter("");
       setMentionIndex(0);
       setShowMentions(true);
     } else {
-      setValue("/" + cmd.name);
+      setValue(`/${cmd.name}`);
       setShowCommands(false);
     }
     textareaRef.current?.focus();
@@ -393,16 +393,16 @@ export function ChatInput({
 
   const fillTextarea = useCallback((text: string) => {
     if (!text) return;
-    setValue((prev) => (prev ? prev + " " + text : text));
+    setValue((prev) => (prev ? `${prev} ${text}` : text));
   }, []);
 
   // Auto-resize textarea when value changes programmatically (e.g., from STT)
   useEffect(() => {
     if (textareaRef.current) {
       textareaRef.current.style.height = "auto";
-      textareaRef.current.style.height = Math.min(textareaRef.current.scrollHeight, 120) + "px";
+      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 120)}px`;
     }
-  }, [value]);
+  }, []);
 
   async function handleMicClick() {
     if (stt.state === "recording") {
@@ -542,7 +542,7 @@ export function ChatInput({
           onInput={(e) => {
             const target = e.target as HTMLTextAreaElement;
             target.style.height = "auto";
-            target.style.height = Math.min(target.scrollHeight, 120) + "px";
+            target.style.height = `${Math.min(target.scrollHeight, 120)}px`;
           }}
         />
 

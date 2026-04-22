@@ -156,7 +156,7 @@ export class TelegramConnector implements Connector {
   }
 
   async sendMessage(target: Target, text: string): Promise<string | undefined> {
-    if (!text || !text.trim()) return undefined;
+    if (!text?.trim()) return undefined;
     const chunks = formatResponse(text);
     let lastMessageId: string | undefined;
     for (const chunk of chunks) {
@@ -168,7 +168,7 @@ export class TelegramConnector implements Connector {
   }
 
   async replyMessage(target: Target, text: string): Promise<string | undefined> {
-    if (!text || !text.trim()) return undefined;
+    if (!text?.trim()) return undefined;
     const replyToId = target.replyContext?.messageId != null ? Number(target.replyContext.messageId) : undefined;
     const opts: TelegramBot.SendMessageOptions = {};
     if (replyToId) {
@@ -217,7 +217,7 @@ export class TelegramConnector implements Connector {
 
   async editMessage(target: Target, text: string): Promise<void> {
     if (!target.messageTs) return;
-    if (!text || !text.trim()) return;
+    if (!text?.trim()) return;
     await this.bot.editMessageText(text, {
       chat_id: target.channel,
       message_id: Number(target.messageTs),

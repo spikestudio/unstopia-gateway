@@ -32,7 +32,7 @@ export function getGoalTree(db: Database): (Goal & { children: Goal[] })[] {
   }
   for (const [, g] of map) {
     if (g.parentId && map.has(g.parentId)) {
-      map.get(g.parentId)!.children.push(g);
+      map.get(g.parentId)?.children.push(g);
     } else {
       roots.push(g);
     }

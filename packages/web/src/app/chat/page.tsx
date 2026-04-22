@@ -34,9 +34,7 @@ class ChatErrorBoundary extends React.Component<{ children: React.ReactNode }, {
   static getDerivedStateFromError(error: Error) {
     return { error };
   }
-  componentDidCatch(error: Error, info: React.ErrorInfo) {
-    console.error("[ChatErrorBoundary]", error.message, "\nComponent stack:", info.componentStack);
-  }
+  componentDidCatch(_error: Error, _info: React.ErrorInfo) {}
   render() {
     if (this.state.error) {
       return (
@@ -94,7 +92,7 @@ function ChatPage() {
     employee?: string;
   } | null>(null);
   // Sibling sessions for the currently selected employee (empty if direct/single session)
-  const [employeeSessions, setEmployeeSessions] = useState<
+  const [_employeeSessions, setEmployeeSessions] = useState<
     Array<{ id: string; title?: string; lastActivity?: string; createdAt?: string }>
   >([]);
   // When true, user explicitly started a new chat — don't auto-select first session
@@ -182,7 +180,7 @@ function ChatPage() {
         })
         .catch(() => {});
     }
-  }, [searchParams]);
+  }, [searchParams, triggerOnboarding]);
 
   function triggerOnboarding() {
     api
@@ -472,7 +470,17 @@ function ChatPage() {
         action: () => chatTabs.switchTab(i),
       })),
     ],
-    [handleNewChat, navigateSession, cycleEmployee, copyChat, selectedId, showShortcutOverlay, showMoreMenu, chatTabs],
+    [
+      handleNewChat,
+      navigateSession,
+      cycleEmployee,
+      copyChat,
+      selectedId,
+      showShortcutOverlay,
+      showMoreMenu,
+      chatTabs,
+      handleDeleteSession,
+    ],
   );
 
   useKeyboardShortcuts(shortcuts);

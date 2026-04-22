@@ -315,7 +315,7 @@ function buildChainOfCommand(
   const unique = [...new Set(escalation)];
   lines.push(`- **Escalation path**: ${unique.join(" → ")}`);
 
-  return "\n" + lines.join("\n") + "\n";
+  return `\n${lines.join("\n")}\n`;
 }
 
 function buildServicesContext(employee: Employee, gatewayUrl: string): string | null {

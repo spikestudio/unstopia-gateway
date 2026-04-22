@@ -21,7 +21,7 @@ export function scanOrg(): Map<string, Employee> {
         try {
           const raw = fs.readFileSync(fullPath, "utf-8");
           const data = yaml.load(raw) as any;
-          if (data && data.name && data.persona) {
+          if (data?.name && data.persona) {
             const employee: Employee = {
               name: data.name,
               displayName: data.displayName || data.name,

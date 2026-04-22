@@ -198,7 +198,7 @@ export function LogBrowser({ lines }: LogBrowserProps) {
 
                   {/* Message */}
                   <span className="truncate text-[length:var(--text-footnote)] text-[var(--text-primary)] ml-[var(--space-3)] flex-1 min-w-0">
-                    {isLong && !isExpanded ? entry.message.slice(0, 117) + "..." : entry.message}
+                    {isLong && !isExpanded ? `${entry.message.slice(0, 117)}...` : entry.message}
                   </span>
 
                   {/* Chevron for long messages */}

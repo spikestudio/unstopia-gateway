@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronDown, Clock3, Copy, EllipsisVertical, Pencil, Pin, Plus, Search, Trash2, X } from "lucide-react";
+import { ChevronDown, Clock3, EllipsisVertical, Pin, Plus, Search, X } from "lucide-react";
 import { startTransition, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSettings } from "@/app/settings-provider";
 import { Button } from "@/components/ui/button";
@@ -212,7 +212,7 @@ function StatusDot({ color, pulse = false, className }: { color: string; pulse?:
   );
 }
 
-function SectionLabel({ icon, label, count }: { icon: React.ReactNode; label: string; count?: number }) {
+function _SectionLabel({ icon, label, count }: { icon: React.ReactNode; label: string; count?: number }) {
   return (
     <div className="flex items-center gap-2 px-4 py-2">
       <span className="text-xs">{icon}</span>
@@ -469,9 +469,9 @@ export function ChatSidebar({
         const empData = s.employee ? employeeData.get(s.employee) : undefined;
         return (
           s.id.toLowerCase().includes(q) ||
-          (s.employee && s.employee.toLowerCase().includes(q)) ||
-          (empData?.displayName && empData.displayName.toLowerCase().includes(q)) ||
-          (s.title && s.title.toLowerCase().includes(q))
+          s.employee?.toLowerCase().includes(q) ||
+          empData?.displayName?.toLowerCase().includes(q) ||
+          s.title?.toLowerCase().includes(q)
         );
       })
     : sessions;
@@ -486,7 +486,7 @@ export function ChatSidebar({
     else {
       const emp = s.employee!;
       if (!employeeSessionMap.has(emp)) employeeSessionMap.set(emp, []);
-      employeeSessionMap.get(emp)!.push(s);
+      employeeSessionMap.get(emp)?.push(s);
     }
   }
 
@@ -545,7 +545,7 @@ export function ChatSidebar({
     for (const item of [...pinnedFlat, ...unpinnedFlat]) {
       const name = item.employeeName!;
       empNames.push(name);
-      const sessionIds = item.sessions!.map((s) => s.id);
+      const sessionIds = item.sessions?.map((s) => s.id) ?? [];
       empMap[name] = sessionIds;
       ids.push(...sessionIds);
     }
@@ -614,7 +614,6 @@ export function ChatSidebar({
             <StatusDot color={sessionDotColor} pulse={sessionIsRunning} className="size-1.5" />
             {isRenaming ? (
               <input
-                autoFocus
                 maxLength={200}
                 defaultValue={displayTitle}
                 className={cn(

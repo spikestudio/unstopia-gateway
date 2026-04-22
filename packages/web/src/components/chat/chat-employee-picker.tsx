@@ -45,7 +45,7 @@ export function ChatEmployeePicker({ employees, selectedEmployee, onSelect, port
     for (const emp of filtered) {
       const dept = emp.department || "other";
       if (!map.has(dept)) map.set(dept, []);
-      map.get(dept)!.push(emp);
+      map.get(dept)?.push(emp);
     }
     return map;
   }, [filtered]);
@@ -62,7 +62,7 @@ export function ChatEmployeePicker({ employees, selectedEmployee, onSelect, port
   // Reset highlight when search changes
   useEffect(() => {
     setHighlightIdx(-1);
-  }, [search]);
+  }, []);
 
   // Scroll highlighted item into view
   useEffect(() => {

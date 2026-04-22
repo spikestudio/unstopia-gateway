@@ -67,7 +67,7 @@ function serveStatic(req: http.IncomingMessage, res: http.ServerResponse, webDir
   if (!fs.existsSync(resolved) || fs.statSync(resolved).isDirectory()) {
     // Next.js static export produces /chat.html, /sessions.html, etc.
     // Try appending .html before falling back to index.html
-    const htmlPath = resolved.endsWith("/") ? path.join(resolved, "index.html") : resolved + ".html";
+    const htmlPath = resolved.endsWith("/") ? path.join(resolved, "index.html") : `${resolved}.html`;
     if (fs.existsSync(htmlPath) && !fs.statSync(htmlPath).isDirectory()) {
       res.writeHead(200, { "Content-Type": "text/html" });
       fs.createReadStream(htmlPath).pipe(res);
@@ -240,6 +240,7 @@ export async function startGateway(config: JinnConfig): Promise<GatewayCleanup> 
     } catch (err) {
       logger.error(`Failed to start Discord connector: ${err instanceof Error ? err.message : err}`);
     }
+    // biome-ignore lint/suspicious/noDuplicateElseIf: different sub-property (proxyVia vs botToken)
   } else if (config.connectors?.discord?.proxyVia) {
     try {
       const discord = new RemoteDiscordConnector({ proxyVia: config.connectors.discord.proxyVia });
@@ -691,9 +692,6 @@ export async function startGateway(config: JinnConfig): Promise<GatewayCleanup> 
       if (err.code === "EADDRINUSE") {
         const msg = `Port ${port} is already in use.`;
         logger.error(msg);
-        console.error(`\nError: ${msg}`);
-        console.error(`\nTry: jinn start -p ${port + 1}`);
-        console.error(`Or update the port in config.yaml\n`);
         process.exit(1);
       }
       reject(err);

@@ -76,7 +76,7 @@ async function _sendNotification(
     message = `⚠️ Employee "${employeeName}" (session ${childId}) encountered an error: ${result.error}`;
   } else {
     const raw = result.result || "(no output)";
-    const preview = raw.length > 200 ? raw.substring(0, 200) + "..." : raw;
+    const preview = raw.length > 200 ? `${raw.substring(0, 200)}...` : raw;
     message = `📩 Employee "${employeeName}" replied in session ${childId}.\nRead the latest messages: GET /api/sessions/${childId}?last=N\n\nPreview: ${preview}`;
   }
 

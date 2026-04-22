@@ -325,7 +325,7 @@ async function handleTool(name: string, args: Record<string, unknown>): Promise<
 
 function sendResponse(response: JsonRpcResponse): void {
   const json = JSON.stringify(response);
-  process.stdout.write(json + "\n");
+  process.stdout.write(`${json}\n`);
 }
 
 async function handleRequest(request: JsonRpcRequest): Promise<void> {

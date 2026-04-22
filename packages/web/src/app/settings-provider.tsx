@@ -282,7 +282,7 @@ export function DocumentTitle() {
     const observer = new MutationObserver(() => applyTitle());
     observer.observe(titleEl, { childList: true, characterData: true, subtree: true });
     return () => observer.disconnect();
-  }, [settings.portalName]);
+  }, []);
 
   return null;
 }

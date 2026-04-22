@@ -1,7 +1,6 @@
 "use client";
 
 import { ArrowLeftRight, Moon, Palette, Sun } from "lucide-react";
-import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useTheme } from "@/app/providers";

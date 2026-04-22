@@ -11,7 +11,7 @@ import {
 } from "@/lib/notifications";
 import { createGatewaySocket } from "@/lib/ws";
 
-const TOAST_DURATION_MS = 5_000;
+const _TOAST_DURATION_MS = 5_000;
 
 export function NotificationProvider({ children }: { children: ReactNode }) {
   const [notifications, setNotifications] = useState<AppNotification[]>([]);

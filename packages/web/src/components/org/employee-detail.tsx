@@ -116,7 +116,7 @@ export function EmployeeDetail({ name, prefetched }: { name: string; prefetched?
   const rank = employee.rank || "employee";
   const persona = employee.persona || "";
   const currentEmoji = settings.employeeOverrides[employee.name]?.emoji || emojiForName(employee.name);
-  const truncatedPersona = persona.length > 200 && !personaExpanded ? persona.slice(0, 200) + "..." : persona;
+  const truncatedPersona = persona.length > 200 && !personaExpanded ? `${persona.slice(0, 200)}...` : persona;
 
   return (
     <div className="flex flex-col gap-[var(--space-6)]">

@@ -15,11 +15,11 @@ export function loadJobs(): CronJob[] {
 export function saveJobs(jobs: CronJob[]): void {
   const dir = path.dirname(CRON_JOBS);
   fs.mkdirSync(dir, { recursive: true });
-  fs.writeFileSync(CRON_JOBS, JSON.stringify(jobs, null, 2) + "\n", "utf-8");
+  fs.writeFileSync(CRON_JOBS, `${JSON.stringify(jobs, null, 2)}\n`, "utf-8");
 }
 
 export function appendRunLog(jobId: string, entry: object): void {
   fs.mkdirSync(CRON_RUNS, { recursive: true });
   const logPath = path.join(CRON_RUNS, `${jobId}.jsonl`);
-  fs.appendFileSync(logPath, JSON.stringify(entry) + "\n", "utf-8");
+  fs.appendFileSync(logPath, `${JSON.stringify(entry)}\n`, "utf-8");
 }

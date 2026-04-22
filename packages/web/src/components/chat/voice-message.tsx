@@ -1,5 +1,5 @@
 "use client";
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { formatDuration } from "@/lib/audio-recorder";
 
 interface VoiceMessageProps {
@@ -20,7 +20,7 @@ export function VoiceMessage({ src, duration, waveform, isUser }: VoiceMessagePr
     audioRef.current = audio;
 
     audio.addEventListener("timeupdate", () => {
-      if (audio.duration && isFinite(audio.duration)) {
+      if (audio.duration && Number.isFinite(audio.duration)) {
         setProgress(audio.currentTime / audio.duration);
         setCurrentTime(audio.currentTime);
       }
