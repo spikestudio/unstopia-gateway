@@ -1,19 +1,10 @@
-import {
-  Home,
-  MessageSquare,
-  Users,
-  Clock,
-  LayoutGrid,
-  Activity,
-  Zap,
-  Settings,
-} from "lucide-react"
-import type { LucideIcon } from "lucide-react"
+import type { LucideIcon } from "lucide-react";
+import { Activity, Clock, Home, LayoutGrid, MessageSquare, Settings, Users, Zap } from "lucide-react";
 
 export interface NavItem {
-  href: string
-  label: string
-  icon: LucideIcon
+  href: string;
+  label: string;
+  icon: LucideIcon;
 }
 
 export const NAV_ITEMS: NavItem[] = [
@@ -25,4 +16,4 @@ export const NAV_ITEMS: NavItem[] = [
   { href: "/logs", label: "Activity", icon: Activity },
   { href: "/skills", label: "Skills", icon: Zap },
   { href: "/settings", label: "Settings", icon: Settings },
-]
+];

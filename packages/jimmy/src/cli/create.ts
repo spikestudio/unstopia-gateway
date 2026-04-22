@@ -1,13 +1,8 @@
-import fs from "node:fs";
-import path from "node:path";
-import os from "node:os";
 import { execFileSync } from "node:child_process";
-import {
-  loadInstances,
-  saveInstances,
-  nextAvailablePort,
-  type Instance,
-} from "./instances.js";
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
+import { type Instance, loadInstances, nextAvailablePort, saveInstances } from "./instances.js";
 
 const GREEN = "\x1b[32m";
 const DIM = "\x1b[2m";
@@ -17,7 +12,9 @@ const RESET = "\x1b[0m";
 export async function runCreate(name: string, port?: number): Promise<void> {
   // Validate name
   if (!/^[a-z][a-z0-9-]*$/.test(name)) {
-    console.error(`${RED}Error:${RESET} Instance name must be lowercase alphanumeric with hyphens (e.g. "atlas", "my-bot").`);
+    console.error(
+      `${RED}Error:${RESET} Instance name must be lowercase alphanumeric with hyphens (e.g. "atlas", "my-bot").`,
+    );
     process.exit(1);
   }
 

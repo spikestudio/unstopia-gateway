@@ -1,6 +1,6 @@
-import { spawn, type ChildProcess } from "node:child_process";
-import type { InterruptibleEngine, EngineRunOpts, EngineResult, StreamDelta } from "../shared/types.js";
+import { type ChildProcess, spawn } from "node:child_process";
 import { logger } from "../shared/logger.js";
+import type { EngineResult, EngineRunOpts, InterruptibleEngine, StreamDelta } from "../shared/types.js";
 
 interface LiveProcess {
   proc: ChildProcess;
@@ -47,9 +47,7 @@ export class CodexEngine implements InterruptibleEngine {
 
     const bin = opts.bin || "codex";
     const isResume = !!opts.resumeSessionId;
-    const args = isResume
-      ? this.buildResumeArgs(opts, prompt)
-      : this.buildFreshArgs(opts, prompt);
+    const args = isResume ? this.buildResumeArgs(opts, prompt) : this.buildFreshArgs(opts, prompt);
 
     logger.info(
       `Codex engine starting: ${bin} ${args[0]}${isResume ? " resume" : ""} --model ${opts.model || "default"} (resume: ${opts.resumeSessionId || "none"})`,
@@ -206,7 +204,8 @@ export class CodexEngine implements InterruptibleEngine {
   private buildFreshArgs(opts: EngineRunOpts, prompt: string): string[] {
     const args = ["exec"];
     if (opts.model) args.push("--model", opts.model);
-    if (opts.effortLevel && opts.effortLevel !== "default") args.push("-c", `model_reasoning_effort="${opts.effortLevel}"`);
+    if (opts.effortLevel && opts.effortLevel !== "default")
+      args.push("-c", `model_reasoning_effort="${opts.effortLevel}"`);
     args.push("--json", "--color", "never", "--dangerously-bypass-approvals-and-sandbox", "--skip-git-repo-check");
     if (opts.cwd) args.push("-C", opts.cwd);
     if (opts.cliFlags?.length) args.push(...opts.cliFlags);
@@ -217,7 +216,8 @@ export class CodexEngine implements InterruptibleEngine {
   private buildResumeArgs(opts: EngineRunOpts, prompt: string): string[] {
     const args = ["exec", "resume"];
     if (opts.model) args.push("--model", opts.model);
-    if (opts.effortLevel && opts.effortLevel !== "default") args.push("-c", `model_reasoning_effort="${opts.effortLevel}"`);
+    if (opts.effortLevel && opts.effortLevel !== "default")
+      args.push("-c", `model_reasoning_effort="${opts.effortLevel}"`);
     args.push("--json", "--dangerously-bypass-approvals-and-sandbox", "--skip-git-repo-check");
     if (opts.cliFlags?.length) args.push(...opts.cliFlags);
     args.push(opts.resumeSessionId!);

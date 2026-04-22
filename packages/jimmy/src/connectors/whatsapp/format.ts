@@ -41,7 +41,10 @@ export function formatResponse(text: string): string[] {
   const chunks: string[] = [];
   let remaining = converted;
   while (remaining.length > 0) {
-    if (remaining.length <= WA_MAX_LENGTH) { chunks.push(remaining); break; }
+    if (remaining.length <= WA_MAX_LENGTH) {
+      chunks.push(remaining);
+      break;
+    }
     let cutAt = remaining.lastIndexOf("\n", WA_MAX_LENGTH);
     if (cutAt <= 0) cutAt = remaining.lastIndexOf(" ", WA_MAX_LENGTH);
     if (cutAt <= 0) cutAt = WA_MAX_LENGTH;

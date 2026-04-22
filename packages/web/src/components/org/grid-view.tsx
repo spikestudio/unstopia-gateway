@@ -1,13 +1,13 @@
-"use client"
+"use client";
 
-import type { Employee } from "@/lib/api"
-import { Card, CardContent } from "@/components/ui/card"
-import { EmployeeAvatar } from "@/components/ui/employee-avatar"
+import { Card, CardContent } from "@/components/ui/card";
+import { EmployeeAvatar } from "@/components/ui/employee-avatar";
+import type { Employee } from "@/lib/api";
 
 interface GridViewProps {
-  employees: Employee[]
-  selectedName: string | null
-  onSelect: (employee: Employee) => void
+  employees: Employee[];
+  selectedName: string | null;
+  onSelect: (employee: Employee) => void;
 }
 
 function EmployeeCard({
@@ -15,18 +15,16 @@ function EmployeeCard({
   selected,
   onSelect,
 }: {
-  employee: Employee
-  selected: boolean
-  onSelect: () => void
+  employee: Employee;
+  selected: boolean;
+  onSelect: () => void;
 }) {
   return (
     <button
       onClick={onSelect}
       className={`flex items-center gap-[var(--space-3)] px-[var(--space-4)] py-[var(--space-3)] rounded-[var(--radius-md,12px)] bg-[var(--material-regular)] cursor-pointer w-full text-left transition-all duration-150 ease-in-out ${selected ? "border-[1.5px] border-[var(--accent)]" : "border border-[var(--separator)]"}`}
       style={{
-        boxShadow: selected
-          ? "0 0 0 1px var(--accent), var(--shadow-subtle)"
-          : "var(--shadow-subtle)",
+        boxShadow: selected ? "0 0 0 1px var(--accent), var(--shadow-subtle)" : "var(--shadow-subtle)",
       }}
     >
       <EmployeeAvatar name={employee.name} size={28} />
@@ -47,18 +45,10 @@ function EmployeeCard({
         </span>
       </div>
     </button>
-  )
+  );
 }
 
-function DepartmentSection({
-  label,
-  count,
-  children,
-}: {
-  label: string
-  count: number
-  children: React.ReactNode
-}) {
+function DepartmentSection({ label, count, children }: { label: string; count: number; children: React.ReactNode }) {
   return (
     <Card className="p-0 shadow-none bg-[var(--bg-secondary)] rounded-[var(--radius-lg,16px)] border border-[var(--separator)]">
       <CardContent className="p-4 flex flex-col gap-[var(--space-2)]">
@@ -74,26 +64,26 @@ function DepartmentSection({
         {children}
       </CardContent>
     </Card>
-  )
+  );
 }
 
 export function GridView({ employees, selectedName, onSelect }: GridViewProps) {
   // Group by department
-  const deptMap = new Map<string, Employee[]>()
-  const ungrouped: Employee[] = []
+  const deptMap = new Map<string, Employee[]>();
+  const ungrouped: Employee[] = [];
 
   for (const emp of employees) {
     if (emp.department) {
-      const list = deptMap.get(emp.department) || []
-      list.push(emp)
-      deptMap.set(emp.department, list)
+      const list = deptMap.get(emp.department) || [];
+      list.push(emp);
+      deptMap.set(emp.department, list);
     } else {
-      ungrouped.push(emp)
+      ungrouped.push(emp);
     }
   }
 
   // Find executive
-  const executive = employees.find((e) => e.rank === "executive")
+  const executive = employees.find((e) => e.rank === "executive");
 
   return (
     <div className="overflow-y-auto p-[var(--space-6)] h-full">
@@ -104,9 +94,7 @@ export function GridView({ employees, selectedName, onSelect }: GridViewProps) {
           className={`flex items-center gap-[var(--space-5)] w-full px-[var(--space-6)] py-[var(--space-5)] rounded-[var(--radius-xl,20px)] bg-[var(--material-regular)] cursor-pointer text-left mb-[var(--space-6)] transition-all duration-150 ease-in-out ${selectedName === executive.name ? "border-[1.5px] border-[var(--accent)]" : "border border-[var(--separator)]"}`}
           style={{
             boxShadow:
-              selectedName === executive.name
-                ? "0 0 0 1px var(--accent), var(--shadow-card)"
-                : "var(--shadow-card)",
+              selectedName === executive.name ? "0 0 0 1px var(--accent), var(--shadow-card)" : "var(--shadow-card)",
           }}
         >
           <EmployeeAvatar name={executive.name} size={40} />
@@ -123,18 +111,14 @@ export function GridView({ employees, selectedName, onSelect }: GridViewProps) {
               <div className="text-[length:var(--text-title3)] font-[var(--weight-bold)] text-[var(--text-primary)] leading-none">
                 {employees.length}
               </div>
-              <div className="text-[length:var(--text-caption2)] text-[var(--text-tertiary)] mt-0.5">
-                employees
-              </div>
+              <div className="text-[length:var(--text-caption2)] text-[var(--text-tertiary)] mt-0.5">employees</div>
             </div>
             <div className="w-px self-stretch bg-[var(--separator)]" />
             <div className="text-center">
               <div className="text-[length:var(--text-title3)] font-[var(--weight-bold)] text-[var(--text-primary)] leading-none">
                 {deptMap.size}
               </div>
-              <div className="text-[length:var(--text-caption2)] text-[var(--text-tertiary)] mt-0.5">
-                depts
-              </div>
+              <div className="text-[length:var(--text-caption2)] text-[var(--text-tertiary)] mt-0.5">depts</div>
             </div>
           </div>
         </button>
@@ -143,14 +127,10 @@ export function GridView({ employees, selectedName, onSelect }: GridViewProps) {
       {/* Department columns */}
       <div className="grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-[var(--space-5)] items-start">
         {Array.from(deptMap.entries()).map(([dept, members]) => {
-          const filtered = members.filter((m) => m.name !== executive?.name)
-          if (filtered.length === 0) return null
+          const filtered = members.filter((m) => m.name !== executive?.name);
+          if (filtered.length === 0) return null;
           return (
-            <DepartmentSection
-              key={dept}
-              label={dept}
-              count={filtered.length}
-            >
+            <DepartmentSection key={dept} label={dept} count={filtered.length}>
               {filtered.map((emp) => (
                 <EmployeeCard
                   key={emp.name}
@@ -160,14 +140,11 @@ export function GridView({ employees, selectedName, onSelect }: GridViewProps) {
                 />
               ))}
             </DepartmentSection>
-          )
+          );
         })}
 
         {ungrouped.length > 0 && (
-          <DepartmentSection
-            label="Unassigned"
-            count={ungrouped.filter((u) => u.name !== executive?.name).length}
-          >
+          <DepartmentSection label="Unassigned" count={ungrouped.filter((u) => u.name !== executive?.name).length}>
             {ungrouped
               .filter((u) => u.name !== executive?.name)
               .map((emp) => (
@@ -182,5 +159,5 @@ export function GridView({ employees, selectedName, onSelect }: GridViewProps) {
         )}
       </div>
     </div>
-  )
+  );
 }

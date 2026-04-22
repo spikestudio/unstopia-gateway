@@ -1,57 +1,67 @@
-import type { IncomingMessage as HttpRequest, ServerResponse } from "node:http";
-import http from "node:http";
 import crypto from "node:crypto";
 import fs from "node:fs";
+import type { IncomingMessage as HttpRequest, ServerResponse } from "node:http";
+import http from "node:http";
 import path from "node:path";
 import yaml from "js-yaml";
-import type { CronJob, Engine, IncomingMessage, JinnConfig, Session, Target } from "../shared/types.js";
-import { isInterruptibleEngine } from "../shared/types.js";
-import type { SessionManager } from "../sessions/manager.js";
-import { buildContext } from "../sessions/context.js";
+import QRCode from "qrcode";
+import { loadInstances } from "../cli/instances.js";
+import type { WhatsAppConnector } from "../connectors/whatsapp/index.js";
+import { loadJobs, saveJobs } from "../cron/jobs.js";
+import { runCronJob } from "../cron/runner.js";
+import { reloadScheduler } from "../cron/scheduler.js";
 import {
-  initDb,
-  listSessions,
-  getSession,
+  notifyDiscordChannel,
+  notifyParentSession,
+  notifyRateLimited,
+  notifyRateLimitResumed,
+} from "../sessions/callbacks.js";
+import { buildContext } from "../sessions/context.js";
+import { forkEngineSession } from "../sessions/fork.js";
+import type { SessionManager } from "../sessions/manager.js";
+import {
+  cancelAllPendingQueueItems,
+  cancelQueueItem,
   createSession,
-  updateSession,
-  UpdateSessionFields,
   deleteSession,
   deleteSessions,
   duplicateSession,
-  insertMessage,
-  getMessages,
   enqueueQueueItem,
-  cancelQueueItem,
-  getQueueItems,
-  cancelAllPendingQueueItems,
-  listAllPendingQueueItems,
   getFile,
+  getMessages,
+  getQueueItems,
+  getSession,
+  initDb,
+  insertMessage,
+  listAllPendingQueueItems,
+  listSessions,
+  type UpdateSessionFields,
+  updateSession,
 } from "../sessions/registry.js";
-import { forkEngineSession } from "../sessions/fork.js";
+import { resolveEffort } from "../shared/effort.js";
+import { logger } from "../shared/logger.js";
 import {
   CONFIG_PATH,
-  CRON_JOBS,
   CRON_RUNS,
+  FILES_DIR,
+  JINN_HOME,
+  LOGS_DIR,
   ORG_DIR,
   SKILLS_DIR,
-  LOGS_DIR,
   TMP_DIR,
-  FILES_DIR,
 } from "../shared/paths.js";
-import { logger } from "../shared/logger.js";
-import { getSttStatus, downloadModel, transcribe as sttTranscribe, resolveLanguages, WHISPER_LANGUAGES } from "../stt/stt.js";
-import { JINN_HOME } from "../shared/paths.js";
-import { resolveEffort } from "../shared/effort.js";
 import { computeNextRetryDelayMs, computeRateLimitDeadlineMs, detectRateLimit } from "../shared/rateLimit.js";
+import type { CronJob, Engine, IncomingMessage, JinnConfig, Session, Target } from "../shared/types.js";
+import { isInterruptibleEngine } from "../shared/types.js";
 import { getClaudeExpectedResetAt, recordClaudeRateLimit } from "../shared/usageAwareness.js";
-import { loadJobs, saveJobs } from "../cron/jobs.js";
-import { reloadScheduler } from "../cron/scheduler.js";
-import { runCronJob } from "../cron/runner.js";
-import QRCode from "qrcode";
-import { WhatsAppConnector } from "../connectors/whatsapp/index.js";
-import { handleFilesRequest, ensureFilesDir } from "./files.js";
-import { notifyParentSession, notifyRateLimited, notifyRateLimitResumed, notifyDiscordChannel } from "../sessions/callbacks.js";
-import { loadInstances } from "../cli/instances.js";
+import {
+  downloadModel,
+  getSttStatus,
+  resolveLanguages,
+  transcribe as sttTranscribe,
+  WHISPER_LANGUAGES,
+} from "../stt/stt.js";
+import { handleFilesRequest } from "./files.js";
 
 export interface ApiContext {
   config: JinnConfig;
@@ -81,7 +91,11 @@ export function resumePendingWebQueueItems(context: ApiContext): void {
     const engine = context.sessionManager.getEngine(session.engine);
     if (!engine) {
       cancelQueueItem(item.id);
-      updateSession(session.id, { status: "error", lastActivity: new Date().toISOString(), lastError: `Engine "${session.engine}" not available` });
+      updateSession(session.id, {
+        status: "error",
+        lastActivity: new Date().toISOString(),
+        lastError: `Engine "${session.engine}" not available`,
+      });
       continue;
     }
 
@@ -103,9 +117,8 @@ function maybeRevertEngineOverride(session: Session): Session {
   if (!override) return session;
 
   const originalEngine = typeof override.originalEngine === "string" ? override.originalEngine : null;
-  const originalEngineSessionId = typeof override.originalEngineSessionId === "string"
-    ? override.originalEngineSessionId
-    : null;
+  const originalEngineSessionId =
+    typeof override.originalEngineSessionId === "string" ? override.originalEngineSessionId : null;
   const syncSince = typeof override.syncSince === "string" ? override.syncSince : null;
   const untilIso = typeof override.until === "string" ? override.until : null;
   if (!originalEngine || !untilIso) return session;
@@ -115,29 +128,33 @@ function maybeRevertEngineOverride(session: Session): Session {
   if (until.getTime() > Date.now()) return session;
 
   const engineSessionsRaw = meta["engineSessions"];
-  const engineSessions = (engineSessionsRaw && typeof engineSessionsRaw === "object" && !Array.isArray(engineSessionsRaw))
-    ? { ...(engineSessionsRaw as Record<string, unknown>) }
-    : {};
+  const engineSessions =
+    engineSessionsRaw && typeof engineSessionsRaw === "object" && !Array.isArray(engineSessionsRaw)
+      ? { ...(engineSessionsRaw as Record<string, unknown>) }
+      : {};
 
   // Preserve the current engine session ID under its engine key
   if (session.engine && session.engineSessionId) {
     engineSessions[String(session.engine)] = session.engineSessionId;
   }
 
-  const restoredSessionId = originalEngineSessionId
-    ?? (typeof engineSessions[originalEngine] === "string" ? (engineSessions[originalEngine] as string) : null);
+  const restoredSessionId =
+    originalEngineSessionId ??
+    (typeof engineSessions[originalEngine] === "string" ? (engineSessions[originalEngine] as string) : null);
 
   const nextMeta = { ...meta, engineSessions } as Record<string, unknown>;
   if (originalEngine === "claude" && syncSince && session.engine !== "claude") {
     nextMeta["claudeSyncSince"] = syncSince;
   }
   delete (nextMeta as Record<string, unknown>)["engineOverride"];
-  return updateSession(session.id, {
-    engine: originalEngine,
-    engineSessionId: restoredSessionId,
-    transportMeta: nextMeta as any,
-    lastError: null,
-  }) ?? session;
+  return (
+    updateSession(session.id, {
+      engine: originalEngine,
+      engineSessionId: restoredSessionId,
+      transportMeta: nextMeta as any,
+      lastError: null,
+    }) ?? session
+  );
 }
 
 function dispatchWebSessionRun(
@@ -149,10 +166,14 @@ function dispatchWebSessionRun(
   opts?: { delayMs?: number; queueItemId?: string; attachments?: string[] },
 ): void {
   const run = async () => {
-    await context.sessionManager.getQueue().enqueue(session.sessionKey || session.sourceRef, async () => {
-      context.emit("session:started", { sessionId: session.id });
-      await runWebSession(session, prompt, engine, config, context, opts?.attachments);
-    }, opts?.queueItemId);
+    await context.sessionManager.getQueue().enqueue(
+      session.sessionKey || session.sourceRef,
+      async () => {
+        context.emit("session:started", { sessionId: session.id });
+        await runWebSession(session, prompt, engine, config, context, opts?.attachments);
+      },
+      opts?.queueItemId,
+    );
   };
 
   const launch = () => {
@@ -197,7 +218,10 @@ function readBodyRaw(req: HttpRequest): Promise<Buffer> {
   });
 }
 
-async function readJsonBody(req: HttpRequest, res: ServerResponse): Promise<{ ok: true; body: unknown } | { ok: false }> {
+async function readJsonBody(
+  req: HttpRequest,
+  res: ServerResponse,
+): Promise<{ ok: true; body: unknown } | { ok: false }> {
   const raw = await readBody(req);
   try {
     return { ok: true, body: JSON.parse(raw) };
@@ -264,7 +288,7 @@ function deepMerge(target: Record<string, unknown>, source: Record<string, unkno
             const srcItem = item as Record<string, unknown>;
             // Find matching target item by id
             const matchTarget = (tv as unknown[]).find(
-              (t) => t && typeof t === "object" && (t as Record<string, unknown>).id === srcItem.id
+              (t) => t && typeof t === "object" && (t as Record<string, unknown>).id === srcItem.id,
             ) as Record<string, unknown> | undefined;
             if (matchTarget) return deepMerge(matchTarget, srcItem);
           }
@@ -273,7 +297,14 @@ function deepMerge(target: Record<string, unknown>, source: Record<string, unkno
       } else {
         result[key] = sv;
       }
-    } else if (sv && typeof sv === "object" && !Array.isArray(sv) && tv && typeof tv === "object" && !Array.isArray(tv)) {
+    } else if (
+      sv &&
+      typeof sv === "object" &&
+      !Array.isArray(sv) &&
+      tv &&
+      typeof tv === "object" &&
+      !Array.isArray(tv)
+    ) {
       result[key] = deepMerge(tv as Record<string, unknown>, sv as Record<string, unknown>);
     } else {
       result[key] = sv;
@@ -282,10 +313,7 @@ function deepMerge(target: Record<string, unknown>, source: Record<string, unkno
   return result;
 }
 
-function matchRoute(
-  pattern: string,
-  pathname: string,
-): Record<string, string> | null {
+function matchRoute(pattern: string, pathname: string): Record<string, string> | null {
   const patternParts = pattern.split("/");
   const pathParts = pathname.split("/");
   if (patternParts.length !== pathParts.length) return null;
@@ -319,16 +347,15 @@ function checkInstanceHealth(port: number): Promise<boolean> {
       res.resume();
     });
     req.on("error", () => resolve(false));
-    req.on("timeout", () => { req.destroy(); resolve(false); });
+    req.on("timeout", () => {
+      req.destroy();
+      resolve(false);
+    });
     req.end();
   });
 }
 
-export async function handleApiRequest(
-  req: HttpRequest,
-  res: ServerResponse,
-  context: ApiContext,
-): Promise<void> {
+export async function handleApiRequest(req: HttpRequest, res: ServerResponse, context: ApiContext): Promise<void> {
   const url = new URL(req.url || "/", `http://${req.headers.host || "localhost"}`);
   const pathname = url.pathname;
   const method = req.method || "GET";
@@ -367,7 +394,7 @@ export async function handleApiRequest(
           port: inst.port,
           running: inst.port === currentPort ? true : await checkInstanceHealth(inst.port),
           current: inst.port === currentPort,
-        }))
+        })),
       );
       return json(res, results);
     }
@@ -375,14 +402,20 @@ export async function handleApiRequest(
     // GET /api/sessions
     if (method === "GET" && pathname === "/api/sessions") {
       const sessions = listSessions();
-      return json(res, sessions.map((session) => serializeSession(session, context)));
+      return json(
+        res,
+        sessions.map((session) => serializeSession(session, context)),
+      );
     }
 
     // GET /api/sessions/interrupted — list sessions that can be resumed after a restart
     if (method === "GET" && pathname === "/api/sessions/interrupted") {
       const { getInterruptedSessions } = await import("../sessions/registry.js");
       const interrupted = getInterruptedSessions();
-      return json(res, interrupted.map((session) => serializeSession(session, context)));
+      return json(
+        res,
+        interrupted.map((session) => serializeSession(session, context)),
+      );
     }
 
     // GET /api/sessions/:id
@@ -490,7 +523,9 @@ export async function handleApiRequest(
         lastError: null,
         transportMeta: meta as any,
       });
-      logger.info(`Session ${params.id} reset via API (cleared engineSessions, engineOverride, engineSessionId, lastError)`);
+      logger.info(
+        `Session ${params.id} reset via API (cleared engineSessions, engineOverride, engineSessionId, lastError)`,
+      );
       context.emit("session:updated", { sessionId: params.id });
       return json(res, { status: "reset", sessionId: params.id });
     }
@@ -519,13 +554,19 @@ export async function handleApiRequest(
         updateSession(newSession.id, { engineSessionId: forkResult.engineSessionId });
 
         const result = getSession(newSession.id)!;
-        logger.info(`Session duplicated: ${params.id} → ${newSession.id} (engine: ${forkResult.engineSessionId}, ${messageCount} messages)`);
+        logger.info(
+          `Session duplicated: ${params.id} → ${newSession.id} (engine: ${forkResult.engineSessionId}, ${messageCount} messages)`,
+        );
         context.emit("session:created", { sessionId: newSession.id });
         return json(res, serializeSession(result, context));
       } catch (err: any) {
         // Clean up orphaned session if the engine fork failed after DB insert
         if (newSessionId) {
-          try { deleteSession(newSessionId); } catch { /* best effort */ }
+          try {
+            deleteSession(newSessionId);
+          } catch {
+            /* best effort */
+          }
         }
         logger.error(`Failed to duplicate session ${params.id}: ${err.message}`);
         res.writeHead(500, { "Content-Type": "application/json" });
@@ -623,7 +664,10 @@ export async function handleApiRequest(
     params = matchRoute("/api/sessions/:id/children", pathname);
     if (method === "GET" && params) {
       const children = listSessions().filter((s) => s.parentSessionId === params!.id);
-      return json(res, children.map((child) => serializeSession(child, context)));
+      return json(
+        res,
+        children.map((child) => serializeSession(child, context)),
+      );
     }
 
     // GET /api/sessions/:id/transcript — return raw Claude Code session transcript
@@ -697,7 +741,16 @@ export async function handleApiRequest(
           status: "error",
           lastError: `Engine "${engineName}" not available`,
         });
-        return json(res, { ...serializeSession({ ...session, status: "error", lastError: `Engine "${engineName}" not available` }, context) }, 201);
+        return json(
+          res,
+          {
+            ...serializeSession(
+              { ...session, status: "error", lastError: `Engine "${engineName}" not available` },
+              context,
+            ),
+          },
+          201,
+        );
       }
 
       // Set status to "running" synchronously BEFORE returning the response.
@@ -715,7 +768,10 @@ export async function handleApiRequest(
       const queueItemId = enqueueQueueItem(session.id, queueSessionKey, prompt);
       context.emit("queue:updated", { sessionId: session.id, sessionKey: queueSessionKey });
 
-      dispatchWebSessionRun(session, prompt, engine, config, context, { queueItemId, attachments: attachmentPaths.length > 0 ? attachmentPaths : undefined });
+      dispatchWebSessionRun(session, prompt, engine, config, context, {
+        queueItemId,
+        attachments: attachmentPaths.length > 0 ? attachmentPaths : undefined,
+      });
 
       return json(res, serializeSession(session, context), 201);
     }
@@ -754,10 +810,15 @@ export async function handleApiRequest(
       if (!isNotification && session.status === "waiting") {
         const expectedResetAt = getClaudeExpectedResetAt();
         const resumeText = expectedResetAt
-          ? expectedResetAt.toLocaleString("en-GB", { weekday: "short", day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })
+          ? expectedResetAt.toLocaleString("en-GB", {
+              weekday: "short",
+              day: "2-digit",
+              month: "short",
+              hour: "2-digit",
+              minute: "2-digit",
+            })
           : null;
-        const queuedText =
-          `⏳ Still paused due to Claude usage limit${resumeText ? ` (resets ${resumeText})` : ""}. Your message is queued and will run automatically.`;
+        const queuedText = `⏳ Still paused due to Claude usage limit${resumeText ? ` (resets ${resumeText})` : ""}. Your message is queued and will run automatically.`;
         insertMessage(session.id, "notification", queuedText);
         context.emit("session:notification", { sessionId: session.id, message: queuedText });
       }
@@ -765,7 +826,12 @@ export async function handleApiRequest(
       // If a turn is already running, check whether we should interrupt or queue.
       // Notifications (child completion callbacks) should never interrupt — just queue.
       if (session.status === "running") {
-        if (!isNotification && (config.sessions?.interruptOnNewMessage ?? true) && isInterruptibleEngine(engine) && engine.isAlive(session.id)) {
+        if (
+          !isNotification &&
+          (config.sessions?.interruptOnNewMessage ?? true) &&
+          isInterruptibleEngine(engine) &&
+          engine.isAlive(session.id)
+        ) {
           logger.info(`Interrupting running session ${session.id} for new message`);
           engine.kill(session.id, "Interrupted: new message received");
           // Wait briefly for the process to exit so the queue slot frees up
@@ -796,7 +862,10 @@ export async function handleApiRequest(
       const queueItemId = enqueueQueueItem(session.id, sessionKey, prompt);
       context.emit("queue:updated", { sessionId: session.id, sessionKey });
 
-      dispatchWebSessionRun(session, prompt, engine, config, context, { queueItemId, attachments: attachmentPaths.length > 0 ? attachmentPaths : undefined });
+      dispatchWebSessionRun(session, prompt, engine, config, context, {
+        queueItemId,
+        attachments: attachmentPaths.length > 0 ? attachmentPaths : undefined,
+      });
 
       return json(res, { status: "queued", sessionId: session.id });
     }
@@ -811,7 +880,9 @@ export async function handleApiRequest(
         if (fs.existsSync(runFile)) {
           const lines = fs.readFileSync(runFile, "utf-8").trim().split("\n").filter(Boolean);
           if (lines.length > 0) {
-            try { lastRun = JSON.parse(lines[lines.length - 1]); } catch {}
+            try {
+              lastRun = JSON.parse(lines[lines.length - 1]);
+            } catch {}
           }
         }
         return { ...job, lastRun };
@@ -896,8 +967,8 @@ export async function handleApiRequest(
       logger.info(`Manual trigger for cron job "${job.name}" (${job.id})`);
 
       // Fire and forget — respond immediately, run in background
-      runCronJob(job, context.sessionManager, context.getConfig(), context.connectors).catch(
-        (err) => logger.error(`Manual cron trigger failed for "${job.name}": ${err}`)
+      runCronJob(job, context.sessionManager, context.getConfig(), context.connectors).catch((err) =>
+        logger.error(`Manual cron trigger failed for "${job.name}": ${err}`),
       );
 
       return json(res, {
@@ -911,11 +982,10 @@ export async function handleApiRequest(
 
     // GET /api/org
     if (method === "GET" && pathname === "/api/org") {
-      if (!fs.existsSync(ORG_DIR)) return json(res, { departments: [], employees: [], hierarchy: { root: null, sorted: [], warnings: [] } });
+      if (!fs.existsSync(ORG_DIR))
+        return json(res, { departments: [], employees: [], hierarchy: { root: null, sorted: [], warnings: [] } });
       const entries = fs.readdirSync(ORG_DIR, { withFileTypes: true });
-      const departments = entries
-        .filter((e) => e.isDirectory())
-        .map((e) => e.name);
+      const departments = entries.filter((e) => e.isDirectory()).map((e) => e.name);
 
       const { scanOrg } = await import("./org.js");
       const { resolveOrgHierarchy } = await import("./org-hierarchy.js");
@@ -1056,19 +1126,25 @@ Handle this as a priority request from a colleague.`;
         title: `Cross-request: ${fromEmployee} → ${service}`,
       });
       insertMessage(session.id, "user", crossBrief);
-      logger.info(`Cross-request session created: ${session.id} (${fromEmployee} → ${service} → ${entry.provider.name})`);
+      logger.info(
+        `Cross-request session created: ${session.id} (${fromEmployee} → ${service} → ${entry.provider.name})`,
+      );
 
-      return json(res, {
-        sessionId: session.id,
-        provider: {
-          name: entry.provider.name,
-          displayName: entry.provider.displayName,
-          department: entry.provider.department,
+      return json(
+        res,
+        {
+          sessionId: session.id,
+          provider: {
+            name: entry.provider.name,
+            displayName: entry.provider.displayName,
+            department: entry.provider.department,
+          },
+          route,
+          managers: managers.map((m) => m.employee.name),
+          service,
         },
-        route,
-        managers: managers.map((m) => m.employee.name),
-        service,
-      }, 201);
+        201,
+      );
     }
 
     // GET /api/org/departments/:name/board
@@ -1129,8 +1205,12 @@ Handle this as a priority request from a colleague.`;
       if (!source) return badRequest(res, "source is required");
       try {
         const {
-          snapshotDirs, diffSnapshots, copySkillToInstance,
-          upsertManifest, extractSkillName, findExistingSkill,
+          snapshotDirs,
+          diffSnapshots,
+          copySkillToInstance,
+          upsertManifest,
+          extractSkillName,
+          findExistingSkill,
         } = await import("../cli/skills.js");
         const { execFileSync } = await import("node:child_process");
 
@@ -1168,39 +1248,41 @@ Handle this as a priority request from a colleague.`;
     if (method === "GET" && pathname === "/api/skills") {
       if (!fs.existsSync(SKILLS_DIR)) return json(res, []);
       const entries = fs.readdirSync(SKILLS_DIR, { withFileTypes: true });
-      const skills = entries.filter((e) => e.isDirectory()).map((e) => {
-        const skillMdPath = path.join(SKILLS_DIR, e.name, "SKILL.md");
-        let description = "";
-        if (fs.existsSync(skillMdPath)) {
-          const content = fs.readFileSync(skillMdPath, "utf-8");
-          // Extract description from YAML frontmatter, ## Trigger section, or first paragraph
-          const frontmatterMatch = content.match(/^---\s*\n([\s\S]*?)\n---/);
-          if (frontmatterMatch) {
-            const descMatch = frontmatterMatch[1].match(/^description:\s*(.+)$/m);
-            if (descMatch) {
-              description = descMatch[1].trim();
+      const skills = entries
+        .filter((e) => e.isDirectory())
+        .map((e) => {
+          const skillMdPath = path.join(SKILLS_DIR, e.name, "SKILL.md");
+          let description = "";
+          if (fs.existsSync(skillMdPath)) {
+            const content = fs.readFileSync(skillMdPath, "utf-8");
+            // Extract description from YAML frontmatter, ## Trigger section, or first paragraph
+            const frontmatterMatch = content.match(/^---\s*\n([\s\S]*?)\n---/);
+            if (frontmatterMatch) {
+              const descMatch = frontmatterMatch[1].match(/^description:\s*(.+)$/m);
+              if (descMatch) {
+                description = descMatch[1].trim();
+              }
             }
-          }
-          if (!description) {
-            const triggerMatch = content.match(/##\s*Trigger\s*\n+([^\n#]+)/);
-            if (triggerMatch) {
-              description = triggerMatch[1].trim();
-            } else {
-              // Use first non-heading, non-empty, non-frontmatter line
-              const bodyContent = frontmatterMatch ? content.slice(frontmatterMatch[0].length) : content;
-              const lines = bodyContent.split("\n");
-              for (const line of lines) {
-                const trimmed = line.trim();
-                if (trimmed && !trimmed.startsWith("#")) {
-                  description = trimmed;
-                  break;
+            if (!description) {
+              const triggerMatch = content.match(/##\s*Trigger\s*\n+([^\n#]+)/);
+              if (triggerMatch) {
+                description = triggerMatch[1].trim();
+              } else {
+                // Use first non-heading, non-empty, non-frontmatter line
+                const bodyContent = frontmatterMatch ? content.slice(frontmatterMatch[0].length) : content;
+                const lines = bodyContent.split("\n");
+                for (const line of lines) {
+                  const trimmed = line.trim();
+                  if (trimmed && !trimmed.startsWith("#")) {
+                    description = trimmed;
+                    break;
+                  }
                 }
               }
             }
           }
-        }
-        return { name: e.name, description };
-      });
+          return { name: e.name, description };
+        });
       return json(res, skills);
     }
 
@@ -1307,8 +1389,10 @@ Handle this as a priority request from a colleague.`;
       // fields not included in the update (e.g. connector tokens).
       let existing: Record<string, unknown> = {};
       try {
-        existing = yaml.load(fs.readFileSync(CONFIG_PATH, "utf-8")) as Record<string, unknown> || {};
-      } catch { /* start fresh if unreadable */ }
+        existing = (yaml.load(fs.readFileSync(CONFIG_PATH, "utf-8")) as Record<string, unknown>) || {};
+      } catch {
+        /* start fresh if unreadable */
+      }
       const merged = deepMerge(existing, body);
       const yamlStr = yaml.dump(merged);
       fs.writeFileSync(CONFIG_PATH, yamlStr);
@@ -1353,7 +1437,8 @@ Handle this as a priority request from a colleague.`;
     params = matchRoute("/api/connectors/:id/incoming", pathname);
     if (method === "POST" && params && params.id) {
       // Try the exact instance id first, then fall back to "discord" for the legacy path
-      const connector = context.connectors.get(params.id) ?? (params.id === "discord" ? context.connectors.get("discord") : undefined);
+      const connector =
+        context.connectors.get(params.id) ?? (params.id === "discord" ? context.connectors.get("discord") : undefined);
       if (!connector) return notFound(res);
       if (!("deliverMessage" in connector)) {
         return json(res, { error: "Discord connector is not in remote mode" }, 400);
@@ -1405,7 +1490,8 @@ Handle this as a priority request from a colleague.`;
     // Supports both the legacy /api/connectors/discord/proxy and named instance ids
     params = matchRoute("/api/connectors/:id/proxy", pathname);
     if (method === "POST" && params && params.id) {
-      const connector = context.connectors.get(params.id) ?? (params.id === "discord" ? context.connectors.get("discord") : undefined);
+      const connector =
+        context.connectors.get(params.id) ?? (params.id === "discord" ? context.connectors.get("discord") : undefined);
       if (!connector) return notFound(res);
 
       const _parsed = await readJsonBody(req, res);
@@ -1460,10 +1546,7 @@ Handle this as a priority request from a colleague.`;
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const body = _parsed.body as any;
       if (!body.channel || !body.text) return badRequest(res, "channel and text are required");
-      await connector.sendMessage(
-        { channel: body.channel, thread: body.thread },
-        body.text,
-      );
+      await connector.sendMessage({ channel: body.channel, thread: body.thread }, body.text);
       return json(res, { status: "sent" });
     }
 
@@ -1494,15 +1577,33 @@ Handle this as a priority request from a colleague.`;
       const events: Array<{ event: string; payload: unknown; ts: number }> = [];
       for (const s of sessions) {
         const ts = new Date(s.lastActivity || s.createdAt).getTime();
-        const transportState = context.sessionManager.getQueue().getTransportState(s.sessionKey || s.sourceRef, s.status);
+        const transportState = context.sessionManager
+          .getQueue()
+          .getTransportState(s.sessionKey || s.sourceRef, s.status);
         if (transportState === "running") {
-          events.push({ event: "session:started", payload: { sessionId: s.id, employee: s.employee, engine: s.engine, connector: s.connector }, ts });
+          events.push({
+            event: "session:started",
+            payload: { sessionId: s.id, employee: s.employee, engine: s.engine, connector: s.connector },
+            ts,
+          });
         } else if (transportState === "queued") {
-          events.push({ event: "session:queued", payload: { sessionId: s.id, employee: s.employee, engine: s.engine, connector: s.connector }, ts });
+          events.push({
+            event: "session:queued",
+            payload: { sessionId: s.id, employee: s.employee, engine: s.engine, connector: s.connector },
+            ts,
+          });
         } else if (transportState === "idle") {
-          events.push({ event: "session:completed", payload: { sessionId: s.id, employee: s.employee, engine: s.engine, connector: s.connector }, ts });
+          events.push({
+            event: "session:completed",
+            payload: { sessionId: s.id, employee: s.employee, engine: s.engine, connector: s.connector },
+            ts,
+          });
         } else if (transportState === "error") {
-          events.push({ event: "session:error", payload: { sessionId: s.id, employee: s.employee, error: s.lastError, connector: s.connector }, ts });
+          events.push({
+            event: "session:error",
+            payload: { sessionId: s.id, employee: s.employee, error: s.lastError, connector: s.connector },
+            ts,
+          });
         }
       }
       events.sort((a, b) => b.ts - a.ts);
@@ -1512,10 +1613,11 @@ Handle this as a priority request from a colleague.`;
     // GET /api/onboarding — check if onboarding is needed
     if (method === "GET" && pathname === "/api/onboarding") {
       const sessions = listSessions();
-      const hasEmployees = fs.existsSync(ORG_DIR) &&
-        fs.readdirSync(ORG_DIR, { recursive: true }).some(
-          (f) => String(f).endsWith(".yaml") && !String(f).endsWith("department.yaml")
-        );
+      const hasEmployees =
+        fs.existsSync(ORG_DIR) &&
+        fs
+          .readdirSync(ORG_DIR, { recursive: true })
+          .some((f) => String(f).endsWith(".yaml") && !String(f).endsWith("department.yaml"));
       const config = context.getConfig();
       const onboarded = config.portal?.onboarded === true;
       return json(res, {
@@ -1555,9 +1657,10 @@ Handle this as a priority request from a colleague.`;
       logger.info(`Onboarding: portal name="${portalName}", operator="${operatorName}", language="${language}"`);
 
       const effectiveName = portalName || "Jinn";
-      const languageSection = language && language !== "English"
-        ? `\n\n## Language\nAlways respond in ${language}. All communication with the user must be in ${language}.`
-        : "";
+      const languageSection =
+        language && language !== "English"
+          ? `\n\n## Language\nAlways respond in ${language}. All communication with the user must be in ${language}.`
+          : "";
 
       // Update CLAUDE.md with personalized COO name and language
       const claudeMdPath = path.join(JINN_HOME, "CLAUDE.md");
@@ -1569,7 +1672,10 @@ Handle this as a priority request from a colleague.`;
           `You are ${effectiveName}, the COO of the user's AI organization.`,
         );
         // Remove existing language section if present, then add new one if needed
-        claudeMd = claudeMd.replace(/\n\n## Language\nAlways respond in .+\. All communication with the user must be in .+\./m, "");
+        claudeMd = claudeMd.replace(
+          /\n\n## Language\nAlways respond in .+\. All communication with the user must be in .+\./m,
+          "",
+        );
         if (languageSection) {
           claudeMd = claudeMd.trimEnd() + languageSection + "\n";
         }
@@ -1581,12 +1687,12 @@ Handle this as a priority request from a colleague.`;
       if (fs.existsSync(agentsMdPath)) {
         let agentsMd = fs.readFileSync(agentsMdPath, "utf-8");
         // Replace the bold identity line (e.g. "You are **Jinn**")
-        agentsMd = agentsMd.replace(
-          /You are \*\*\w+\*\*/,
-          `You are **${effectiveName}**`,
-        );
+        agentsMd = agentsMd.replace(/You are \*\*\w+\*\*/, `You are **${effectiveName}**`);
         // Remove existing language section if present, then add new one if needed
-        agentsMd = agentsMd.replace(/\n\n## Language\nAlways respond in .+\. All communication with the user must be in .+\./m, "");
+        agentsMd = agentsMd.replace(
+          /\n\n## Language\nAlways respond in .+\. All communication with the user must be in .+\./m,
+          "",
+        );
         if (languageSection) {
           agentsMd = agentsMd.trimEnd() + languageSection + "\n";
         }
@@ -1611,26 +1717,28 @@ Handle this as a priority request from a colleague.`;
 
       downloadModel(model, (progress) => {
         context.emit("stt:download:progress", { progress });
-      }).then(() => {
-        // Update config to mark STT as enabled
-        try {
-          const raw = fs.readFileSync(CONFIG_PATH, "utf-8");
-          const cfg = yaml.load(raw) as Record<string, unknown>;
-          if (!cfg.stt || typeof cfg.stt !== "object") cfg.stt = {};
-          const sttCfg = cfg.stt as Record<string, unknown>;
-          sttCfg.enabled = true;
-          sttCfg.model = model;
-          if (!sttCfg.languages) sttCfg.languages = ["en"];
-          fs.writeFileSync(CONFIG_PATH, yaml.dump(cfg, { lineWidth: -1 }));
-        } catch (err) {
-          logger.error(`Failed to update config after STT download: ${err}`);
-        }
-        context.emit("stt:download:complete", { model });
-      }).catch((err) => {
-        const msg = err instanceof Error ? err.message : String(err);
-        logger.error(`STT download failed: ${msg}`);
-        context.emit("stt:download:error", { error: msg });
-      });
+      })
+        .then(() => {
+          // Update config to mark STT as enabled
+          try {
+            const raw = fs.readFileSync(CONFIG_PATH, "utf-8");
+            const cfg = yaml.load(raw) as Record<string, unknown>;
+            if (!cfg.stt || typeof cfg.stt !== "object") cfg.stt = {};
+            const sttCfg = cfg.stt as Record<string, unknown>;
+            sttCfg.enabled = true;
+            sttCfg.model = model;
+            if (!sttCfg.languages) sttCfg.languages = ["en"];
+            fs.writeFileSync(CONFIG_PATH, yaml.dump(cfg, { lineWidth: -1 }));
+          } catch (err) {
+            logger.error(`Failed to update config after STT download: ${err}`);
+          }
+          context.emit("stt:download:complete", { model });
+        })
+        .catch((err) => {
+          const msg = err instanceof Error ? err.message : String(err);
+          logger.error(`STT download failed: ${msg}`);
+          context.emit("stt:download:error", { error: msg });
+        });
 
       return json(res, { status: "downloading", model });
     }
@@ -1648,10 +1756,13 @@ Handle this as a priority request from a colleague.`;
       if (audioBuffer.length > 100 * 1024 * 1024) return badRequest(res, "Audio too large (100MB max)");
 
       const contentType = req.headers["content-type"] || "audio/webm";
-      const ext = contentType.includes("wav") ? ".wav"
-        : contentType.includes("mp4") || contentType.includes("m4a") ? ".m4a"
-        : contentType.includes("ogg") ? ".ogg"
-        : ".webm";
+      const ext = contentType.includes("wav")
+        ? ".wav"
+        : contentType.includes("mp4") || contentType.includes("m4a")
+          ? ".m4a"
+          : contentType.includes("ogg")
+            ? ".ogg"
+            : ".webm";
 
       const tmpFile = path.join(TMP_DIR, `stt-${crypto.randomUUID()}${ext}`);
       fs.mkdirSync(TMP_DIR, { recursive: true });
@@ -1665,7 +1776,9 @@ Handle this as a priority request from a colleague.`;
         logger.error(`STT transcription failed: ${msg}`);
         return serverError(res, `Transcription failed: ${msg}`);
       } finally {
-        try { fs.unlinkSync(tmpFile); } catch {}
+        try {
+          fs.unlinkSync(tmpFile);
+        } catch {}
       }
     }
 
@@ -1768,7 +1881,7 @@ Handle this as a priority request from a colleague.`;
     if (method === "GET" && pathname === "/api/costs/summary") {
       const { getCostSummary } = await import("./costs.js");
       const rawPeriod = url.searchParams.get("period") ?? "month";
-      const period = (rawPeriod === "day" || rawPeriod === "week" || rawPeriod === "month") ? rawPeriod : "month";
+      const period = rawPeriod === "day" || rawPeriod === "week" || rawPeriod === "month" ? rawPeriod : "month";
       return json(res, getCostSummary(period));
     }
 
@@ -1776,7 +1889,7 @@ Handle this as a priority request from a colleague.`;
     if (method === "GET" && pathname === "/api/costs/by-employee") {
       const { getCostsByEmployee } = await import("./costs.js");
       const rawPeriod = url.searchParams.get("period") ?? "month";
-      const period = (rawPeriod === "week") ? "week" : "month";
+      const period = rawPeriod === "week" ? "week" : "month";
       return json(res, getCostsByEmployee(period));
     }
 
@@ -1785,7 +1898,7 @@ Handle this as a priority request from a colleague.`;
     if (method === "GET" && pathname === "/api/budgets") {
       const { getBudgetStatus } = await import("./budgets.js");
       const config = context.getConfig();
-      const budgetConfig = (config as any).budgets?.employees as Record<string, number> | undefined ?? {};
+      const budgetConfig = ((config as any).budgets?.employees as Record<string, number> | undefined) ?? {};
       const employees = Object.keys(budgetConfig);
       const statuses = employees.map((emp) => ({
         employee: emp,
@@ -1801,8 +1914,10 @@ Handle this as a priority request from a colleague.`;
       const body = _parsed.body as Record<string, unknown>;
       let existing: Record<string, unknown> = {};
       try {
-        existing = yaml.load(fs.readFileSync(CONFIG_PATH, "utf-8")) as Record<string, unknown> || {};
-      } catch { /* start fresh if unreadable */ }
+        existing = (yaml.load(fs.readFileSync(CONFIG_PATH, "utf-8")) as Record<string, unknown>) || {};
+      } catch {
+        /* start fresh if unreadable */
+      }
       const merged = deepMerge(existing, { budgets: { employees: body } });
       fs.writeFileSync(CONFIG_PATH, yaml.dump(merged));
       logger.info("Budget limits updated via API");
@@ -1814,7 +1929,7 @@ Handle this as a priority request from a colleague.`;
     if (method === "POST" && params) {
       const { overrideBudget } = await import("./budgets.js");
       const config = context.getConfig();
-      const budgetConfig = (config as any).budgets?.employees as Record<string, number> | undefined ?? {};
+      const budgetConfig = ((config as any).budgets?.employees as Record<string, number> | undefined) ?? {};
       return json(res, overrideBudget(params.employee, budgetConfig));
     }
 
@@ -1897,11 +2012,7 @@ interface TranscriptEntry {
 }
 
 function loadRawTranscript(engineSessionId: string): TranscriptEntry[] {
-  const claudeProjectsDir = path.join(
-    process.env.HOME || process.env.USERPROFILE || "",
-    ".claude",
-    "projects",
-  );
+  const claudeProjectsDir = path.join(process.env.HOME || process.env.USERPROFILE || "", ".claude", "projects");
   if (!fs.existsSync(claudeProjectsDir)) return [];
 
   const projectDirs = fs.readdirSync(claudeProjectsDir, { withFileTypes: true });
@@ -1961,9 +2072,7 @@ function loadRawTranscript(engineSessionId: string): TranscriptEntry[] {
         if (blocks.length > 0) {
           entries.push({ role: type as "user" | "assistant", content: blocks });
         }
-      } catch {
-        continue;
-      }
+      } catch {}
     }
     return entries;
   }
@@ -1972,11 +2081,7 @@ function loadRawTranscript(engineSessionId: string): TranscriptEntry[] {
 
 function loadTranscriptMessages(engineSessionId: string): Array<{ role: string; content: string }> {
   // Claude Code stores transcripts in ~/.claude/projects/<project-key>/<sessionId>.jsonl
-  const claudeProjectsDir = path.join(
-    process.env.HOME || process.env.USERPROFILE || "",
-    ".claude",
-    "projects",
-  );
+  const claudeProjectsDir = path.join(process.env.HOME || process.env.USERPROFILE || "", ".claude", "projects");
   if (!fs.existsSync(claudeProjectsDir)) return [];
 
   // Search all project dirs for the transcript
@@ -2006,9 +2111,7 @@ function loadTranscriptMessages(engineSessionId: string): Array<{ role: string; 
         if (typeof content === "string" && content.trim()) {
           messages.push({ role: type, content: content.trim() });
         }
-      } catch {
-        continue;
-      }
+      } catch {}
     }
     return messages;
   }
@@ -2028,7 +2131,9 @@ async function runWebSession(
     logger.info(`Skipping deleted web session ${session.id} before run start`);
     return;
   }
-  logger.info(`Web session ${currentSession.id} running engine "${currentSession.engine}" (model: ${currentSession.model || "default"})`);
+  logger.info(
+    `Web session ${currentSession.id} running engine "${currentSession.engine}" (model: ${currentSession.model || "default"})`,
+  );
 
   // Ensure status is "running" (may already be set by the POST handler)
   const currentStatus = getSession(currentSession.id);
@@ -2053,7 +2158,6 @@ async function runWebSession(
   const orgHierarchy = resolveOrgHierarchy(scanOrgForHierarchy());
 
   try {
-
     const systemPrompt = buildContext({
       source: "web",
       channel: currentSession.sourceRef,
@@ -2065,11 +2169,12 @@ async function runWebSession(
       hierarchy: orgHierarchy,
     });
 
-    const engineConfig = currentSession.engine === "codex"
-      ? config.engines.codex
-      : currentSession.engine === "gemini"
-        ? config.engines.gemini ?? config.engines.claude
-        : config.engines.claude;
+    const engineConfig =
+      currentSession.engine === "codex"
+        ? config.engines.codex
+        : currentSession.engine === "gemini"
+          ? (config.engines.gemini ?? config.engines.claude)
+          : config.engines.claude;
     const effortLevel = resolveEffort(engineConfig, currentSession, employee);
 
     let lastHeartbeatAt = 0;
@@ -2082,51 +2187,56 @@ async function runWebSession(
 
     const syncSinceIso = (currentSession.transportMeta as any)?.claudeSyncSince;
     const syncSinceMs = typeof syncSinceIso === "string" ? new Date(syncSinceIso).getTime() : NaN;
-    const syncRequested = currentSession.engine === "claude" && typeof syncSinceIso === "string" && Number.isFinite(syncSinceMs);
+    const syncRequested =
+      currentSession.engine === "claude" && typeof syncSinceIso === "string" && Number.isFinite(syncSinceMs);
     const promptToRun = syncRequested
       ? (() => {
-        const sinceMessages = getMessages(currentSession.id)
-          .filter((m) => (m.role === "user" || m.role === "assistant") && m.timestamp >= syncSinceMs)
-          .map((m) => `${m.role.toUpperCase()}: ${m.content}`);
-        const transcript = sinceMessages.slice(-20).join("\n\n");
-        return `We temporarily switched to GPT due to a Claude usage limit. Sync your context with this transcript (most recent last), then respond to the last USER message.\n\n${transcript}`;
-      })()
+          const sinceMessages = getMessages(currentSession.id)
+            .filter((m) => (m.role === "user" || m.role === "assistant") && m.timestamp >= syncSinceMs)
+            .map((m) => `${m.role.toUpperCase()}: ${m.content}`);
+          const transcript = sinceMessages.slice(-20).join("\n\n");
+          return `We temporarily switched to GPT due to a Claude usage limit. Sync your context with this transcript (most recent last), then respond to the last USER message.\n\n${transcript}`;
+        })()
       : prompt;
 
-    const result = await engine.run({
-      prompt: promptToRun,
-      resumeSessionId: currentSession.engineSessionId ?? undefined,
-      systemPrompt,
-      cwd: JINN_HOME,
-      bin: engineConfig.bin,
-      model: currentSession.model ?? engineConfig.model,
-      effortLevel,
-      cliFlags: employee?.cliFlags,
-      attachments: attachments?.length ? attachments : undefined,
-      sessionId: currentSession.id,
-      onStream: (delta) => {
-        const now = Date.now();
-        if (now - lastHeartbeatAt >= 2000) {
-          lastHeartbeatAt = now;
-          updateSession(currentSession.id, {
-            status: "running",
-            lastActivity: new Date(now).toISOString(),
-          });
-        }
-        try {
-          context.emit("session:delta", {
-            sessionId: currentSession.id,
-            type: delta.type,
-            content: delta.content,
-            toolName: delta.toolName,
-          });
-        } catch (err) {
-          logger.warn(`Failed to emit stream delta for session ${currentSession.id}: ${err instanceof Error ? err.message : err}`);
-        }
-      },
-    }).finally(() => {
-      clearInterval(runHeartbeat);
-    });
+    const result = await engine
+      .run({
+        prompt: promptToRun,
+        resumeSessionId: currentSession.engineSessionId ?? undefined,
+        systemPrompt,
+        cwd: JINN_HOME,
+        bin: engineConfig.bin,
+        model: currentSession.model ?? engineConfig.model,
+        effortLevel,
+        cliFlags: employee?.cliFlags,
+        attachments: attachments?.length ? attachments : undefined,
+        sessionId: currentSession.id,
+        onStream: (delta) => {
+          const now = Date.now();
+          if (now - lastHeartbeatAt >= 2000) {
+            lastHeartbeatAt = now;
+            updateSession(currentSession.id, {
+              status: "running",
+              lastActivity: new Date(now).toISOString(),
+            });
+          }
+          try {
+            context.emit("session:delta", {
+              sessionId: currentSession.id,
+              type: delta.type,
+              content: delta.content,
+              toolName: delta.toolName,
+            });
+          } catch (err) {
+            logger.warn(
+              `Failed to emit stream delta for session ${currentSession.id}: ${err instanceof Error ? err.message : err}`,
+            );
+          }
+        },
+      })
+      .finally(() => {
+        clearInterval(runHeartbeat);
+      });
 
     if (!getSession(currentSession.id)) {
       logger.info(`Skipping completion for deleted web session ${currentSession.id}`);
@@ -2150,24 +2260,35 @@ async function runWebSession(
           const syncSince = new Date().toISOString();
 
           const resumeText = resumeAt
-            ? resumeAt.toLocaleString("en-GB", { weekday: "short", day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })
+            ? resumeAt.toLocaleString("en-GB", {
+                weekday: "short",
+                day: "2-digit",
+                month: "short",
+                hour: "2-digit",
+                minute: "2-digit",
+              })
             : null;
 
-          const notificationText =
-            `⚠️ Claude usage limit reached${resumeText ? `. Resets ${resumeText}` : ""}. Switching to GPT for now.`;
+          const notificationText = `⚠️ Claude usage limit reached${resumeText ? `. Resets ${resumeText}` : ""}. Switching to GPT for now.`;
           insertMessage(currentSession.id, "notification", notificationText);
           context.emit("session:notification", { sessionId: currentSession.id, message: notificationText });
 
           const nextMeta = { ...(currentSession.transportMeta || {}) } as Record<string, unknown>;
           const engineSessionsRaw = nextMeta.engineSessions;
-          const engineSessions = (engineSessionsRaw && typeof engineSessionsRaw === "object" && !Array.isArray(engineSessionsRaw))
-            ? { ...(engineSessionsRaw as Record<string, unknown>) }
-            : {};
+          const engineSessions =
+            engineSessionsRaw && typeof engineSessionsRaw === "object" && !Array.isArray(engineSessionsRaw)
+              ? { ...(engineSessionsRaw as Record<string, unknown>) }
+              : {};
           if (currentSession.engineSessionId) {
             engineSessions.claude = currentSession.engineSessionId;
           }
           nextMeta.engineSessions = engineSessions;
-          nextMeta.engineOverride = { originalEngine: "claude", originalEngineSessionId: currentSession.engineSessionId, until: until.toISOString(), syncSince };
+          nextMeta.engineOverride = {
+            originalEngine: "claude",
+            originalEngineSessionId: currentSession.engineSessionId,
+            until: until.toISOString(),
+            syncSince,
+          };
 
           updateSession(currentSession.id, {
             engine: fallbackName,
@@ -2222,7 +2343,10 @@ async function runWebSession(
           if (fallbackResult.sessionId) {
             nextEngineSessions.codex = fallbackResult.sessionId;
           }
-          const metaAfter = { ...(getSession(currentSession.id)?.transportMeta || nextMeta) } as Record<string, unknown>;
+          const metaAfter = { ...(getSession(currentSession.id)?.transportMeta || nextMeta) } as Record<
+            string,
+            unknown
+          >;
           metaAfter.engineSessions = nextEngineSessions;
           updateSession(currentSession.id, { transportMeta: metaAfter as any });
 
@@ -2233,7 +2357,16 @@ async function runWebSession(
             lastError: fallbackResult.error ?? null,
           });
           if (completedFallback) {
-            notifyParentSession(completedFallback, { result: fallbackResult.result, error: fallbackResult.error ?? null, cost: fallbackResult.cost, durationMs: fallbackResult.durationMs }, { alwaysNotify: employee?.alwaysNotify });
+            notifyParentSession(
+              completedFallback,
+              {
+                result: fallbackResult.result,
+                error: fallbackResult.error ?? null,
+                cost: fallbackResult.cost,
+                durationMs: fallbackResult.durationMs,
+              },
+              { alwaysNotify: employee?.alwaysNotify },
+            );
           }
 
           context.emit("session:completed", {
@@ -2258,7 +2391,13 @@ async function runWebSession(
       );
 
       const resumeText = resumeAt
-        ? resumeAt.toLocaleString("en-GB", { weekday: "short", day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })
+        ? resumeAt.toLocaleString("en-GB", {
+            weekday: "short",
+            day: "2-digit",
+            month: "short",
+            hour: "2-digit",
+            minute: "2-digit",
+          })
         : null;
 
       logger.info(
@@ -2270,8 +2409,7 @@ async function runWebSession(
         `⚠️ Claude usage limit reached. Session ${currentSession.id}${currentSession.employee ? ` (${currentSession.employee})` : ""} paused${resumeText ? ` until ${resumeText}` : ""}.`,
       );
 
-      const notificationText =
-        `⏳ Claude usage limit reached${resumeText ? `. Resets ${resumeText}` : ""} — I'll continue automatically.`;
+      const notificationText = `⏳ Claude usage limit reached${resumeText ? `. Resets ${resumeText}` : ""} — I'll continue automatically.`;
       insertMessage(currentSession.id, "notification", notificationText);
       context.emit("session:notification", { sessionId: currentSession.id, message: notificationText });
 
@@ -2287,9 +2425,7 @@ async function runWebSession(
       // Notify parent session about rate limit (fire-and-forget)
       notifyRateLimited(
         (waitingSession ?? { ...currentSession, status: "waiting" }) as Session,
-        resumeAt
-          ? resumeAt.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })
-          : undefined,
+        resumeAt ? resumeAt.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }) : undefined,
       );
 
       context.emit("session:rate-limited", {
@@ -2380,7 +2516,16 @@ async function runWebSession(
             notifyDiscordChannel(
               `✅ Claude usage limit cleared. Session ${currentSession.id}${currentSession.employee ? ` (${currentSession.employee})` : ""} resumed.`,
             );
-            notifyParentSession(completedAfterRetry, { result: retryResult.result, error: retryResult.error ?? null, cost: retryResult.cost, durationMs: retryResult.durationMs }, { alwaysNotify: employee?.alwaysNotify });
+            notifyParentSession(
+              completedAfterRetry,
+              {
+                result: retryResult.result,
+                error: retryResult.error ?? null,
+                cost: retryResult.cost,
+                durationMs: retryResult.durationMs,
+              },
+              { alwaysNotify: employee?.alwaysNotify },
+            );
           }
 
           context.emit("session:completed", {
@@ -2407,7 +2552,11 @@ async function runWebSession(
           lastError: "Claude usage limit did not clear in time",
         });
         if (erroredSession) {
-          notifyParentSession(erroredSession, { error: "Claude usage limit did not clear in time" }, { alwaysNotify: employee?.alwaysNotify });
+          notifyParentSession(
+            erroredSession,
+            { error: "Claude usage limit did not clear in time" },
+            { alwaysNotify: employee?.alwaysNotify },
+          );
         }
         context.emit("session:completed", {
           sessionId: currentSession.id,
@@ -2433,7 +2582,10 @@ async function runWebSession(
       lastError: result.error ?? null,
     });
     if (syncRequested && !rateLimit.limited && !wasInterrupted) {
-      const meta = (getSession(currentSession.id)?.transportMeta || currentSession.transportMeta || {}) as Record<string, unknown>;
+      const meta = (getSession(currentSession.id)?.transportMeta || currentSession.transportMeta || {}) as Record<
+        string,
+        unknown
+      >;
       if (meta && typeof meta === "object" && !Array.isArray(meta)) {
         const nextMeta = { ...meta } as Record<string, unknown>;
         delete nextMeta["claudeSyncSince"];
@@ -2441,7 +2593,11 @@ async function runWebSession(
       }
     }
     if (completedSession) {
-      notifyParentSession(completedSession, { result: result.result, error: result.error ?? null, cost: result.cost, durationMs: result.durationMs }, { alwaysNotify: employee?.alwaysNotify });
+      notifyParentSession(
+        completedSession,
+        { result: result.result, error: result.error ?? null, cost: result.cost, durationMs: result.durationMs },
+        { alwaysNotify: employee?.alwaysNotify },
+      );
     }
 
     context.emit("session:completed", {
@@ -2456,8 +2612,8 @@ async function runWebSession(
 
     logger.info(
       `Web session ${currentSession.id} completed` +
-      (result.durationMs ? ` in ${result.durationMs}ms` : "") +
-      (result.cost ? ` ($${result.cost.toFixed(4)})` : ""),
+        (result.durationMs ? ` in ${result.durationMs}ms` : "") +
+        (result.cost ? ` ($${result.cost.toFixed(4)})` : ""),
     );
   } catch (err) {
     const errMsg = err instanceof Error ? err.message : String(err);

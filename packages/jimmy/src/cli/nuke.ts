@@ -22,7 +22,7 @@ export async function runNuke(name?: string): Promise<void> {
   const instances = loadInstances().filter((i) => i.name !== "jinn");
 
   if (instances.length === 0) {
-    console.log("No removable instances found. The default \"jinn\" instance cannot be nuked.");
+    console.log('No removable instances found. The default "jinn" instance cannot be nuked.');
     return;
   }
 

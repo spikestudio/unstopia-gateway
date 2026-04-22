@@ -1,9 +1,9 @@
 import fs from "node:fs";
 import path from "node:path";
 import yaml from "js-yaml";
+import { logger } from "../shared/logger.js";
 import { ORG_DIR } from "../shared/paths.js";
 import type { Employee } from "../shared/types.js";
-import { logger } from "../shared/logger.js";
 
 export function scanOrg(): Map<string, Employee> {
   const registry = new Map<string, Employee>();
@@ -17,10 +17,7 @@ export function scanOrg(): Map<string, Employee> {
       const fullPath = path.join(dir, entry.name);
       if (entry.isDirectory()) {
         scan(fullPath);
-      } else if (
-        entry.name.endsWith(".yaml") &&
-        entry.name !== "department.yaml"
-      ) {
+      } else if (entry.name.endsWith(".yaml") && entry.name !== "department.yaml") {
         try {
           const raw = fs.readFileSync(fullPath, "utf-8");
           const data = yaml.load(raw) as any;
@@ -28,8 +25,7 @@ export function scanOrg(): Map<string, Employee> {
             const employee: Employee = {
               name: data.name,
               displayName: data.displayName || data.name,
-              department:
-                data.department || path.basename(path.dirname(fullPath)),
+              department: data.department || path.basename(path.dirname(fullPath)),
               rank: data.rank || "employee",
               engine: data.engine || "claude",
               model: data.model || "sonnet",
@@ -41,8 +37,15 @@ export function scanOrg(): Map<string, Employee> {
               reportsTo: data.reportsTo ?? undefined,
               mcp: data.mcp ?? undefined,
               provides: Array.isArray(data.provides)
-                ? data.provides.filter((s: unknown) => s && typeof s === "object" && typeof (s as any).name === "string" && typeof (s as any).description === "string")
-                  .map((s: any) => ({ name: s.name as string, description: s.description as string }))
+                ? data.provides
+                    .filter(
+                      (s: unknown) =>
+                        s &&
+                        typeof s === "object" &&
+                        typeof (s as any).name === "string" &&
+                        typeof (s as any).description === "string",
+                    )
+                    .map((s: any) => ({ name: s.name as string, description: s.description as string }))
                 : undefined,
             };
             registry.set(employee.name, employee);
@@ -72,10 +75,7 @@ function findEmployeeYamlPath(name: string): string | undefined {
       if (entry.isDirectory()) {
         const found = search(fullPath);
         if (found) return found;
-      } else if (
-        (entry.name.endsWith(".yaml") || entry.name.endsWith(".yml")) &&
-        entry.name !== "department.yaml"
-      ) {
+      } else if ((entry.name.endsWith(".yaml") || entry.name.endsWith(".yml")) && entry.name !== "department.yaml") {
         try {
           const raw = fs.readFileSync(fullPath, "utf-8");
           const data = yaml.load(raw) as any;
@@ -95,10 +95,7 @@ function findEmployeeYamlPath(name: string): string | undefined {
  * Update an employee's YAML file. Only alwaysNotify can be changed.
  * Returns true on success, false if employee not found.
  */
-export function updateEmployeeYaml(
-  name: string,
-  updates: { alwaysNotify?: boolean },
-): boolean {
+export function updateEmployeeYaml(name: string, updates: { alwaysNotify?: boolean }): boolean {
   const filePath = findEmployeeYamlPath(name);
   if (!filePath) return false;
 
@@ -119,17 +116,11 @@ export function updateEmployeeYaml(
   }
 }
 
-export function findEmployee(
-  name: string,
-  registry: Map<string, Employee>,
-): Employee | undefined {
+export function findEmployee(name: string, registry: Map<string, Employee>): Employee | undefined {
   return registry.get(name);
 }
 
-export function extractMention(
-  text: string,
-  registry: Map<string, Employee>,
-): Employee | undefined {
+export function extractMention(text: string, registry: Map<string, Employee>): Employee | undefined {
   for (const [name, employee] of registry) {
     if (text.includes(`@${name}`)) {
       return employee;
@@ -142,10 +133,7 @@ export function extractMention(
  * Extract ALL mentioned employees from text (e.g. "@jinn-dev @jinn-qa do X").
  * Returns an array of matched employees (can be empty).
  */
-export function extractMentions(
-  text: string,
-  registry: Map<string, Employee>,
-): Employee[] {
+export function extractMentions(text: string, registry: Map<string, Employee>): Employee[] {
   const mentioned: Employee[] = [];
   for (const [name, employee] of registry) {
     if (text.includes(`@${name}`)) {

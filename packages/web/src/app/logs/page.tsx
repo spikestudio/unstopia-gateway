@@ -1,10 +1,10 @@
-"use client"
+"use client";
 
-import { useCallback, useEffect, useState } from "react"
-import { RefreshCw, Radio } from "lucide-react"
-import { api } from "@/lib/api"
-import { PageLayout, ToolbarActions } from "@/components/page-layout"
-import { LogBrowser, parseLogLine } from "@/components/activity/log-browser"
+import { Radio, RefreshCw } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import { LogBrowser, parseLogLine } from "@/components/activity/log-browser";
+import { PageLayout, ToolbarActions } from "@/components/page-layout";
+import { api } from "@/lib/api";
 
 /* ── Summary Cards ─────────────────────────────────────────────── */
 
@@ -14,10 +14,10 @@ function SummaryCard({
   color,
   pulse,
 }: {
-  label: string
-  value: number
-  color?: string
-  pulse?: boolean
+  label: string;
+  value: number;
+  color?: string;
+  pulse?: boolean;
 }) {
   return (
     <div className="bg-[var(--material-regular)] border border-[var(--separator)] rounded-[var(--radius-md)] p-[var(--space-4)]">
@@ -36,64 +36,64 @@ function SummaryCard({
         </span>
       </div>
     </div>
-  )
+  );
 }
 
 /* ── Page ──────────────────────────────────────────────────────── */
 
 export default function LogsPage() {
-  const [lines, setLines] = useState<string[]>([])
-  const [loading, setLoading] = useState(true)
-  const [refreshing, setRefreshing] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [lastRefresh, setLastRefresh] = useState<Date>(new Date())
-  const [updatedAgo, setUpdatedAgo] = useState("just now")
+  const [lines, setLines] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
+  const [updatedAgo, setUpdatedAgo] = useState("just now");
 
   const refresh = useCallback(() => {
-    setRefreshing(true)
-    setError(null)
+    setRefreshing(true);
+    setError(null);
     api
       .getLogs(500)
       .then((data) => {
-        setLines(data.lines ?? [])
-        setLastRefresh(new Date())
+        setLines(data.lines ?? []);
+        setLastRefresh(new Date());
       })
       .catch((err) => {
-        setError(err instanceof Error ? err.message : "Failed to load logs")
+        setError(err instanceof Error ? err.message : "Failed to load logs");
       })
       .finally(() => {
-        setLoading(false)
-        setRefreshing(false)
-      })
-  }, [])
+        setLoading(false);
+        setRefreshing(false);
+      });
+  }, []);
 
   // Initial load + auto-refresh every 30s
   useEffect(() => {
-    refresh()
-    const interval = setInterval(refresh, 30000)
-    return () => clearInterval(interval)
-  }, [refresh])
+    refresh();
+    const interval = setInterval(refresh, 30000);
+    return () => clearInterval(interval);
+  }, [refresh]);
 
   // Updated ago ticker
   useEffect(() => {
     function tick() {
-      const diff = Date.now() - lastRefresh.getTime()
-      const secs = Math.floor(diff / 1000)
-      if (secs < 10) setUpdatedAgo("just now")
-      else if (secs < 60) setUpdatedAgo(`${secs}s ago`)
-      else setUpdatedAgo(`${Math.floor(secs / 60)}m ago`)
+      const diff = Date.now() - lastRefresh.getTime();
+      const secs = Math.floor(diff / 1000);
+      if (secs < 10) setUpdatedAgo("just now");
+      else if (secs < 60) setUpdatedAgo(`${secs}s ago`);
+      else setUpdatedAgo(`${Math.floor(secs / 60)}m ago`);
     }
-    tick()
-    const interval = setInterval(tick, 10000)
-    return () => clearInterval(interval)
-  }, [lastRefresh])
+    tick();
+    const interval = setInterval(tick, 10000);
+    return () => clearInterval(interval);
+  }, [lastRefresh]);
 
   // Parse lines for summary counts
-  const entries = lines.map(parseLogLine)
-  const totalCount = entries.length
-  const errorCount = entries.filter((e) => e.level === "error").length
-  const infoCount = entries.filter((e) => e.level === "info").length
-  const warnCount = entries.filter((e) => e.level === "warn").length
+  const entries = lines.map(parseLogLine);
+  const totalCount = entries.length;
+  const errorCount = entries.filter((e) => e.level === "error").length;
+  const infoCount = entries.filter((e) => e.level === "info").length;
+  const warnCount = entries.filter((e) => e.level === "warn").length;
 
   return (
     <PageLayout>
@@ -127,9 +127,7 @@ export default function LogsPage() {
               <div className="flex items-center gap-[var(--space-3)]">
                 {/* Open Live Stream */}
                 <button
-                  onClick={() =>
-                    window.dispatchEvent(new CustomEvent("open-live-stream"))
-                  }
+                  onClick={() => window.dispatchEvent(new CustomEvent("open-live-stream"))}
                   className="focus-ring flex items-center py-[6px] px-[14px] rounded-[var(--radius-sm)] border-none cursor-pointer text-[length:var(--text-footnote)] font-[var(--weight-semibold)] gap-1.5 bg-[var(--accent-fill)] text-[var(--accent)] transition-all duration-200 ease-[var(--ease-smooth)]"
                 >
                   <Radio size={14} />
@@ -144,10 +142,7 @@ export default function LogsPage() {
                   className="focus-ring w-8 h-8 flex items-center justify-center rounded-[var(--radius-sm)] border-none bg-transparent text-[var(--text-tertiary)] cursor-pointer transition-colors duration-150 ease-[var(--ease-smooth)]"
                   aria-label="Refresh logs"
                 >
-                  <RefreshCw
-                    size={16}
-                    className={refreshing ? "animate-spin" : ""}
-                  />
+                  <RefreshCw size={16} className={refreshing ? "animate-spin" : ""} />
                 </button>
               </div>
             </ToolbarActions>
@@ -164,9 +159,7 @@ export default function LogsPage() {
           )}
 
           {loading ? (
-            <div className="flex items-center justify-center h-[200px] text-[var(--text-tertiary)]">
-              Loading...
-            </div>
+            <div className="flex items-center justify-center h-[200px] text-[var(--text-tertiary)]">Loading...</div>
           ) : (
             <>
               {/* Summary cards */}
@@ -175,23 +168,11 @@ export default function LogsPage() {
                 <SummaryCard
                   label="Errors"
                   value={errorCount}
-                  color={
-                    errorCount > 0
-                      ? "var(--system-red)"
-                      : "var(--system-green)"
-                  }
+                  color={errorCount > 0 ? "var(--system-red)" : "var(--system-green)"}
                   pulse
                 />
-                <SummaryCard
-                  label="Info"
-                  value={infoCount}
-                  color="var(--system-green)"
-                />
-                <SummaryCard
-                  label="Warnings"
-                  value={warnCount}
-                  color="var(--system-orange)"
-                />
+                <SummaryCard label="Info" value={infoCount} color="var(--system-green)" />
+                <SummaryCard label="Warnings" value={warnCount} color="var(--system-orange)" />
               </div>
 
               {/* Log browser */}
@@ -209,5 +190,5 @@ export default function LogsPage() {
         `}</style>
       </div>
     </PageLayout>
-  )
+  );
 }

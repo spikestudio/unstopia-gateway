@@ -1,35 +1,35 @@
-"use client"
+"use client";
 
-import { useEffect } from "react"
-import { useSettings } from "@/app/settings-provider"
+import { useEffect } from "react";
+import { useSettings } from "@/app/settings-provider";
 
 export function EmojiFavicon() {
-  const { settings } = useSettings()
-  const emoji = settings.portalEmoji ?? "\u{1F9DE}"
+  const { settings } = useSettings();
+  const emoji = settings.portalEmoji ?? "\u{1F9DE}";
 
   useEffect(() => {
-    const canvas = document.createElement("canvas")
-    canvas.width = 64
-    canvas.height = 64
-    const ctx = canvas.getContext("2d")
-    if (!ctx) return
+    const canvas = document.createElement("canvas");
+    canvas.width = 64;
+    canvas.height = 64;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
 
-    ctx.font = "52px serif"
-    ctx.textAlign = "center"
-    ctx.textBaseline = "middle"
-    ctx.fillText(emoji, 32, 36)
+    ctx.font = "52px serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(emoji, 32, 36);
 
-    const url = canvas.toDataURL("image/png")
+    const url = canvas.toDataURL("image/png");
 
-    let link = document.querySelector<HTMLLinkElement>("link[rel='icon']")
+    let link = document.querySelector<HTMLLinkElement>("link[rel='icon']");
     if (!link) {
-      link = document.createElement("link")
-      link.rel = "icon"
-      document.head.appendChild(link)
+      link = document.createElement("link");
+      link.rel = "icon";
+      document.head.appendChild(link);
     }
-    link.type = "image/png"
-    link.href = url
-  }, [emoji])
+    link.type = "image/png";
+    link.href = url;
+  }, [emoji]);
 
-  return null
+  return null;
 }

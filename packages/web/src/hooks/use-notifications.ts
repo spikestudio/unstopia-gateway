@@ -1,19 +1,11 @@
 "use client";
 
-import {
-  createContext,
-  useContext,
-  useState,
-  useCallback,
-  useEffect,
-  useRef,
-  type ReactNode,
-} from "react";
+import { createContext, type ReactNode, useCallback, useContext, useEffect, useRef, useState } from "react";
 import {
   type AppNotification,
+  generateId,
   loadNotifications,
   saveNotifications,
-  generateId,
   wsEventToNotification,
 } from "@/lib/notifications";
 
@@ -52,8 +44,7 @@ export function useNotifications() {
   return useContext(NotificationContext);
 }
 
-// Re-export for use in provider component
-export { NotificationContext };
-
 // Re-export types
 export type { AppNotification };
+// Re-export for use in provider component
+export { NotificationContext };

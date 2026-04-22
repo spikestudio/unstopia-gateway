@@ -1,6 +1,6 @@
-import { describe, it, expect } from "vitest";
-import { resolveOrgHierarchy, getPrimaryParent, getAllParents } from "../org-hierarchy.js";
+import { describe, expect, it } from "vitest";
 import type { Employee } from "../../shared/types.js";
+import { getAllParents, getPrimaryParent, resolveOrgHierarchy } from "../org-hierarchy.js";
 
 function emp(name: string, opts: Partial<Employee> = {}): Employee {
   return {
@@ -122,9 +122,7 @@ describe("resolveOrgHierarchy", () => {
   });
 
   it("broken ref → warning emitted, smart default applied", () => {
-    const h = resolveOrgHierarchy(
-      registry(emp("alice", { department: "eng", reportsTo: "nonexistent" })),
-    );
+    const h = resolveOrgHierarchy(registry(emp("alice", { department: "eng", reportsTo: "nonexistent" })));
     const brokenWarnings = h.warnings.filter((w) => w.type === "broken_ref");
     expect(brokenWarnings).toHaveLength(1);
     expect(brokenWarnings[0].employee).toBe("alice");
@@ -133,9 +131,7 @@ describe("resolveOrgHierarchy", () => {
   });
 
   it("self ref → warning emitted, smart default applied", () => {
-    const h = resolveOrgHierarchy(
-      registry(emp("alice", { department: "eng", reportsTo: "alice" })),
-    );
+    const h = resolveOrgHierarchy(registry(emp("alice", { department: "eng", reportsTo: "alice" })));
     const selfWarnings = h.warnings.filter((w) => w.type === "self_ref");
     expect(selfWarnings).toHaveLength(1);
     expect(h.nodes["alice"].parentName).toBeNull();
@@ -191,9 +187,7 @@ describe("resolveOrgHierarchy", () => {
   });
 
   it("smart defaults: employee alone in dept reports to root", () => {
-    const h = resolveOrgHierarchy(
-      registry(emp("lonely", { rank: "employee", department: "solo" })),
-    );
+    const h = resolveOrgHierarchy(registry(emp("lonely", { rank: "employee", department: "solo" })));
     expect(h.nodes["lonely"].parentName).toBeNull();
   });
 
@@ -210,10 +204,7 @@ describe("resolveOrgHierarchy", () => {
 
   it("smart defaults: two seniors no manager both report to root", () => {
     const h = resolveOrgHierarchy(
-      registry(
-        emp("sr-a", { rank: "senior", department: "eng" }),
-        emp("sr-b", { rank: "senior", department: "eng" }),
-      ),
+      registry(emp("sr-a", { rank: "senior", department: "eng" }), emp("sr-b", { rank: "senior", department: "eng" })),
     );
     expect(h.nodes["sr-a"].parentName).toBeNull();
     expect(h.nodes["sr-b"].parentName).toBeNull();

@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 
 function filterLastN<T>(messages: T[], lastN: number): T[] {
   if (lastN > 0 && messages.length > lastN) {

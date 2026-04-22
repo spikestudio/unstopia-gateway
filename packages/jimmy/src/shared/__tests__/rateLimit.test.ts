@@ -1,6 +1,6 @@
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
+import { detectRateLimit, isDeadSessionError } from "../rateLimit.js";
 import type { EngineResult } from "../types.js";
-import { isDeadSessionError, detectRateLimit } from "../rateLimit.js";
 
 function makeResult(overrides: Partial<EngineResult> = {}): EngineResult {
   return {

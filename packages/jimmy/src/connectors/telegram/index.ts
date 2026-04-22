@@ -1,4 +1,5 @@
 import TelegramBot from "node-telegram-bot-api";
+import { logger } from "../../shared/logger.js";
 import type {
   Connector,
   ConnectorCapabilities,
@@ -8,9 +9,8 @@ import type {
   Target,
   TelegramConnectorConfig,
 } from "../../shared/types.js";
-import { deriveSessionKey, buildReplyContext, isOldTelegramMessage } from "./threads.js";
 import { formatResponse } from "./format.js";
-import { logger } from "../../shared/logger.js";
+import { buildReplyContext, deriveSessionKey, isOldTelegramMessage } from "./threads.js";
 
 export class TelegramConnector implements Connector {
   name = "telegram";
@@ -33,10 +33,7 @@ export class TelegramConnector implements Connector {
   constructor(config: TelegramConnectorConfig) {
     this.bot = new TelegramBot(config.botToken, { polling: false });
     this.ignoreOldMessagesOnBoot = config.ignoreOldMessagesOnBoot !== false;
-    this.allowedUsers =
-      config.allowFrom && config.allowFrom.length > 0
-        ? new Set(config.allowFrom)
-        : null;
+    this.allowedUsers = config.allowFrom && config.allowFrom.length > 0 ? new Set(config.allowFrom) : null;
   }
 
   async start(): Promise<void> {
@@ -65,10 +62,7 @@ export class TelegramConnector implements Connector {
         return;
       }
 
-      if (
-        this.ignoreOldMessagesOnBoot &&
-        isOldTelegramMessage(telegramMsg.date, this.bootTimeMs)
-      ) {
+      if (this.ignoreOldMessagesOnBoot && isOldTelegramMessage(telegramMsg.date, this.bootTimeMs)) {
         logger.debug(`[telegram] Ignoring old message ${telegramMsg.message_id}`);
         return;
       }
@@ -76,9 +70,7 @@ export class TelegramConnector implements Connector {
       const userId = telegramMsg.from?.id;
       if (this.allowedUsers) {
         if (userId === undefined || !this.allowedUsers.has(userId)) {
-          logger.debug(
-            `[telegram] Ignoring message from unauthorized user ${userId}`,
-          );
+          logger.debug(`[telegram] Ignoring message from unauthorized user ${userId}`);
           return;
         }
       }
@@ -86,8 +78,7 @@ export class TelegramConnector implements Connector {
       const sessionKey = deriveSessionKey(telegramMsg);
       const replyContext = buildReplyContext(telegramMsg);
 
-      const username =
-        telegramMsg.from?.username || telegramMsg.from?.first_name || "unknown";
+      const username = telegramMsg.from?.username || telegramMsg.from?.first_name || "unknown";
 
       const msg: IncomingMessage = {
         connector: this.name,
@@ -178,10 +169,7 @@ export class TelegramConnector implements Connector {
 
   async replyMessage(target: Target, text: string): Promise<string | undefined> {
     if (!text || !text.trim()) return undefined;
-    const replyToId =
-      target.replyContext?.messageId != null
-        ? Number(target.replyContext.messageId)
-        : undefined;
+    const replyToId = target.replyContext?.messageId != null ? Number(target.replyContext.messageId) : undefined;
     const opts: TelegramBot.SendMessageOptions = {};
     if (replyToId) {
       opts.reply_to_message_id = replyToId;
@@ -209,7 +197,9 @@ export class TelegramConnector implements Connector {
       const interval = setInterval(async () => {
         try {
           await this.bot.sendChatAction(channelId, "typing");
-        } catch { /* non-fatal */ }
+        } catch {
+          /* non-fatal */
+        }
       }, 4_000);
       this.typingIntervals.set(channelId, interval);
     } catch {

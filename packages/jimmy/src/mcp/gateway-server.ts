@@ -35,7 +35,8 @@ interface JsonRpcResponse {
 const TOOLS = [
   {
     name: "send_message",
-    description: "Send a message to a Slack channel or other connector. Use this to proactively communicate with the user or post to specific channels.",
+    description:
+      "Send a message to a Slack channel or other connector. Use this to proactively communicate with the user or post to specific channels.",
     inputSchema: {
       type: "object" as const,
       properties: {
@@ -49,7 +50,8 @@ const TOOLS = [
   },
   {
     name: "list_sessions",
-    description: "List all active sessions in the Jinn gateway. Returns session IDs, employees, status, and timestamps.",
+    description:
+      "List all active sessions in the Jinn gateway. Returns session IDs, employees, status, and timestamps.",
     inputSchema: {
       type: "object" as const,
       properties: {
@@ -232,10 +234,8 @@ async function handleTool(name: string, args: Record<string, unknown>): Promise<
     }
 
     case "list_sessions": {
-      const sessions = await apiGet("/api/sessions") as any[];
-      const filtered = args.status
-        ? sessions.filter((s: any) => s.status === args.status)
-        : sessions;
+      const sessions = (await apiGet("/api/sessions")) as any[];
+      const filtered = args.status ? sessions.filter((s: any) => s.status === args.status) : sessions;
       // Return a summary, not the full data
       const summary = filtered.map((s: any) => ({
         id: s.id,
@@ -273,7 +273,7 @@ async function handleTool(name: string, args: Record<string, unknown>): Promise<
     }
 
     case "list_employees": {
-      const org = await apiGet("/api/org") as any;
+      const org = (await apiGet("/api/org")) as any;
       return JSON.stringify(org);
     }
 
@@ -299,7 +299,7 @@ async function handleTool(name: string, args: Record<string, unknown>): Promise<
 
     case "trigger_cron_job": {
       // Resolve job ID (allow passing name or id)
-      const jobs = await apiGet("/api/cron") as any[];
+      const jobs = (await apiGet("/api/cron")) as any[];
       const job = jobs.find((j: any) => j.id === args.jobId || j.name === args.jobId);
       if (!job) return JSON.stringify({ error: `Job "${args.jobId}" not found` });
       // Actually trigger the job via the gateway REST API (fire-and-forget)

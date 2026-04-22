@@ -1,20 +1,20 @@
 export interface TranscriptContentBlock {
-  type: 'text' | 'tool_use' | 'tool_result' | 'thinking'
-  text?: string
-  name?: string
-  input?: Record<string, unknown>
+  type: "text" | "tool_use" | "tool_result" | "thinking";
+  text?: string;
+  name?: string;
+  input?: Record<string, unknown>;
 }
 
 export interface TranscriptEntry {
-  role: 'user' | 'assistant' | 'system'
-  content: TranscriptContentBlock[]
+  role: "user" | "assistant" | "system";
+  content: TranscriptContentBlock[];
 }
 
 export interface QueueItem {
   id: string;
   sessionId: string;
   prompt: string;
-  status: 'pending' | 'running' | 'cancelled' | 'completed';
+  status: "pending" | "running" | "cancelled" | "completed";
   position: number;
   createdAt: string;
 }
@@ -55,10 +55,7 @@ export interface OrgData {
   hierarchy: OrgHierarchy;
 }
 
-const BASE =
-  typeof window !== "undefined"
-    ? window.location.origin
-    : "http://127.0.0.1:7777";
+const BASE = typeof window !== "undefined" ? window.location.origin : "http://127.0.0.1:7777";
 
 async function extractErrorMessage(res: Response): Promise<string> {
   try {
@@ -114,10 +111,10 @@ async function patch<T>(path: string, body: unknown): Promise<T> {
 }
 
 interface UploadedFile {
-  id: string
-  filename: string
-  size: number
-  mimetype: string | null
+  id: string;
+  filename: string;
+  size: number;
+  mimetype: string | null;
 }
 
 export const api = {
@@ -125,56 +122,54 @@ export const api = {
   getSessions: () => get<Record<string, unknown>[]>("/api/sessions"),
   getSession: (id: string) => get<Record<string, unknown>>(`/api/sessions/${id}`),
   getSessionChildren: (id: string) => get<Record<string, unknown>[]>(`/api/sessions/${id}/children`),
-  updateSession: (id: string, data: { title?: string }) =>
-    put<Record<string, unknown>>(`/api/sessions/${id}`, data),
+  updateSession: (id: string, data: { title?: string }) => put<Record<string, unknown>>(`/api/sessions/${id}`, data),
   deleteSession: (id: string) => del<Record<string, unknown>>(`/api/sessions/${id}`),
-  duplicateSession: (id: string) =>
-    post<Record<string, unknown>>(`/api/sessions/${id}/duplicate`, {}),
-  bulkDeleteSessions: (ids: string[]) =>
-    post<{ status: string; count: number }>("/api/sessions/bulk-delete", { ids }),
-  createSession: (data: Record<string, unknown>) =>
-    post<Record<string, unknown>>("/api/sessions", data),
-  createStubSession: (data: Record<string, unknown>) =>
-    post<Record<string, unknown>>("/api/sessions/stub", data),
+  duplicateSession: (id: string) => post<Record<string, unknown>>(`/api/sessions/${id}/duplicate`, {}),
+  bulkDeleteSessions: (ids: string[]) => post<{ status: string; count: number }>("/api/sessions/bulk-delete", { ids }),
+  createSession: (data: Record<string, unknown>) => post<Record<string, unknown>>("/api/sessions", data),
+  createStubSession: (data: Record<string, unknown>) => post<Record<string, unknown>>("/api/sessions/stub", data),
   sendMessage: (id: string, data: Record<string, unknown>) =>
     post<Record<string, unknown>>(`/api/sessions/${id}/message`, data),
-  stopSession: (id: string) =>
-    post<{ status: string; sessionId: string }>(`/api/sessions/${id}/stop`, {}),
-  resetSession: (id: string) =>
-    post<{ status: string; sessionId: string }>(`/api/sessions/${id}/reset`, {}),
+  stopSession: (id: string) => post<{ status: string; sessionId: string }>(`/api/sessions/${id}/stop`, {}),
+  resetSession: (id: string) => post<{ status: string; sessionId: string }>(`/api/sessions/${id}/reset`, {}),
   getCronJobs: () => get<Record<string, unknown>[]>("/api/cron"),
   getCronRuns: (id: string) => get<Record<string, unknown>[]>(`/api/cron/${id}/runs`),
-  updateCronJob: (id: string, data: Record<string, unknown>) =>
-    put<Record<string, unknown>>(`/api/cron/${id}`, data),
-  triggerCronJob: (id: string) =>
-    post<Record<string, unknown>>(`/api/cron/${id}/trigger`, {}),
+  updateCronJob: (id: string, data: Record<string, unknown>) => put<Record<string, unknown>>(`/api/cron/${id}`, data),
+  triggerCronJob: (id: string) => post<Record<string, unknown>>(`/api/cron/${id}/trigger`, {}),
   getOrg: () => get<OrgData>("/api/org"),
   getEmployee: (name: string) => get<Employee>(`/api/org/employees/${name}`),
   updateEmployee: (name: string, data: { alwaysNotify?: boolean }) =>
     patch<{ status: string }>(`/api/org/employees/${name}`, data),
-  getDepartmentBoard: (name: string) =>
-    get<Record<string, unknown>>(`/api/org/departments/${name}/board`),
+  getDepartmentBoard: (name: string) => get<Record<string, unknown>>(`/api/org/departments/${name}/board`),
   getSkills: () => get<Record<string, unknown>[]>("/api/skills"),
   getSkill: (name: string) => get<Record<string, unknown>>(`/api/skills/${name}`),
   getConfig: () => get<Record<string, unknown>>("/api/config"),
   reloadConnectors: () =>
     post<{ started: string[]; stopped: string[]; errors: string[] }>("/api/connectors/reload", {}),
-  updateConfig: (data: Record<string, unknown>) =>
-    put<Record<string, unknown>>("/api/config", data),
-  getLogs: (n?: number) =>
-    get<{ lines: string[] }>(`/api/logs${n ? `?n=${n}` : ""}`),
+  updateConfig: (data: Record<string, unknown>) => put<Record<string, unknown>>("/api/config", data),
+  getLogs: (n?: number) => get<{ lines: string[] }>(`/api/logs${n ? `?n=${n}` : ""}`),
   getOnboarding: () =>
-    get<{ needed: boolean; onboarded: boolean; sessionsCount: number; hasEmployees: boolean; portalName: string | null; operatorName: string | null }>("/api/onboarding"),
+    get<{
+      needed: boolean;
+      onboarded: boolean;
+      sessionsCount: number;
+      hasEmployees: boolean;
+      portalName: string | null;
+      operatorName: string | null;
+    }>("/api/onboarding"),
   completeOnboarding: (data: { portalName?: string; operatorName?: string; language?: string }) =>
-    post<{ status: string; portal: { portalName?: string; operatorName?: string; language?: string } }>("/api/onboarding", data),
-  getActivity: () =>
-    get<Array<{ event: string; payload: unknown; ts: number }>>("/api/activity"),
+    post<{ status: string; portal: { portalName?: string; operatorName?: string; language?: string } }>(
+      "/api/onboarding",
+      data,
+    ),
+  getActivity: () => get<Array<{ event: string; payload: unknown; ts: number }>>("/api/activity"),
   updateDepartmentBoard: (name: string, data: unknown) =>
     put<Record<string, unknown>>(`/api/org/departments/${name}/board`, data),
   sttStatus: () =>
-    get<{ available: boolean; model: string | null; downloading: boolean; progress: number; languages: string[] }>("/api/stt/status"),
-  sttDownload: () =>
-    post<{ status: string; model: string }>("/api/stt/download", {}),
+    get<{ available: boolean; model: string | null; downloading: boolean; progress: number; languages: string[] }>(
+      "/api/stt/status",
+    ),
+  sttDownload: () => post<{ status: string; model: string }>("/api/stt/download", {}),
   sttTranscribe: async (audioBlob: Blob, language?: string): Promise<{ text: string }> => {
     const params = language ? `?language=${encodeURIComponent(language)}` : "";
     const controller = new AbortController();
@@ -199,23 +194,19 @@ export const api = {
   },
   sttUpdateConfig: (languages: string[]) =>
     put<{ status: string; languages: string[] }>("/api/stt/config", { languages }),
-  getSessionQueue: (id: string) =>
-    get<QueueItem[]>(`/api/sessions/${id}/queue`),
+  getSessionQueue: (id: string) => get<QueueItem[]>(`/api/sessions/${id}/queue`),
   cancelQueueItem: (sessionId: string, itemId: string) =>
     del<{ status: string }>(`/api/sessions/${sessionId}/queue/${itemId}`),
   clearSessionQueue: (sessionId: string) =>
     del<{ status: string; cancelled: number }>(`/api/sessions/${sessionId}/queue`),
-  pauseSessionQueue: (sessionId: string) =>
-    post<{ status: string }>(`/api/sessions/${sessionId}/queue/pause`, {}),
-  resumeSessionQueue: (sessionId: string) =>
-    post<{ status: string }>(`/api/sessions/${sessionId}/queue/resume`, {}),
-  getSessionTranscript: (id: string) =>
-    get<TranscriptEntry[]>(`/api/sessions/${id}/transcript`),
+  pauseSessionQueue: (sessionId: string) => post<{ status: string }>(`/api/sessions/${sessionId}/queue/pause`, {}),
+  resumeSessionQueue: (sessionId: string) => post<{ status: string }>(`/api/sessions/${sessionId}/queue/resume`, {}),
+  getSessionTranscript: (id: string) => get<TranscriptEntry[]>(`/api/sessions/${id}/transcript`),
   uploadFile: async (file: File): Promise<UploadedFile> => {
-    const form = new FormData()
-    form.append('file', file)
-    const res = await fetch(`${BASE}/api/files`, { method: 'POST', body: form })
-    if (!res.ok) throw new Error(await extractErrorMessage(res))
-    return res.json()
+    const form = new FormData();
+    form.append("file", file);
+    const res = await fetch(`${BASE}/api/files`, { method: "POST", body: form });
+    if (!res.ok) throw new Error(await extractErrorMessage(res));
+    return res.json();
   },
 };

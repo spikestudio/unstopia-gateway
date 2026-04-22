@@ -1,10 +1,10 @@
-"use client"
+"use client";
 
-import { useEffect, useRef } from 'react'
-import type { Employee } from '@/lib/api'
-import type { KanbanTicket, TicketStatus, TicketPriority } from '@/lib/kanban/types'
-import { PRIORITY_COLORS, COLUMNS } from '@/lib/kanban/types'
-import { EmployeePicker } from './employee-picker'
+import { useEffect, useRef } from "react";
+import type { Employee } from "@/lib/api";
+import type { KanbanTicket, TicketPriority, TicketStatus } from "@/lib/kanban/types";
+import { COLUMNS, PRIORITY_COLORS } from "@/lib/kanban/types";
+import { EmployeePicker } from "./employee-picker";
 
 /* Priority badge */
 function PriorityBadge({ priority }: { priority: TicketPriority }) {
@@ -13,33 +13,30 @@ function PriorityBadge({ priority }: { priority: TicketPriority }) {
       className="inline-flex items-center gap-[var(--space-1)] text-[length:var(--text-caption2)] font-semibold uppercase tracking-[0.5px]"
       style={{ color: PRIORITY_COLORS[priority] }}
     >
-      <span
-        className="w-1.5 h-1.5 rounded-full"
-        style={{ background: PRIORITY_COLORS[priority] }}
-      />
+      <span className="w-1.5 h-1.5 rounded-full" style={{ background: PRIORITY_COLORS[priority] }} />
       {priority}
     </span>
-  )
+  );
 }
 
 /* Status badge */
 function StatusBadge({ status }: { status: TicketStatus }) {
-  const label = COLUMNS.find(c => c.id === status)?.title ?? status
+  const label = COLUMNS.find((c) => c.id === status)?.title ?? status;
   return (
     <span className="text-[length:var(--text-caption2)] font-semibold text-[var(--text-secondary)] bg-[var(--fill-tertiary)] px-[var(--space-2)] py-[2px] rounded-[var(--radius-sm)] uppercase tracking-[0.3px]">
       {label}
     </span>
-  )
+  );
 }
 
 /* Main component */
 interface TicketDetailPanelProps {
-  ticket: KanbanTicket
-  employees: Employee[]
-  onClose: () => void
-  onStatusChange: (status: TicketStatus) => void
-  onAssigneeChange: (employeeName: string | null) => void
-  onDelete: () => void
+  ticket: KanbanTicket;
+  employees: Employee[];
+  onClose: () => void;
+  onStatusChange: (status: TicketStatus) => void;
+  onAssigneeChange: (employeeName: string | null) => void;
+  onDelete: () => void;
 }
 
 export function TicketDetailPanel({
@@ -50,36 +47,32 @@ export function TicketDetailPanel({
   onAssigneeChange,
   onDelete,
 }: TicketDetailPanelProps) {
-  const closeRef = useRef<HTMLButtonElement>(null)
+  const closeRef = useRef<HTMLButtonElement>(null);
 
   // Escape key to close
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
-      if (e.key === 'Escape') onClose()
+      if (e.key === "Escape") onClose();
     }
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [onClose])
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [onClose]);
 
   // Focus close button on mount
   useEffect(() => {
-    closeRef.current?.focus()
-  }, [])
+    closeRef.current?.focus();
+  }, []);
 
   function handleDelete() {
-    onDelete()
+    onDelete();
   }
 
-  const assignee = employees.find(e => e.name === ticket.assigneeId) ?? null
-  const accentColor = 'var(--accent)'
+  const assignee = employees.find((e) => e.name === ticket.assigneeId) ?? null;
+  const accentColor = "var(--accent)";
 
   return (
-    <div
-      className="absolute top-0 right-0 bottom-0 z-30"
-    >
-      <div
-        className="w-[420px] max-w-[100vw] h-full bg-[var(--material-regular)] shadow-[-4px_0_24px_rgba(0,0,0,0.25)] flex flex-col"
-      >
+    <div className="absolute top-0 right-0 bottom-0 z-30">
+      <div className="w-[420px] max-w-[100vw] h-full bg-[var(--material-regular)] shadow-[-4px_0_24px_rgba(0,0,0,0.25)] flex flex-col">
         {/* Color strip */}
         <div className="h-[3px] bg-[var(--accent)] shrink-0" />
 
@@ -129,24 +122,26 @@ export function TicketDetailPanel({
               Move to
             </div>
             <div className="flex gap-[var(--space-1)] flex-wrap">
-              {COLUMNS.map(col => {
-                const isCurrent = col.id === ticket.status
+              {COLUMNS.map((col) => {
+                const isCurrent = col.id === ticket.status;
                 return (
                   <button
                     key={col.id}
-                    onClick={() => { if (!isCurrent) onStatusChange(col.id) }}
+                    onClick={() => {
+                      if (!isCurrent) onStatusChange(col.id);
+                    }}
                     disabled={isCurrent}
                     className="text-[length:var(--text-caption2)] font-semibold py-[3px] px-[var(--space-2)] rounded-[var(--radius-sm)] border-none transition-all duration-[120ms] ease-linear"
                     style={{
-                      cursor: isCurrent ? 'default' : 'pointer',
-                      background: isCurrent ? accentColor : 'var(--fill-tertiary)',
-                      color: isCurrent ? '#fff' : 'var(--text-secondary)',
+                      cursor: isCurrent ? "default" : "pointer",
+                      background: isCurrent ? accentColor : "var(--fill-tertiary)",
+                      color: isCurrent ? "#fff" : "var(--text-secondary)",
                       opacity: isCurrent ? 1 : 0.8,
                     }}
                   >
                     {col.title}
                   </button>
-                )
+                );
               })}
             </div>
           </div>
@@ -158,7 +153,7 @@ export function TicketDetailPanel({
             </div>
             <EmployeePicker
               employees={employees}
-              value={ticket.assigneeId ?? ''}
+              value={ticket.assigneeId ?? ""}
               onChange={(name) => onAssigneeChange(name || null)}
             />
           </div>
@@ -188,5 +183,5 @@ export function TicketDetailPanel({
         </div>
       </div>
     </div>
-  )
+  );
 }

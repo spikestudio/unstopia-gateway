@@ -1,27 +1,23 @@
 import makeWASocketImport, {
   Browsers,
   DisconnectReason,
+  downloadMediaMessage,
   fetchLatestWaWebVersion,
   useMultiFileAuthState,
-  downloadMediaMessage,
-  type WASocket,
   type WAMessage,
+  type WASocket,
 } from "@whiskeysockets/baileys";
+
 // Handle ESM/CJS interop — Baileys may export as .default in some environments
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const makeWASocket = ((makeWASocketImport as any).default ?? makeWASocketImport) as typeof makeWASocketImport;
-import type {
-  Connector,
-  ConnectorCapabilities,
-  ConnectorHealth,
-  IncomingMessage,
-  Target,
-} from "../../shared/types.js";
+
+import fs from "node:fs";
+import path from "node:path";
 import { logger } from "../../shared/logger.js";
 import { JINN_HOME } from "../../shared/paths.js";
+import type { Connector, ConnectorCapabilities, ConnectorHealth, IncomingMessage, Target } from "../../shared/types.js";
 import { formatResponse } from "./format.js";
-import path from "node:path";
-import fs from "node:fs";
 
 export interface WhatsAppConnectorConfig {
   /** Where to store session credentials (default: JINN_HOME/.whatsapp-auth) */
@@ -82,7 +78,7 @@ export class WhatsAppConnector implements Connector {
   private scheduleReconnect(): void {
     if (this.connectionStatus === "stopped") return;
     // Exponential backoff: 5s, 10s, 20s, 40s, 60s max
-    const delay = Math.min(5000 * Math.pow(2, this.reconnectAttempts), 60000);
+    const delay = Math.min(5000 * 2 ** this.reconnectAttempts, 60000);
     this.reconnectAttempts++;
     logger.info(`WhatsApp reconnecting in ${delay / 1000}s (attempt ${this.reconnectAttempts})`);
     this.reconnectTimer = setTimeout(() => this.connect(), delay);
@@ -165,9 +161,8 @@ export class WhatsAppConnector implements Connector {
     else if (this.connectionStatus === "qr_pending") status = "qr_pending";
     return {
       status,
-      detail: this.connectionStatus === "qr_pending"
-        ? "Scan QR code in settings to connect"
-        : (this.lastError ?? undefined),
+      detail:
+        this.connectionStatus === "qr_pending" ? "Scan QR code in settings to connect" : (this.lastError ?? undefined),
       capabilities: this.capabilities,
     };
   }
@@ -244,18 +239,13 @@ export class WhatsAppConnector implements Connector {
     if (jid.endsWith("@broadcast")) return;
 
     // Allow "note to self" — matches own phone JID or own LID
-    const isSelfChat = message.key.fromMe && (
-      jid === ownJidBare || jid === ownJid ||
-      jid === ownLidBare || jid === ownLid
-    );
+    const isSelfChat =
+      message.key.fromMe && (jid === ownJidBare || jid === ownJid || jid === ownLidBare || jid === ownLid);
 
     if (message.key.fromMe && !isSelfChat) return;
 
     const msgTimestampMs = Number(message.messageTimestamp ?? 0) * 1000;
-    if (
-      this.config.ignoreOldMessagesOnBoot !== false &&
-      msgTimestampMs < this.bootTimeMs
-    ) return;
+    if (this.config.ignoreOldMessagesOnBoot !== false && msgTimestampMs < this.bootTimeMs) return;
 
     // If no allowFrom configured, only self-chat is allowed.
     // If allowFrom is set, also allow those specific JIDs.
@@ -277,21 +267,22 @@ export class WhatsAppConnector implements Connector {
     const hasMedia = message.message?.imageMessage || message.message?.documentMessage || message.message?.audioMessage;
     if (hasMedia && this.sock) {
       try {
-        const buffer = await downloadMediaMessage(message, "buffer", {}, {
-          logger: silentLogger as never,
-          reuploadRequest: this.sock.updateMediaMessage,
-        });
-        const ext = message.message?.imageMessage ? "jpg"
-          : message.message?.audioMessage ? "ogg"
-          : "bin";
+        const buffer = await downloadMediaMessage(
+          message,
+          "buffer",
+          {},
+          {
+            logger: silentLogger as never,
+            reuploadRequest: this.sock.updateMediaMessage,
+          },
+        );
+        const ext = message.message?.imageMessage ? "jpg" : message.message?.audioMessage ? "ogg" : "bin";
         const filename = `wa-attachment-${message.key.id}.${ext}`;
         const tmpDir = path.join(JINN_HOME, "tmp");
         const localPath = path.join(tmpDir, filename);
         fs.mkdirSync(tmpDir, { recursive: true });
         fs.writeFileSync(localPath, buffer as Buffer);
-        const mimeType = ext === "jpg" ? "image/jpeg"
-          : ext === "ogg" ? "audio/ogg"
-          : "application/octet-stream";
+        const mimeType = ext === "jpg" ? "image/jpeg" : ext === "ogg" ? "audio/ogg" : "application/octet-stream";
         attachments.push({ name: filename, localPath, mimeType, url: localPath });
       } catch {
         // Non-fatal: continue without attachment

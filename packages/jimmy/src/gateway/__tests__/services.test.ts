@@ -1,7 +1,7 @@
-import { describe, it, expect } from "vitest";
-import { buildServiceRegistry, findCommonAncestor, buildRoutePath, resolveManagerChain } from "../services.js";
-import { resolveOrgHierarchy } from "../org-hierarchy.js";
+import { describe, expect, it } from "vitest";
 import type { Employee } from "../../shared/types.js";
+import { resolveOrgHierarchy } from "../org-hierarchy.js";
+import { buildRoutePath, buildServiceRegistry, findCommonAncestor, resolveManagerChain } from "../services.js";
 
 function emp(name: string, opts: Partial<Employee> = {}): Employee {
   return {
@@ -35,9 +35,7 @@ describe("buildServiceRegistry", () => {
   });
 
   it("registers services from employees", () => {
-    const reg = registry(
-      emp("dev", { provides: [{ name: "code-review", description: "Review PRs" }] }),
-    );
+    const reg = registry(emp("dev", { provides: [{ name: "code-review", description: "Review PRs" }] }));
     const services = buildServiceRegistry(reg);
     expect(services.size).toBe(1);
     expect(services.get("code-review")?.provider.name).toBe("dev");
@@ -129,10 +127,7 @@ describe("findCommonAncestor", () => {
 
   it("returns null when both are root-level with no common ancestor", () => {
     // No executive — both become root nodes
-    const reg = registry(
-      emp("a", { department: "eng" }),
-      emp("b", { department: "mkt" }),
-    );
+    const reg = registry(emp("a", { department: "eng" }), emp("b", { department: "mkt" }));
     const hierarchy = resolveOrgHierarchy(reg);
     expect(findCommonAncestor("a", "b", hierarchy)).toBeNull();
   });
@@ -168,16 +163,11 @@ describe("buildRoutePath", () => {
       emp("writer", { department: "mkt", reportsTo: "mkt-lead" }),
     );
     const hierarchy = resolveOrgHierarchy(reg);
-    expect(buildRoutePath("dev", "writer", hierarchy)).toEqual([
-      "dev", "eng-lead", "coo", "mkt-lead", "writer",
-    ]);
+    expect(buildRoutePath("dev", "writer", hierarchy)).toEqual(["dev", "eng-lead", "coo", "mkt-lead", "writer"]);
   });
 
   it("builds direct path when one reports to the other", () => {
-    const reg = registry(
-      emp("mgr", { rank: "manager" }),
-      emp("dev", { reportsTo: "mgr" }),
-    );
+    const reg = registry(emp("mgr", { rank: "manager" }), emp("dev", { reportsTo: "mgr" }));
     const hierarchy = resolveOrgHierarchy(reg);
     expect(buildRoutePath("dev", "mgr", hierarchy)).toEqual(["dev", "mgr"]);
   });
@@ -211,10 +201,7 @@ describe("resolveManagerChain", () => {
   });
 
   it("deduplicates managers", () => {
-    const reg = registry(
-      emp("coo", { rank: "executive" }),
-      emp("a", { reportsTo: "coo" }),
-    );
+    const reg = registry(emp("coo", { rank: "executive" }), emp("a", { reportsTo: "coo" }));
     const hierarchy = resolveOrgHierarchy(reg);
     // Route goes through coo twice conceptually
     const chain = resolveManagerChain(["a", "coo", "coo", "a"], hierarchy);

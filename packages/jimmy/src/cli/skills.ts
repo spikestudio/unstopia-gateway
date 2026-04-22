@@ -1,7 +1,7 @@
-import fs from "node:fs";
-import path from "node:path";
-import os from "node:os";
 import { spawnSync } from "node:child_process";
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
 import { JINN_HOME, SKILLS_DIR } from "../shared/paths.js";
 
 const GREEN = "\x1b[32m";

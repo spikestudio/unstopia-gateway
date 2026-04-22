@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 // Mock dependencies before importing the module under test
 vi.mock("../registry.js", () => ({
@@ -18,11 +18,11 @@ vi.mock("../../shared/logger.js", () => ({
   },
 }));
 
+import type { Session } from "../../shared/types.js";
 import { notifyParentSession } from "../callbacks.js";
 import { getSession } from "../registry.js";
-import type { Session } from "../../shared/types.js";
 
-function makeSession(overrides: Partial<Session> = {}): Session {
+function makeSession(_overrides: Partial<Session> = {}): Session {
   return {
     id: "child-001",
     engine: "claude",
@@ -72,9 +72,7 @@ describe("notifyParentSession", () => {
     fetchSpy = vi.fn().mockResolvedValue({ ok: true });
     globalThis.fetch = fetchSpy as unknown as typeof fetch;
 
-    vi.mocked(getSession).mockReturnValue(
-      makeSession({ id: "parent-001", parentSessionId: null, status: "idle" }),
-    );
+    vi.mocked(getSession).mockReturnValue(makeSession({ id: "parent-001", parentSessionId: null, status: "idle" }));
   });
 
   afterEach(() => {
@@ -156,9 +154,7 @@ describe("notifyParentSession — alwaysNotify suppression", () => {
     fetchSpy = vi.fn().mockResolvedValue({ ok: true });
     globalThis.fetch = fetchSpy as unknown as typeof fetch;
 
-    vi.mocked(getSession).mockReturnValue(
-      makeSession({ id: "parent-001", parentSessionId: null, status: "idle" }),
-    );
+    vi.mocked(getSession).mockReturnValue(makeSession({ id: "parent-001", parentSessionId: null, status: "idle" }));
   });
 
   afterEach(() => {

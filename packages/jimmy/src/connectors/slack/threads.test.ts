@@ -1,5 +1,5 @@
-import test from "node:test";
 import assert from "node:assert/strict";
+import test from "node:test";
 import { buildReplyContext, deriveSessionKey, isOldSlackMessage } from "./threads.js";
 
 test("deriveSessionKey keeps DM sessions per user", () => {

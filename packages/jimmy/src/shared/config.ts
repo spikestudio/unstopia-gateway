@@ -5,9 +5,7 @@ import type { JinnConfig } from "./types.js";
 
 export function loadConfig(): JinnConfig {
   if (!fs.existsSync(CONFIG_PATH)) {
-    throw new Error(
-      `Jinn config not found at ${CONFIG_PATH}. Run "jinn setup" first.`
-    );
+    throw new Error(`Jinn config not found at ${CONFIG_PATH}. Run "jinn setup" first.`);
   }
   const raw = fs.readFileSync(CONFIG_PATH, "utf-8");
   return yaml.load(raw) as JinnConfig;

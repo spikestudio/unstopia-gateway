@@ -1,11 +1,11 @@
+import fs from "node:fs";
 import { getStatus } from "../gateway/lifecycle.js";
 import { loadConfig } from "../shared/config.js";
 import { JINN_HOME, PID_FILE } from "../shared/paths.js";
-import fs from "node:fs";
 
 export async function runStatus(): Promise<void> {
   if (!fs.existsSync(JINN_HOME)) {
-    console.log("Gateway is not set up. Run \"jinn setup\" first.");
+    console.log('Gateway is not set up. Run "jinn setup" first.');
     return;
   }
 

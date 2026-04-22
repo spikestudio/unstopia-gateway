@@ -1,52 +1,52 @@
-"use client"
+"use client";
 
-import { useState, useMemo, useRef, useEffect } from "react"
-import emojilib from "emojilib"
-import { EMOJI_POOL } from "@/lib/emoji-pool"
+import emojilib from "emojilib";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { EMOJI_POOL } from "@/lib/emoji-pool";
 
 interface EmojiPickerProps {
-  current: string
-  onSelect: (emoji: string) => void
-  onClose: () => void
+  current: string;
+  onSelect: (emoji: string) => void;
+  onClose: () => void;
 }
 
 // Pre-build searchable list: each entry has the emoji + all keyword tags joined
-const ALL_EMOJIS: Array<{ emoji: string; keywords: string[] }> = []
+const ALL_EMOJIS: Array<{ emoji: string; keywords: string[] }> = [];
 for (const [emoji, keywords] of Object.entries(emojilib as Record<string, string[]>)) {
-  ALL_EMOJIS.push({ emoji, keywords })
+  ALL_EMOJIS.push({ emoji, keywords });
 }
 
 export function EmojiPicker({ current, onSelect, onClose }: EmojiPickerProps) {
-  const [search, setSearch] = useState("")
-  const inputRef = useRef<HTMLInputElement>(null)
-  const containerRef = useRef<HTMLDivElement>(null)
+  const [search, setSearch] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    inputRef.current?.focus()
-  }, [])
+    inputRef.current?.focus();
+  }, []);
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        onClose()
+        onClose();
       }
     }
-    document.addEventListener("mousedown", handleClick)
-    return () => document.removeEventListener("mousedown", handleClick)
-  }, [onClose])
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [onClose]);
 
   const filtered = useMemo(() => {
-    const q = search.toLowerCase().trim()
-    if (!q) return null
-    const results: Array<{ emoji: string; label: string }> = []
+    const q = search.toLowerCase().trim();
+    if (!q) return null;
+    const results: Array<{ emoji: string; label: string }> = [];
     for (const entry of ALL_EMOJIS) {
       if (entry.keywords.some((kw) => kw.includes(q))) {
-        results.push({ emoji: entry.emoji, label: entry.keywords[0] })
-        if (results.length >= 80) break
+        results.push({ emoji: entry.emoji, label: entry.keywords[0] });
+        if (results.length >= 80) break;
       }
     }
-    return results
-  }, [search])
+    return results;
+  }, [search]);
 
   return (
     <div
@@ -106,5 +106,5 @@ export function EmojiPicker({ current, onSelect, onClose }: EmojiPickerProps) {
         )}
       </div>
     </div>
-  )
+  );
 }

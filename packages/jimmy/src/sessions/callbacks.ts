@@ -1,7 +1,7 @@
-import { getSession } from "./registry.js";
 import { loadConfig } from "../shared/config.js";
 import { logger } from "../shared/logger.js";
 import type { Session } from "../shared/types.js";
+import { getSession } from "./registry.js";
 
 /**
  * Notify the parent session that a child session has replied.
@@ -18,7 +18,9 @@ export function notifyParentSession(
 
   // Run asynchronously — do not await in the caller
   _sendNotification(childSession, result).catch((err) => {
-    logger.warn(`[callbacks] Failed to notify parent session ${childSession.parentSessionId}: ${err instanceof Error ? err.message : String(err)}`);
+    logger.warn(
+      `[callbacks] Failed to notify parent session ${childSession.parentSessionId}: ${err instanceof Error ? err.message : String(err)}`,
+    );
   });
 }
 
@@ -34,9 +36,11 @@ export function notifyRateLimited(
 
   _sendNotification(childSession, {
     error: null,
-    result: `⏳ Session is rate-limited and will auto-resume${estimatedResumeTime ? ` around ${estimatedResumeTime}` : ' when the limit resets'}. No action needed.`,
+    result: `⏳ Session is rate-limited and will auto-resume${estimatedResumeTime ? ` around ${estimatedResumeTime}` : " when the limit resets"}. No action needed.`,
   }).catch((err) => {
-    logger.warn(`[callbacks] Failed to send rate-limit notification: ${err instanceof Error ? err.message : String(err)}`);
+    logger.warn(
+      `[callbacks] Failed to send rate-limit notification: ${err instanceof Error ? err.message : String(err)}`,
+    );
   });
 }
 
@@ -44,13 +48,14 @@ export function notifyRateLimited(
  * Notify the parent session that a rate-limited child session has successfully resumed.
  * Fire-and-forget — errors are logged but never rethrown.
  */
-export function notifyRateLimitResumed(
-  childSession: Session,
-): void {
+export function notifyRateLimitResumed(childSession: Session): void {
   if (!childSession.parentSessionId) return;
 
   const employeeName = childSession.employee || "Unknown";
-  _sendRaw(childSession.parentSessionId, `🔄 Employee "${employeeName}" (session ${childSession.id}) has resumed after rate limit cleared.`).catch((err) => {
+  _sendRaw(
+    childSession.parentSessionId,
+    `🔄 Employee "${employeeName}" (session ${childSession.id}) has resumed after rate limit cleared.`,
+  ).catch((err) => {
     logger.warn(`[callbacks] Failed to send resume notification: ${err instanceof Error ? err.message : String(err)}`);
   });
 }

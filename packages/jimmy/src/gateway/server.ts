@@ -1,31 +1,37 @@
-import http from "node:http";
-import { spawn, type ChildProcess } from "node:child_process";
+import { type ChildProcess, spawn } from "node:child_process";
+import { randomUUID } from "node:crypto";
 import fs from "node:fs";
+import http from "node:http";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { randomUUID } from "node:crypto";
-import { WebSocketServer, type WebSocket } from "ws";
-import type { JinnConfig, Connector, Employee } from "../shared/types.js";
-import { loadConfig } from "../shared/config.js";
-import { configureLogger, logger } from "../shared/logger.js";
-import { initDb, recoverStaleSessions, recoverStaleQueueItems, getInterruptedSessions, listSessions, updateSession } from "../sessions/registry.js";
-import { SessionManager, type RouteOptions } from "../sessions/manager.js";
+import { WebSocketServer } from "ws";
+import { DiscordConnector, type DiscordConnectorConfig } from "../connectors/discord/index.js";
+import { RemoteDiscordConnector } from "../connectors/discord/remote.js";
+import { SlackConnector } from "../connectors/slack/index.js";
+import { TelegramConnector } from "../connectors/telegram/index.js";
+import { WhatsAppConnector } from "../connectors/whatsapp/index.js";
+import { loadJobs } from "../cron/jobs.js";
+import { reloadScheduler, startScheduler, stopScheduler } from "../cron/scheduler.js";
 import { ClaudeEngine } from "../engines/claude.js";
 import { CodexEngine } from "../engines/codex.js";
 import { GeminiEngine } from "../engines/gemini.js";
-import { handleApiRequest, resumePendingWebQueueItems, type ApiContext } from "./api.js";
-import { ensureFilesDir } from "./files.js";
+import { type RouteOptions, SessionManager } from "../sessions/manager.js";
+import {
+  getInterruptedSessions,
+  initDb,
+  listSessions,
+  recoverStaleQueueItems,
+  recoverStaleSessions,
+  updateSession,
+} from "../sessions/registry.js";
+import { loadConfig } from "../shared/config.js";
+import { configureLogger, logger } from "../shared/logger.js";
+import type { Connector, JinnConfig } from "../shared/types.js";
 import { initStt } from "../stt/stt.js";
-import { startWatchers, stopWatchers, syncSkillSymlinks } from "./watcher.js";
-import { SlackConnector } from "../connectors/slack/index.js";
-import { DiscordConnector, type DiscordConnectorConfig } from "../connectors/discord/index.js";
-import { RemoteDiscordConnector } from "../connectors/discord/remote.js";
-import { WhatsAppConnector } from "../connectors/whatsapp/index.js";
-import { TelegramConnector } from "../connectors/telegram/index.js";
-import { loadJobs } from "../cron/jobs.js";
-import { startScheduler, reloadScheduler, stopScheduler } from "../cron/scheduler.js";
+import { type ApiContext, handleApiRequest, resumePendingWebQueueItems } from "./api.js";
+import { ensureFilesDir } from "./files.js";
 import { scanOrg } from "./org.js";
-
+import { startWatchers, stopWatchers, syncSkillSymlinks } from "./watcher.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -42,11 +48,7 @@ const MIME_TYPES: Record<string, string> = {
   ".woff2": "font/woff2",
 };
 
-function serveStatic(
-  req: http.IncomingMessage,
-  res: http.ServerResponse,
-  webDir: string,
-): boolean {
+function serveStatic(req: http.IncomingMessage, res: http.ServerResponse, webDir: string): boolean {
   if (!fs.existsSync(webDir)) return false;
 
   // Strip query string before resolving file path
@@ -65,9 +67,7 @@ function serveStatic(
   if (!fs.existsSync(resolved) || fs.statSync(resolved).isDirectory()) {
     // Next.js static export produces /chat.html, /sessions.html, etc.
     // Try appending .html before falling back to index.html
-    const htmlPath = resolved.endsWith("/")
-      ? path.join(resolved, "index.html")
-      : resolved + ".html";
+    const htmlPath = resolved.endsWith("/") ? path.join(resolved, "index.html") : resolved + ".html";
     if (fs.existsSync(htmlPath) && !fs.statSync(htmlPath).isDirectory()) {
       res.writeHead(200, { "Content-Type": "text/html" });
       fs.createReadStream(htmlPath).pipe(res);
@@ -93,9 +93,7 @@ function serveStatic(
 
 export type GatewayCleanup = () => Promise<void>;
 
-export async function startGateway(
-  config: JinnConfig,
-): Promise<GatewayCleanup> {
+export async function startGateway(config: JinnConfig): Promise<GatewayCleanup> {
   const bootId = randomUUID().slice(0, 8);
 
   // Configure logging
@@ -121,7 +119,9 @@ export async function startGateway(
   if (resumable.length > 0) {
     logger.info(`${resumable.length} interrupted session(s) available for resume:`);
     for (const s of resumable) {
-      logger.info(`  - ${s.id} (engine: ${s.engine}, employee: ${s.employee || "none"}, engineSessionId: ${s.engineSessionId})`);
+      logger.info(
+        `  - ${s.id} (engine: ${s.engine}, employee: ${s.employee || "none"}, engineSessionId: ${s.engineSessionId})`,
+      );
     }
   }
   const recoveredQueue = recoverStaleQueueItems();
@@ -133,7 +133,10 @@ export async function startGateway(
   const claudeEngine = new ClaudeEngine();
   const codexEngine = new CodexEngine();
   const geminiEngine = new GeminiEngine();
-  const engines = new Map<string, InstanceType<typeof ClaudeEngine> | InstanceType<typeof CodexEngine> | InstanceType<typeof GeminiEngine>>();
+  const engines = new Map<
+    string,
+    InstanceType<typeof ClaudeEngine> | InstanceType<typeof CodexEngine> | InstanceType<typeof GeminiEngine>
+  >();
   engines.set("claude", claudeEngine);
   engines.set("codex", codexEngine);
   engines.set("gemini", geminiEngine);
@@ -602,7 +605,9 @@ export async function startGateway(
     if (!serveStatic(req, res, webDir)) {
       if (url === "/" || url === "/index.html") {
         res.writeHead(503, { "Content-Type": "text/html" });
-        res.end("<html><body><h1>Web UI not built</h1><p>Run <code>pnpm build</code> from the project root to build the web UI.</p></body></html>");
+        res.end(
+          "<html><body><h1>Web UI not built</h1><p>Run <code>pnpm build</code> from the project root to build the web UI.</p></body></html>",
+        );
       } else {
         res.writeHead(404, { "Content-Type": "application/json" });
         res.end(JSON.stringify({ error: "Not found" }));
@@ -638,7 +643,6 @@ export async function startGateway(
     }
   });
 
-
   // Sync skill symlinks to .claude/skills/ and .agents/skills/
   syncSkillSymlinks();
 
@@ -658,9 +662,7 @@ export async function startGateway(
         logger.info("Config reloaded successfully");
         emit("config:reloaded", {});
       } catch (err) {
-        logger.error(
-          `Failed to reload config: ${err instanceof Error ? err.message : err}`,
-        );
+        logger.error(`Failed to reload config: ${err instanceof Error ? err.message : err}`);
       }
     },
     onCronReload: () => {

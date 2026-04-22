@@ -1,27 +1,27 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import Link from "next/link"
-import { usePathname } from "next/navigation"
-import { useSettings } from "@/app/settings-provider"
-import { Sidebar } from "./sidebar"
-import { GlobalSearch } from "./global-search"
-import { LiveStreamWidget } from "./live-stream-widget"
-import { OnboardingWizard } from "./onboarding-wizard"
-import { NotificationBell } from "./notifications/notification-bell"
-import { ToastContainer } from "./notifications/toast-container"
-import { BreadcrumbBar } from "./breadcrumb-bar"
-import { useBreadcrumbs } from "@/context/breadcrumb-context"
-import { Menu, X } from "lucide-react"
-import { NAV_ITEMS } from "@/lib/nav"
-import { cn } from "@/lib/utils"
+import { Menu, X } from "lucide-react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { useState } from "react";
+import { useSettings } from "@/app/settings-provider";
+import { useBreadcrumbs } from "@/context/breadcrumb-context";
+import { NAV_ITEMS } from "@/lib/nav";
+import { cn } from "@/lib/utils";
+import { BreadcrumbBar } from "./breadcrumb-bar";
+import { GlobalSearch } from "./global-search";
+import { LiveStreamWidget } from "./live-stream-widget";
+import { NotificationBell } from "./notifications/notification-bell";
+import { ToastContainer } from "./notifications/toast-container";
+import { OnboardingWizard } from "./onboarding-wizard";
+import { Sidebar } from "./sidebar";
 
 function MobileHeader({ actions }: { actions?: React.ReactNode }) {
-  const [open, setOpen] = useState(false)
-  const pathname = usePathname()
-  const { settings } = useSettings()
-  const emoji = settings.portalEmoji ?? "\u{1F9DE}"
-  const portalName = settings.portalName ?? "Jinn"
+  const [open, setOpen] = useState(false);
+  const pathname = usePathname();
+  const { settings } = useSettings();
+  const emoji = settings.portalEmoji ?? "\u{1F9DE}";
+  const portalName = settings.portalName ?? "Jinn";
 
   return (
     <>
@@ -62,8 +62,8 @@ function MobileHeader({ actions }: { actions?: React.ReactNode }) {
             </div>
             <div className="flex flex-1 flex-col gap-1 p-2">
               {NAV_ITEMS.map((item) => {
-                const isActive = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href)
-                const Icon = item.icon
+                const isActive = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
+                const Icon = item.icon;
                 return (
                   <Link
                     key={item.href}
@@ -73,13 +73,13 @@ function MobileHeader({ actions }: { actions?: React.ReactNode }) {
                       "flex h-11 items-center gap-3 rounded-[10px] px-3.5 text-[15px] transition-colors",
                       isActive
                         ? "bg-[var(--accent-fill)] font-semibold text-[var(--accent)]"
-                        : "text-muted-foreground hover:bg-accent hover:text-foreground"
+                        : "text-muted-foreground hover:bg-accent hover:text-foreground",
                     )}
                   >
                     <Icon size={18} className="shrink-0" />
                     {item.label}
                   </Link>
-                )
+                );
               })}
             </div>
           </nav>
@@ -94,7 +94,7 @@ function MobileHeader({ actions }: { actions?: React.ReactNode }) {
         }
       `}</style>
     </>
-  )
+  );
 }
 
 export function ToolbarActions({ children }: { children?: React.ReactNode }) {
@@ -103,20 +103,26 @@ export function ToolbarActions({ children }: { children?: React.ReactNode }) {
       {children}
       <NotificationBell />
     </div>
-  )
+  );
 }
 
 function DesktopHeader() {
-  const { items } = useBreadcrumbs()
-  if (items.length === 0) return null
+  const { items } = useBreadcrumbs();
+  if (items.length === 0) return null;
   return (
     <div className="hidden h-12 shrink-0 items-center border-b border-border bg-[var(--material-thick)] px-5 lg:flex">
       <BreadcrumbBar />
     </div>
-  )
+  );
 }
 
-export function PageLayout({ children, mobileHeaderActions }: { children: React.ReactNode; mobileHeaderActions?: React.ReactNode }) {
+export function PageLayout({
+  children,
+  mobileHeaderActions,
+}: {
+  children: React.ReactNode;
+  mobileHeaderActions?: React.ReactNode;
+}) {
   return (
     <div className="flex h-dvh overflow-hidden bg-background">
       <Sidebar />
@@ -124,13 +130,11 @@ export function PageLayout({ children, mobileHeaderActions }: { children: React.
       <main className="flex-1 overflow-hidden flex flex-col lg:ml-[56px]">
         <MobileHeader actions={mobileHeaderActions} />
         <DesktopHeader />
-        <div className="flex-1 overflow-hidden">
-          {children}
-        </div>
+        <div className="flex-1 overflow-hidden">{children}</div>
       </main>
       <ToastContainer />
       <LiveStreamWidget />
       <OnboardingWizard />
     </div>
-  )
+  );
 }

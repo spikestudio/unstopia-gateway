@@ -1,9 +1,9 @@
-import type { CronJob, Connector, JinnConfig } from "../shared/types.js";
-import { logger } from "../shared/logger.js";
-import { appendRunLog } from "./jobs.js";
-import { scanOrg, findEmployee } from "../gateway/org.js";
 import { CronConnector } from "../connectors/cron/index.js";
+import { findEmployee, scanOrg } from "../gateway/org.js";
 import type { SessionManager } from "../sessions/manager.js";
+import { logger } from "../shared/logger.js";
+import type { Connector, CronJob, JinnConfig } from "../shared/types.js";
+import { appendRunLog } from "./jobs.js";
 
 export async function runCronJob(
   job: CronJob,
@@ -17,9 +17,7 @@ export async function runCronJob(
   const delivery = job.delivery || config.cron?.defaultDelivery;
   const cooSlug = config.portal?.portalName?.toLowerCase() || "jinn";
   if (delivery && job.employee && job.employee !== cooSlug) {
-    logger.debug(
-      `Cron job "${job.name}" targets employee "${job.employee}" directly (skipping COO delegation).`,
-    );
+    logger.debug(`Cron job "${job.name}" targets employee "${job.employee}" directly (skipping COO delegation).`);
   }
 
   let employee;
@@ -64,7 +62,10 @@ export async function runCronJob(
       {
         employee,
         engine: job.engine || employee?.engine || config.engines.default,
-        model: job.model || employee?.model || config.engines[(job.engine || config.engines.default) as "claude" | "codex" | "gemini"]?.model,
+        model:
+          job.model ||
+          employee?.model ||
+          config.engines[(job.engine || config.engines.default) as "claude" | "codex" | "gemini"]?.model,
         title: job.name,
       },
     );
@@ -97,12 +98,11 @@ export async function runCronJob(
     if (alertConnector && alertChannel) {
       const alertTarget = connectors.get(alertConnector);
       if (alertTarget) {
-        await alertTarget.sendMessage(
-          { channel: alertChannel },
-          `⚠️ Cron job "${job.name}" failed:\n${message.slice(0, 500)}`,
-        ).catch((alertErr) => {
-          logger.error(`Failed to send cron alert: ${alertErr instanceof Error ? alertErr.message : alertErr}`);
-        });
+        await alertTarget
+          .sendMessage({ channel: alertChannel }, `⚠️ Cron job "${job.name}" failed:\n${message.slice(0, 500)}`)
+          .catch((alertErr) => {
+            logger.error(`Failed to send cron alert: ${alertErr instanceof Error ? alertErr.message : alertErr}`);
+          });
       }
     }
   }

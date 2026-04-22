@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // Mock child_process before importing the module under test
 vi.mock("node:child_process", () => ({
@@ -64,7 +64,7 @@ describe("migrate: AI session launcher", () => {
     // execFileSync should have been called (AI session launched)
     expect(mockExecFileSync).toHaveBeenCalled();
 
-    const [bin, args] = mockExecFileSync.mock.calls[0];
+    const [_bin, args] = mockExecFileSync.mock.calls[0];
 
     // The args array must NOT contain "--cwd"
     expect(args).not.toContain("--cwd");

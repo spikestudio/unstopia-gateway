@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
-import { Bell, CheckCircle, XCircle, AlertTriangle, Info, Check, Trash2 } from "lucide-react";
+import { AlertTriangle, Bell, Check, CheckCircle, Info, Trash2, XCircle } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Button } from "@/components/ui/button";
 import { useNotifications } from "@/hooks/use-notifications";
 import type { NotificationType } from "@/lib/notifications";
-import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 const ICON_MAP: Record<NotificationType, typeof CheckCircle> = {
@@ -30,8 +30,7 @@ function formatTimeAgo(ts: number): string {
 }
 
 export function NotificationBell() {
-  const { notifications, unreadCount, markAllRead, markRead, clearAll } =
-    useNotifications();
+  const { notifications, unreadCount, markAllRead, markRead, clearAll } = useNotifications();
   const [open, setOpen] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
 
@@ -96,9 +95,7 @@ export function NotificationBell() {
 
           <div className="flex-1 overflow-y-auto">
             {notifications.length === 0 ? (
-              <div className="px-4 py-8 text-center text-[13px] text-muted-foreground">
-                No notifications yet
-              </div>
+              <div className="px-4 py-8 text-center text-[13px] text-muted-foreground">No notifications yet</div>
             ) : (
               notifications.map((notif) => {
                 const Icon = ICON_MAP[notif.type];
@@ -108,12 +105,17 @@ export function NotificationBell() {
                     onClick={() => markRead(notif.id)}
                     className={cn(
                       "flex cursor-pointer items-start gap-2.5 border-b border-border px-4 py-2.5 transition-colors hover:bg-accent",
-                      notif.read ? "bg-transparent" : "bg-[var(--material-ultra-thin)]"
+                      notif.read ? "bg-transparent" : "bg-[var(--material-ultra-thin)]",
                     )}
                   >
                     <Icon size={16} className={cn("mt-0.5 shrink-0", COLOR_MAP[notif.type])} />
                     <div className="min-w-0 flex-1">
-                      <div className={cn("text-[13px] leading-[1.3] text-foreground", notif.read ? "font-normal" : "font-semibold")}>
+                      <div
+                        className={cn(
+                          "text-[13px] leading-[1.3] text-foreground",
+                          notif.read ? "font-normal" : "font-semibold",
+                        )}
+                      >
                         {notif.title}
                       </div>
                       <div className="mt-0.5 truncate text-xs leading-[1.3] text-[var(--text-secondary)]">
@@ -123,9 +125,7 @@ export function NotificationBell() {
                     <span className="mt-0.5 shrink-0 whitespace-nowrap text-[11px] text-[var(--text-quaternary)]">
                       {formatTimeAgo(notif.timestamp)}
                     </span>
-                    {!notif.read && (
-                      <span className="mt-[5px] size-2 shrink-0 rounded-full bg-[var(--system-blue)]" />
-                    )}
+                    {!notif.read && <span className="mt-[5px] size-2 shrink-0 rounded-full bg-[var(--system-blue)]" />}
                   </div>
                 );
               })

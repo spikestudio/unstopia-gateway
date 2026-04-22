@@ -1,4 +1,4 @@
-import { markQueueItemRunning, markQueueItemCompleted } from "./registry.js";
+import { markQueueItemCompleted, markQueueItemRunning } from "./registry.js";
 
 export class SessionQueue {
   private queues = new Map<string, Promise<void>>();
@@ -23,7 +23,10 @@ export class SessionQueue {
     return this.running.has(sessionKey) ? Math.max(0, total - 1) : total;
   }
 
-  getTransportState(sessionKey: string, status?: "idle" | "running" | "error" | "waiting" | "interrupted"): "idle" | "queued" | "running" | "error" | "interrupted" {
+  getTransportState(
+    sessionKey: string,
+    status?: "idle" | "running" | "error" | "waiting" | "interrupted",
+  ): "idle" | "queued" | "running" | "error" | "interrupted" {
     if (status === "error") return "error";
     if (status === "interrupted") return "interrupted";
     if (this.running.has(sessionKey)) return "running";
@@ -71,7 +74,7 @@ export class SessionQueue {
       try {
         // Wait while paused (500ms poll)
         while (this.paused.has(sessionKey)) {
-          await new Promise(resolve => setTimeout(resolve, 500));
+          await new Promise((resolve) => setTimeout(resolve, 500));
         }
         if (queueItemId) markQueueItemRunning(queueItemId);
         if (!this.cancelled.has(sessionKey)) {

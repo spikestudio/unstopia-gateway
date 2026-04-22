@@ -8,8 +8,8 @@
 
 import { execFileSync } from "node:child_process";
 import fs from "node:fs";
-import path from "node:path";
 import os from "node:os";
+import path from "node:path";
 import { v4 as uuidv4 } from "uuid";
 import { logger } from "../shared/logger.js";
 
@@ -24,18 +24,25 @@ export interface ForkResult {
 export function forkClaudeSession(engineSessionId: string, cwd: string): ForkResult {
   logger.info(`Forking Claude session ${engineSessionId} in ${cwd}`);
 
-  const result = execFileSync("claude", [
-    "--resume", engineSessionId,
-    "--fork-session",
-    "--print",
-    "--output-format", "json",
-    "-p", "Session duplicated — this is a snapshot of the original conversation.",
-  ], {
-    cwd,
-    encoding: "utf-8",
-    timeout: 60_000,
-    env: { ...process.env, PATH: process.env.PATH },
-  });
+  const result = execFileSync(
+    "claude",
+    [
+      "--resume",
+      engineSessionId,
+      "--fork-session",
+      "--print",
+      "--output-format",
+      "json",
+      "-p",
+      "Session duplicated — this is a snapshot of the original conversation.",
+    ],
+    {
+      cwd,
+      encoding: "utf-8",
+      timeout: 60_000,
+      env: { ...process.env, PATH: process.env.PATH },
+    },
+  );
 
   const lastLine = result.trim().split("\n").pop();
   if (!lastLine) throw new Error("Claude fork returned empty output");
@@ -183,7 +190,9 @@ function findGeminiSessionFile(tmpRoot: string, sessionId: string): string | nul
         try {
           const data = JSON.parse(fs.readFileSync(filePath, "utf-8"));
           if (data.sessionId === sessionId) return filePath;
-        } catch { /* skip corrupted files */ }
+        } catch {
+          /* skip corrupted files */
+        }
       }
     }
   }

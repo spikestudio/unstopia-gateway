@@ -1,21 +1,19 @@
-"use client"
-import { Handle, Position, type NodeProps } from "@xyflow/react"
-import type { Employee } from "@/lib/api"
-import { EmployeeAvatar } from "@/components/ui/employee-avatar"
+"use client";
+import { Handle, type NodeProps, Position } from "@xyflow/react";
+import { EmployeeAvatar } from "@/components/ui/employee-avatar";
+import type { Employee } from "@/lib/api";
 
-type EmployeeNodeData = Employee & Record<string, unknown>
+type EmployeeNodeData = Employee & Record<string, unknown>;
 
 export function EmployeeNode({ data, selected }: NodeProps) {
-  const employee = data as EmployeeNodeData
+  const employee = data as EmployeeNodeData;
 
   return (
     <div
       className="bg-[var(--material-regular)] backdrop-blur-[20px] backdrop-saturate-[180%] [-webkit-backdrop-filter:blur(20px)_saturate(180%)] rounded-[var(--radius-md,12px)] py-[var(--space-3)] px-[var(--space-4)] w-[240px] cursor-pointer relative transition-shadow duration-150 ease-in-out"
       style={{
         border: `1px solid ${selected ? "var(--accent)" : "var(--separator)"}`,
-        boxShadow: selected
-          ? "0 0 0 1px var(--accent), var(--shadow-card)"
-          : "var(--shadow-card)",
+        boxShadow: selected ? "0 0 0 1px var(--accent), var(--shadow-card)" : "var(--shadow-card)",
       }}
     >
       {/* Avatar + Name row */}
@@ -50,21 +48,21 @@ export function EmployeeNode({ data, selected }: NodeProps) {
       <Handle type="target" position={Position.Top} style={{ opacity: 0 }} />
       <Handle type="source" position={Position.Bottom} style={{ opacity: 0 }} />
     </div>
-  )
+  );
 }
 
 export function DepartmentGroupNode({ data }: NodeProps) {
-  const { label } = data as { label: string } & Record<string, unknown>
+  const { label } = data as { label: string } & Record<string, unknown>;
   return (
     <div className="w-full h-full relative">
       <div className="absolute top-[10px] left-0 right-0 text-center text-[length:var(--text-caption2)] font-[var(--weight-semibold)] tracking-[var(--tracking-wide)] uppercase text-[var(--text-tertiary)] select-none pointer-events-none">
         {label}
       </div>
     </div>
-  )
+  );
 }
 
 export const nodeTypes = {
   employeeNode: EmployeeNode,
   departmentGroup: DepartmentGroupNode,
-}
+};

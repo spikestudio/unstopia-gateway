@@ -44,9 +44,7 @@ export function isDeadSessionError(result: EngineResult): boolean {
 }
 
 export function detectRateLimit(result: EngineResult): RateLimitDetection {
-  const resetsAt = typeof result.rateLimit?.resetsAt === "number"
-    ? result.rateLimit.resetsAt
-    : undefined;
+  const resetsAt = typeof result.rateLimit?.resetsAt === "number" ? result.rateLimit.resetsAt : undefined;
 
   if (result.rateLimit?.status === "rejected") {
     return { limited: true, resetsAt };
@@ -76,4 +74,3 @@ export function computeNextRetryDelayMs(resetsAtSeconds?: number): { delayMs: nu
   }
   return { delayMs: 60_000 };
 }
-

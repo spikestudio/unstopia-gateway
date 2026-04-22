@@ -1,42 +1,44 @@
-"use client"
-import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
-import type { Message, MediaAttachment } from '@/lib/conversations'
-import { parseMedia } from '@/lib/conversations'
-import { FileAttachment } from './file-attachment'
-import { VoiceMessage } from './voice-message'
+"use client";
+import type React from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import type { MediaAttachment, Message } from "@/lib/conversations";
+import { parseMedia } from "@/lib/conversations";
+import { FileAttachment } from "./file-attachment";
+import { VoiceMessage } from "./voice-message";
 
 /* ── Tool grouping ──────────────────────────────────────── */
 
 type MessageItem =
-  | { kind: 'message'; msg: Message; index: number }
-  | { kind: 'tool-group'; msgs: Message[]; startIndex: number }
+  | { kind: "message"; msg: Message; index: number }
+  | { kind: "tool-group"; msgs: Message[]; startIndex: number };
 
 function groupMessages(messages: Message[]): MessageItem[] {
-  const items: MessageItem[] = []
-  let i = 0
+  const items: MessageItem[] = [];
+  let i = 0;
   while (i < messages.length) {
-    if (messages[i].role === 'assistant' && messages[i].toolCall) {
-      const toolMsgs: Message[] = []
-      const start = i
-      while (i < messages.length && messages[i].role === 'assistant' && messages[i].toolCall) {
-        toolMsgs.push(messages[i])
-        i++
+    if (messages[i].role === "assistant" && messages[i].toolCall) {
+      const toolMsgs: Message[] = [];
+      const start = i;
+      while (i < messages.length && messages[i].role === "assistant" && messages[i].toolCall) {
+        toolMsgs.push(messages[i]);
+        i++;
       }
-      items.push({ kind: 'tool-group', msgs: toolMsgs, startIndex: start })
+      items.push({ kind: "tool-group", msgs: toolMsgs, startIndex: start });
     } else {
-      items.push({ kind: 'message', msg: messages[i], index: i })
-      i++
+      items.push({ kind: "message", msg: messages[i], index: i });
+      i++;
     }
   }
-  return items
+  return items;
 }
 
 function ToolGroup({ msgs, isActive }: { msgs: Message[]; isActive: boolean }) {
-  const [expanded, setExpanded] = useState(false)
-  const allDone = msgs.every((m) => m.content.startsWith('Used '))
-  const label = isActive && !allDone
-    ? `${msgs.length} tool${msgs.length !== 1 ? 's' : ''} running…`
-    : `${msgs.length} tool${msgs.length !== 1 ? 's' : ''} used`
+  const [expanded, setExpanded] = useState(false);
+  const allDone = msgs.every((m) => m.content.startsWith("Used "));
+  const label =
+    isActive && !allDone
+      ? `${msgs.length} tool${msgs.length !== 1 ? "s" : ""} running…`
+      : `${msgs.length} tool${msgs.length !== 1 ? "s" : ""} used`;
 
   return (
     <div className="px-[var(--space-4)] mb-[var(--space-1)]">
@@ -44,7 +46,17 @@ function ToolGroup({ msgs, isActive }: { msgs: Message[]; isActive: boolean }) {
         onClick={() => setExpanded((v) => !v)}
         className="flex items-center gap-[var(--space-2)] py-[5px] px-[var(--space-3)] rounded-full bg-[var(--fill-secondary)] border border-[var(--separator)] text-[length:var(--text-caption1)] text-[var(--text-secondary)] cursor-pointer transition-[background] duration-150 ease-in-out hover:bg-[var(--fill-tertiary)]"
       >
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="opacity-60">
+        <svg
+          width="12"
+          height="12"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className="opacity-60"
+        >
           <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
         </svg>
         {label}
@@ -60,7 +72,7 @@ function ToolGroup({ msgs, isActive }: { msgs: Message[]; isActive: boolean }) {
           strokeWidth="2.5"
           strokeLinecap="round"
           strokeLinejoin="round"
-          className={`transition-transform duration-150 ease-in-out opacity-50 ${expanded ? 'rotate-180' : 'rotate-0'}`}
+          className={`transition-transform duration-150 ease-in-out opacity-50 ${expanded ? "rotate-180" : "rotate-0"}`}
         >
           <polyline points="6 9 12 15 18 9" />
         </svg>
@@ -78,20 +90,21 @@ function ToolGroup({ msgs, isActive }: { msgs: Message[]; isActive: boolean }) {
         </div>
       )}
     </div>
-  )
+  );
 }
 
 /* ── Markdown rendering ─────────────────────────────────── */
 
 function inlineFormat(text: string): React.ReactNode {
-  const parts: React.ReactNode[] = []
+  const parts: React.ReactNode[] = [];
   // Markdown links (any href), bare URLs, bold, inline code, italic — in priority order
-  const regex = /\[([^\]]+)\]\(([^)]+)\)|(https?:\/\/[^\s<]+[^\s<.,;:!?)}\]'"])|(\*\*(.+?)\*\*)|(`([^`]+)`)|\*([^*]+)\*/g
-  let last = 0
-  let match
+  const regex =
+    /\[([^\]]+)\]\(([^)]+)\)|(https?:\/\/[^\s<]+[^\s<.,;:!?)}\]'"])|(\*\*(.+?)\*\*)|(`([^`]+)`)|\*([^*]+)\*/g;
+  let last = 0;
+  let match;
 
   while ((match = regex.exec(text)) !== null) {
-    if (match.index > last) parts.push(text.slice(last, match.index))
+    if (match.index > last) parts.push(text.slice(last, match.index));
     if (match[1] && match[2]) {
       // Markdown link: [text](url)
       parts.push(
@@ -103,8 +116,8 @@ function inlineFormat(text: string): React.ReactNode {
           className="text-[var(--system-blue)] underline underline-offset-2"
         >
           {match[1]}
-        </a>
-      )
+        </a>,
+      );
     } else if (match[3]) {
       // Bare URL
       parts.push(
@@ -116,31 +129,44 @@ function inlineFormat(text: string): React.ReactNode {
           className="text-[var(--system-blue)] underline underline-offset-2"
         >
           {match[3]}
-        </a>
-      )
+        </a>,
+      );
     } else if (match[4]) {
-      parts.push(<strong key={match.index} className="font-[var(--weight-bold)]">{match[5]}</strong>)
+      parts.push(
+        <strong key={match.index} className="font-[var(--weight-bold)]">
+          {match[5]}
+        </strong>,
+      );
     } else if (match[6]) {
       parts.push(
-        <code key={match.index} className="bg-[var(--fill-secondary)] border border-[var(--separator)] rounded-[5px] py-px px-[5px] text-[0.88em] font-['SF_Mono',Menlo,monospace] text-[var(--accent)]">{match[7]}</code>
-      )
+        <code
+          key={match.index}
+          className="bg-[var(--fill-secondary)] border border-[var(--separator)] rounded-[5px] py-px px-[5px] text-[0.88em] font-['SF_Mono',Menlo,monospace] text-[var(--accent)]"
+        >
+          {match[7]}
+        </code>,
+      );
     } else if (match[8]) {
-      parts.push(<em key={match.index} className="italic opacity-[0.85]">{match[8]}</em>)
+      parts.push(
+        <em key={match.index} className="italic opacity-[0.85]">
+          {match[8]}
+        </em>,
+      );
     }
-    last = match.index + match[0].length
+    last = match.index + match[0].length;
   }
-  if (last < text.length) parts.push(text.slice(last))
-  return parts.length === 1 ? parts[0] : <>{parts}</>
+  if (last < text.length) parts.push(text.slice(last));
+  return parts.length === 1 ? parts[0] : <>{parts}</>;
 }
 
 function CodeBlock({ code, keyProp }: { code: string; keyProp: number }) {
-  const [copied, setCopied] = useState(false)
+  const [copied, setCopied] = useState(false);
 
   function handleCopy() {
     navigator.clipboard.writeText(code).then(() => {
-      setCopied(true)
-      setTimeout(() => setCopied(false), 1500)
-    })
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    });
   }
 
   return (
@@ -150,24 +176,31 @@ function CodeBlock({ code, keyProp }: { code: string; keyProp: number }) {
         aria-label="Copy code"
         className="absolute top-2 right-2 py-0.5 px-2 text-[11px] rounded-[var(--radius-sm)] bg-[var(--fill-secondary)] text-[var(--text-secondary)] border border-[var(--separator)] cursor-pointer"
       >
-        {copied ? 'Copied!' : 'Copy'}
+        {copied ? "Copied!" : "Copy"}
       </button>
-      <pre className="code-block bg-[var(--fill-tertiary)] border border-[var(--separator)] rounded-[var(--radius-md)] py-[var(--space-3)] px-[var(--space-4)] overflow-x-auto text-[13px] leading-normal font-['SF_Mono',Menlo,monospace] text-[var(--text-primary)]"><code>{code}</code></pre>
+      <pre className="code-block bg-[var(--fill-tertiary)] border border-[var(--separator)] rounded-[var(--radius-md)] py-[var(--space-3)] px-[var(--space-4)] overflow-x-auto text-[13px] leading-normal font-['SF_Mono',Menlo,monospace] text-[var(--text-primary)]">
+        <code>{code}</code>
+      </pre>
     </div>
-  )
+  );
 }
 
 function isTableSeparator(line: string): boolean {
-  return /^\|[\s:|-]+\|$/.test(line.trim())
+  return /^\|[\s:|-]+\|$/.test(line.trim());
 }
 
 function parseTableRow(line: string): string[] {
-  return line.trim().replace(/^\|/, '').replace(/\|$/, '').split('|').map(c => c.trim())
+  return line
+    .trim()
+    .replace(/^\|/, "")
+    .replace(/\|$/, "")
+    .split("|")
+    .map((c) => c.trim());
 }
 
 function TableBlock({ headerLine, rows, keyProp }: { headerLine: string; rows: string[]; keyProp: number }) {
-  const headers = parseTableRow(headerLine)
-  const bodyRows = rows.map(parseTableRow)
+  const headers = parseTableRow(headerLine);
+  const bodyRows = rows.map(parseTableRow);
 
   return (
     <div key={keyProp} className="my-2.5 rounded-[10px] border border-[var(--separator)] overflow-hidden">
@@ -176,15 +209,25 @@ function TableBlock({ headerLine, rows, keyProp }: { headerLine: string; rows: s
           <thead>
             <tr className="bg-[var(--fill-tertiary)]">
               {headers.map((h, hi) => (
-                <th key={hi} className="text-left py-2.5 px-4 font-semibold text-[var(--text-primary)] border-b border-[var(--separator)] max-w-[280px] break-words">{inlineFormat(h)}</th>
+                <th
+                  key={hi}
+                  className="text-left py-2.5 px-4 font-semibold text-[var(--text-primary)] border-b border-[var(--separator)] max-w-[280px] break-words"
+                >
+                  {inlineFormat(h)}
+                </th>
               ))}
             </tr>
           </thead>
           <tbody>
             {bodyRows.map((row, ri) => (
-              <tr key={ri} className={ri % 2 === 1 ? 'bg-[var(--fill-quaternary,transparent)]' : 'bg-transparent'}>
+              <tr key={ri} className={ri % 2 === 1 ? "bg-[var(--fill-quaternary,transparent)]" : "bg-transparent"}>
                 {row.map((cell, ci) => (
-                  <td key={ci} className={`py-2.5 px-4 text-[var(--text-primary)] max-w-[280px] break-words ${ri < bodyRows.length - 1 ? 'border-b border-[var(--separator)]' : ''}`}>{inlineFormat(cell)}</td>
+                  <td
+                    key={ci}
+                    className={`py-2.5 px-4 text-[var(--text-primary)] max-w-[280px] break-words ${ri < bodyRows.length - 1 ? "border-b border-[var(--separator)]" : ""}`}
+                  >
+                    {inlineFormat(cell)}
+                  </td>
                 ))}
               </tr>
             ))}
@@ -192,97 +235,126 @@ function TableBlock({ headerLine, rows, keyProp }: { headerLine: string; rows: s
         </table>
       </div>
     </div>
-  )
+  );
 }
 
 function formatMessage(content: string): React.ReactNode {
-  if (!content) return null
-  const lines = content.split('\n')
-  const result: React.ReactNode[] = []
-  let inCodeBlock = false
-  let codeLines: string[] = []
+  if (!content) return null;
+  const lines = content.split("\n");
+  const result: React.ReactNode[] = [];
+  let inCodeBlock = false;
+  let codeLines: string[] = [];
 
   for (let i = 0; i < lines.length; i++) {
-    const line = lines[i]
-    if (line.startsWith('```')) {
+    const line = lines[i];
+    if (line.startsWith("```")) {
       if (!inCodeBlock) {
-        inCodeBlock = true
-        codeLines = []
+        inCodeBlock = true;
+        codeLines = [];
       } else {
-        inCodeBlock = false
-        result.push(<CodeBlock key={i} keyProp={i} code={codeLines.join('\n')} />)
-        codeLines = []
+        inCodeBlock = false;
+        result.push(<CodeBlock key={i} keyProp={i} code={codeLines.join("\n")} />);
+        codeLines = [];
       }
-      continue
+      continue;
     }
-    if (inCodeBlock) { codeLines.push(line); continue }
+    if (inCodeBlock) {
+      codeLines.push(line);
+      continue;
+    }
 
     // Table detection: header row | separator row | body rows
-    if (line.trim().startsWith('|') && line.trim().endsWith('|') && i + 1 < lines.length && isTableSeparator(lines[i + 1])) {
-      const headerLine = line
-      i++ // skip separator
-      const tableRows: string[] = []
-      while (i + 1 < lines.length && lines[i + 1].trim().startsWith('|') && lines[i + 1].trim().endsWith('|') && !isTableSeparator(lines[i + 1])) {
-        i++
-        tableRows.push(lines[i])
+    if (
+      line.trim().startsWith("|") &&
+      line.trim().endsWith("|") &&
+      i + 1 < lines.length &&
+      isTableSeparator(lines[i + 1])
+    ) {
+      const headerLine = line;
+      i++; // skip separator
+      const tableRows: string[] = [];
+      while (
+        i + 1 < lines.length &&
+        lines[i + 1].trim().startsWith("|") &&
+        lines[i + 1].trim().endsWith("|") &&
+        !isTableSeparator(lines[i + 1])
+      ) {
+        i++;
+        tableRows.push(lines[i]);
       }
-      result.push(<TableBlock key={`table-${i}`} keyProp={i} headerLine={headerLine} rows={tableRows} />)
-      continue
+      result.push(<TableBlock key={`table-${i}`} keyProp={i} headerLine={headerLine} rows={tableRows} />);
+      continue;
     }
 
-    if (line.trim() === '') { result.push(<div key={`space-${i}`} className="h-1.5" />); continue }
+    if (line.trim() === "") {
+      result.push(<div key={`space-${i}`} className="h-1.5" />);
+      continue;
+    }
     if (line.match(/^[-*] /)) {
       result.push(
         <div key={i} className="flex gap-[var(--space-2)] mb-0.5">
           <span className="text-[var(--accent)] shrink-0 mt-px">&bull;</span>
           <span>{inlineFormat(line.slice(2))}</span>
-        </div>
-      )
-      continue
+        </div>,
+      );
+      continue;
     }
     if (line.match(/^\d+\. /)) {
-      const num = line.match(/^(\d+)\. /)?.[1]
+      const num = line.match(/^(\d+)\. /)?.[1];
       result.push(
         <div key={i} className="flex gap-[var(--space-2)] mb-0.5">
           <span className="text-[var(--accent)] shrink-0 font-[var(--weight-semibold)] min-w-4">{num}.</span>
-          <span>{inlineFormat(line.replace(/^\d+\. /, ''))}</span>
-        </div>
-      )
-      continue
+          <span>{inlineFormat(line.replace(/^\d+\. /, ""))}</span>
+        </div>,
+      );
+      continue;
     }
-    if (line.startsWith('### ')) {
+    if (line.startsWith("### ")) {
       result.push(
-        <div key={i} className="font-[var(--weight-semibold)] text-[length:var(--text-footnote)] mt-[var(--space-2)] mb-0.5">
+        <div
+          key={i}
+          className="font-[var(--weight-semibold)] text-[length:var(--text-footnote)] mt-[var(--space-2)] mb-0.5"
+        >
           {inlineFormat(line.slice(4))}
-        </div>
-      )
-      continue
+        </div>,
+      );
+      continue;
     }
-    if (line.startsWith('## ')) {
+    if (line.startsWith("## ")) {
       result.push(
-        <div key={i} className="font-[var(--weight-bold)] text-[length:var(--text-subheadline)] mt-[var(--space-3)] mb-[3px]">
+        <div
+          key={i}
+          className="font-[var(--weight-bold)] text-[length:var(--text-subheadline)] mt-[var(--space-3)] mb-[3px]"
+        >
           {inlineFormat(line.slice(3))}
-        </div>
-      )
-      continue
+        </div>,
+      );
+      continue;
     }
-    if (line.startsWith('# ')) {
+    if (line.startsWith("# ")) {
       result.push(
-        <div key={i} className="font-[var(--weight-bold)] text-[length:var(--text-body)] mt-[var(--space-3)] mb-[var(--space-1)]">
+        <div
+          key={i}
+          className="font-[var(--weight-bold)] text-[length:var(--text-body)] mt-[var(--space-3)] mb-[var(--space-1)]"
+        >
           {inlineFormat(line.slice(2))}
-        </div>
-      )
-      continue
+        </div>,
+      );
+      continue;
     }
-    result.push(<div key={i} className="mb-px">{inlineFormat(line)}</div>)
+    result.push(
+      <div key={i} className="mb-px">
+        {inlineFormat(line)}
+      </div>,
+    );
   }
 
   // Close unclosed code block
   if (inCodeBlock && codeLines.length > 0) {
-    result.push(<CodeBlock key="trailing-code" keyProp={999} code={codeLines.join('\n')} />)
+    result.push(<CodeBlock key="trailing-code" keyProp={999} code={codeLines.join("\n")} />);
   }
 
-  return <>{result}</>
+  return <>{result}</>;
 }
 
 /* ── Partial markdown fixer for streaming ───────────────── */
@@ -292,61 +364,61 @@ function formatMessage(content: string): React.ReactNode {
  * Handles: code blocks (```), inline code (`), bold (**), italic (*).
  */
 function closePartialMarkdown(text: string): string {
-  let result = text
+  let result = text;
 
   // Count triple backticks — if odd, close the code block
-  const tripleBackticks = (result.match(/```/g) || []).length
+  const tripleBackticks = (result.match(/```/g) || []).length;
   if (tripleBackticks % 2 !== 0) {
-    result += '\n```'
+    result += "\n```";
   }
 
   // Only fix inline markers outside of code blocks
   if (tripleBackticks % 2 === 0) {
     // Count inline backticks outside code blocks (simplified: count ` not part of ```)
-    const withoutCodeBlocks = result.replace(/```[\s\S]*?```/g, '')
-    const inlineBackticks = (withoutCodeBlocks.match(/`/g) || []).length
+    const withoutCodeBlocks = result.replace(/```[\s\S]*?```/g, "");
+    const inlineBackticks = (withoutCodeBlocks.match(/`/g) || []).length;
     if (inlineBackticks % 2 !== 0) {
-      result += '`'
+      result += "`";
     }
 
     // Count ** pairs
-    const boldMarkers = (withoutCodeBlocks.match(/\*\*/g) || []).length
+    const boldMarkers = (withoutCodeBlocks.match(/\*\*/g) || []).length;
     if (boldMarkers % 2 !== 0) {
-      result += '**'
+      result += "**";
     }
   }
 
-  return result
+  return result;
 }
 
 /* ── Timestamp formatting ──────────────────────────────── */
 
 function formatTimestamp(ts: number): string {
-  const now = new Date()
-  const date = new Date(ts)
-  const isToday = now.toDateString() === date.toDateString()
-  const yesterday = new Date(now)
-  yesterday.setDate(yesterday.getDate() - 1)
-  const isYesterday = yesterday.toDateString() === date.toDateString()
-  const time = date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
+  const now = new Date();
+  const date = new Date(ts);
+  const isToday = now.toDateString() === date.toDateString();
+  const yesterday = new Date(now);
+  yesterday.setDate(yesterday.getDate() - 1);
+  const isYesterday = yesterday.toDateString() === date.toDateString();
+  const time = date.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true });
 
-  if (isToday) return `Today ${time}`
-  if (isYesterday) return `Yesterday ${time}`
-  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + ` ${time}`
+  if (isToday) return `Today ${time}`;
+  if (isYesterday) return `Yesterday ${time}`;
+  return date.toLocaleDateString("en-US", { month: "short", day: "numeric" }) + ` ${time}`;
 }
 
 function shouldShowTimestamp(messages: Message[], index: number): boolean {
-  if (index === 0) return true
-  const gap = messages[index].timestamp - messages[index - 1].timestamp
-  return gap > 5 * 60 * 1000
+  if (index === 0) return true;
+  const gap = messages[index].timestamp - messages[index - 1].timestamp;
+  return gap > 5 * 60 * 1000;
 }
 
 /* ── Render media helpers ─────────────────────────────── */
 
 function renderMedia(media: MediaAttachment[], isUser: boolean) {
-  const images = media.filter(m => m.type === 'image')
-  const audio = media.filter(m => m.type === 'audio')
-  const files = media.filter(m => m.type === 'file')
+  const images = media.filter((m) => m.type === "image");
+  const audio = media.filter((m) => m.type === "audio");
+  const files = media.filter((m) => m.type === "file");
 
   return (
     <>
@@ -354,130 +426,119 @@ function renderMedia(media: MediaAttachment[], isUser: boolean) {
         <div key={`img-${mi}`} className="mt-[var(--space-2)] rounded-[var(--radius-lg)] overflow-hidden max-w-[280px]">
           <img
             src={m.url}
-            alt={m.name || 'Image'}
+            alt={m.name || "Image"}
             className="w-full block rounded-[var(--radius-lg)] cursor-pointer"
-            onClick={() => window.open(m.url, '_blank')}
+            onClick={() => window.open(m.url, "_blank")}
           />
         </div>
       ))}
       {audio.map((m, mi) => (
         <div key={`audio-${mi}`} className="mt-[var(--space-2)]">
-          <VoiceMessage
-            src={m.url}
-            duration={m.duration || 0}
-            waveform={m.waveform || []}
-            isUser={isUser}
-          />
+          <VoiceMessage src={m.url} duration={m.duration || 0} waveform={m.waveform || []} isUser={isUser} />
         </div>
       ))}
       {files.map((m, mi) => (
         <div key={`file-${mi}`} className="mt-[var(--space-2)]">
-          <FileAttachment
-            name={m.name || 'File'}
-            size={m.size}
-            mimeType={m.mimeType}
-            url={m.url}
-            isUser={isUser}
-          />
+          <FileAttachment name={m.name || "File"} size={m.size} mimeType={m.mimeType} url={m.url} isUser={isUser} />
         </div>
       ))}
     </>
-  )
+  );
 }
 
 /* ── Component ──────────────────────────────────────────── */
 
 interface ChatMessagesProps {
-  messages: Message[]
-  loading: boolean
-  streamingText?: string
+  messages: Message[];
+  loading: boolean;
+  streamingText?: string;
 }
 
 export function ChatMessages({ messages, loading, streamingText }: ChatMessagesProps) {
-  const bottomRef = useRef<HTMLDivElement>(null)
-  const scrollContainerRef = useRef<HTMLDivElement>(null)
-  const contentRef = useRef<HTMLDivElement>(null)
-  const prevMsgIdRef = useRef<string | null>(null)
-  const prevMsgCount = useRef(0)
-  const isAtBottomRef = useRef(true)
-  const [showScrollButton, setShowScrollButton] = useState(false)
-  const scrollButtonTimer = useRef<ReturnType<typeof setTimeout>>(undefined)
+  const bottomRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
+  const prevMsgIdRef = useRef<string | null>(null);
+  const prevMsgCount = useRef(0);
+  const isAtBottomRef = useRef(true);
+  const [showScrollButton, setShowScrollButton] = useState(false);
+  const scrollButtonTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   // IntersectionObserver: track whether the bottom sentinel is visible
   useEffect(() => {
-    const sentinel = bottomRef.current
-    const container = scrollContainerRef.current
-    if (!sentinel || !container) return
+    const sentinel = bottomRef.current;
+    const container = scrollContainerRef.current;
+    if (!sentinel || !container) return;
 
     const observer = new IntersectionObserver(
       ([entry]) => {
-        isAtBottomRef.current = entry.isIntersecting
+        isAtBottomRef.current = entry.isIntersecting;
         // Debounce the button visibility to avoid flicker during fast scrolling
-        clearTimeout(scrollButtonTimer.current)
+        clearTimeout(scrollButtonTimer.current);
         scrollButtonTimer.current = setTimeout(() => {
-          setShowScrollButton(!entry.isIntersecting)
-        }, 100)
+          setShowScrollButton(!entry.isIntersecting);
+        }, 100);
       },
       {
         root: container,
-        rootMargin: '0px 0px 80px 0px', // "near bottom" zone
+        rootMargin: "0px 0px 80px 0px", // "near bottom" zone
         threshold: 0,
-      }
-    )
+      },
+    );
 
-    observer.observe(sentinel)
+    observer.observe(sentinel);
     return () => {
-      observer.disconnect()
-      clearTimeout(scrollButtonTimer.current)
-    }
-  }, [])
+      observer.disconnect();
+      clearTimeout(scrollButtonTimer.current);
+    };
+  }, []);
 
   // ResizeObserver: auto-scroll when content grows (new messages, streaming, image loads)
   useEffect(() => {
-    const content = contentRef.current
-    if (!content) return
+    const content = contentRef.current;
+    if (!content) return;
 
     const observer = new ResizeObserver(() => {
       if (isAtBottomRef.current && bottomRef.current) {
-        bottomRef.current.scrollIntoView({ behavior: 'auto' })
+        bottomRef.current.scrollIntoView({ behavior: "auto" });
       }
-    })
+    });
 
-    observer.observe(content)
-    return () => observer.disconnect()
-  }, [])
+    observer.observe(content);
+    return () => observer.disconnect();
+  }, []);
 
   // Session switch / initial load: snap to bottom instantly before paint
   useLayoutEffect(() => {
     if (messages.length === 0) {
-      prevMsgCount.current = 0
-      prevMsgIdRef.current = null
-      return
+      prevMsgCount.current = 0;
+      prevMsgIdRef.current = null;
+      return;
     }
 
-    const currentFirstId = messages[0]?.id || null
-    const isSessionSwitch = prevMsgIdRef.current !== null && currentFirstId !== prevMsgIdRef.current
-    const isInitialLoad = prevMsgCount.current === 0 && messages.length > 0
+    const currentFirstId = messages[0]?.id || null;
+    const isSessionSwitch = prevMsgIdRef.current !== null && currentFirstId !== prevMsgIdRef.current;
+    const isInitialLoad = prevMsgCount.current === 0 && messages.length > 0;
 
     if (isInitialLoad || isSessionSwitch) {
       if (scrollContainerRef.current) {
-        scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight
+        scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight;
       }
-      isAtBottomRef.current = true
-      setShowScrollButton(false)
+      isAtBottomRef.current = true;
+      setShowScrollButton(false);
     }
 
-    prevMsgCount.current = messages.length
-    prevMsgIdRef.current = currentFirstId
-  }, [messages])
+    prevMsgCount.current = messages.length;
+    prevMsgIdRef.current = currentFirstId;
+  }, [messages]);
 
   const scrollToBottom = useCallback(() => {
     if (scrollContainerRef.current) {
-      scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight
+      scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight;
     }
-    isAtBottomRef.current = true
-    setShowScrollButton(false)
-  }, [])
+    isAtBottomRef.current = true;
+    setShowScrollButton(false);
+  }, []);
 
   if (messages.length === 0 && !loading) {
     return (
@@ -491,139 +552,148 @@ export function ChatMessages({ messages, loading, streamingText }: ChatMessagesP
           </div>
         </div>
       </div>
-    )
+    );
   }
 
   return (
-    <div ref={scrollContainerRef} className="chat-messages-scroll relative flex-1 overflow-y-auto overflow-x-hidden bg-[var(--bg)] min-h-0">
+    <div
+      ref={scrollContainerRef}
+      className="chat-messages-scroll relative flex-1 overflow-y-auto overflow-x-hidden bg-[var(--bg)] min-h-0"
+    >
       <div ref={contentRef} className="py-[var(--space-3)] pb-[var(--space-6)]">
-      {groupMessages(messages).map((item) => {
-        if (item.kind === 'tool-group') {
-          const firstMsg = item.msgs[0]
-          const showTimestamp = shouldShowTimestamp(messages, item.startIndex)
-          const prevMsg = item.startIndex > 0 ? messages[item.startIndex - 1] : null
-          const isActive = loading && item.startIndex + item.msgs.length === messages.length
+        {groupMessages(messages).map((item) => {
+          if (item.kind === "tool-group") {
+            const firstMsg = item.msgs[0];
+            const showTimestamp = shouldShowTimestamp(messages, item.startIndex);
+            const prevMsg = item.startIndex > 0 ? messages[item.startIndex - 1] : null;
+            const isActive = loading && item.startIndex + item.msgs.length === messages.length;
+            return (
+              <div key={`tg-${item.startIndex}`}>
+                {showTimestamp && (
+                  <div className="text-center py-[var(--space-3)] text-[length:var(--text-caption2)] text-[var(--text-tertiary)]">
+                    {formatTimestamp(firstMsg.timestamp)}
+                  </div>
+                )}
+                {!showTimestamp && prevMsg && (
+                  <div className={prevMsg.role !== "assistant" ? "h-[var(--space-4)]" : "h-[var(--space-1)]"} />
+                )}
+                <ToolGroup msgs={item.msgs} isActive={isActive} />
+              </div>
+            );
+          }
+
+          const { msg, index: i } = item;
+          const isUser = msg.role === "user";
+          const isNotification = msg.role === "notification";
+          const showTimestamp = shouldShowTimestamp(messages, i);
+          const media = msg.media || parseMedia(msg.content);
+
+          // Strip media URLs from text for display
+          let textContent = msg.content;
+          if (media.length > 0 && !msg.media) {
+            media.forEach((m) => {
+              textContent = textContent.replace(m.url, "");
+              textContent = textContent.replace(/!\[[^\]]*\]\([^)]+\)/g, "");
+            });
+            textContent = textContent.trim();
+          }
+          // Hide auto-generated content labels for media-only messages
+          if (msg.media && msg.media.length > 0) {
+            const isAutoLabel = textContent.startsWith("[") && textContent.endsWith("]");
+            if (isAutoLabel) textContent = "";
+          }
+
           return (
-            <div key={`tg-${item.startIndex}`}>
+            <div key={msg.id || i}>
+              {/* Timestamp divider */}
               {showTimestamp && (
                 <div className="text-center py-[var(--space-3)] text-[length:var(--text-caption2)] text-[var(--text-tertiary)]">
-                  {formatTimestamp(firstMsg.timestamp)}
+                  {formatTimestamp(msg.timestamp)}
                 </div>
               )}
-              {!showTimestamp && prevMsg && (
-                <div className={prevMsg.role !== 'assistant' ? 'h-[var(--space-4)]' : 'h-[var(--space-1)]'} />
+
+              {/* Spacing between role switches */}
+              {!showTimestamp && i > 0 && (
+                <div className={messages[i - 1].role !== msg.role ? "h-[var(--space-4)]" : "h-[var(--space-1)]"} />
               )}
-              <ToolGroup msgs={item.msgs} isActive={isActive} />
-            </div>
-          )
-        }
 
-        const { msg, index: i } = item
-        const isUser = msg.role === 'user'
-        const isNotification = msg.role === 'notification'
-        const showTimestamp = shouldShowTimestamp(messages, i)
-        const media = msg.media || parseMedia(msg.content)
-
-        // Strip media URLs from text for display
-        let textContent = msg.content
-        if (media.length > 0 && !msg.media) {
-          media.forEach(m => {
-            textContent = textContent.replace(m.url, '')
-            textContent = textContent.replace(/!\[[^\]]*\]\([^)]+\)/g, '')
-          })
-          textContent = textContent.trim()
-        }
-        // Hide auto-generated content labels for media-only messages
-        if (msg.media && msg.media.length > 0) {
-          const isAutoLabel = textContent.startsWith('[') && textContent.endsWith(']')
-          if (isAutoLabel) textContent = ''
-        }
-
-        return (
-          <div key={msg.id || i}>
-            {/* Timestamp divider */}
-            {showTimestamp && (
-              <div className="text-center py-[var(--space-3)] text-[length:var(--text-caption2)] text-[var(--text-tertiary)]">
-                {formatTimestamp(msg.timestamp)}
-              </div>
-            )}
-
-            {/* Spacing between role switches */}
-            {!showTimestamp && i > 0 && (
-              <div className={messages[i - 1].role !== msg.role ? 'h-[var(--space-4)]' : 'h-[var(--space-1)]'} />
-            )}
-
-            {/* Notification message — centered system-style banner */}
-            {isNotification && (
-              <div className="flex justify-center px-[var(--space-4)] mb-[var(--space-1)]">
-                <div className="notification-msg-bubble flex items-start gap-[var(--space-2)] py-[var(--space-3)] px-[var(--space-4)] rounded-[var(--radius-md)] bg-[var(--fill-secondary)] border border-dashed border-[var(--separator)] text-[var(--text-secondary)] text-[length:var(--text-caption1)] leading-[var(--leading-relaxed)] max-w-[85%]">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 mt-0.5 opacity-60">
-                    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-                    <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-                  </svg>
-                  <span>{formatMessage(textContent)}</span>
+              {/* Notification message — centered system-style banner */}
+              {isNotification && (
+                <div className="flex justify-center px-[var(--space-4)] mb-[var(--space-1)]">
+                  <div className="notification-msg-bubble flex items-start gap-[var(--space-2)] py-[var(--space-3)] px-[var(--space-4)] rounded-[var(--radius-md)] bg-[var(--fill-secondary)] border border-dashed border-[var(--separator)] text-[var(--text-secondary)] text-[length:var(--text-caption1)] leading-[var(--leading-relaxed)] max-w-[85%]">
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="shrink-0 mt-0.5 opacity-60"
+                    >
+                      <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                      <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+                    </svg>
+                    <span>{formatMessage(textContent)}</span>
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
 
-            {/* User message */}
-            {isUser && (
-              <div className="flex flex-col items-end px-[var(--space-4)] mb-[var(--space-1)]">
-                {textContent && (
-                  <div className="user-msg-bubble py-[var(--space-3)] px-[var(--space-4)] rounded-[var(--radius-lg)_var(--radius-lg)_var(--radius-sm)_var(--radius-lg)] bg-[var(--accent)] text-[var(--accent-contrast)] text-[length:var(--text-subheadline)] leading-[var(--leading-relaxed)] font-[var(--weight-medium)] shadow-[var(--shadow-subtle)]">
-                    {formatMessage(textContent)}
-                  </div>
-                )}
-                {media.length > 0 && (
-                  <div className="user-msg-bubble">
-                    {renderMedia(media, true)}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Assistant message */}
-            {!isUser && !isNotification && (
-              <div className="assistant-msg-row flex justify-start px-[var(--space-4)] mb-[var(--space-1)]">
-                <div className="assistant-msg-bubble flex flex-col">
-                  {/* Text bubble */}
+              {/* User message */}
+              {isUser && (
+                <div className="flex flex-col items-end px-[var(--space-4)] mb-[var(--space-1)]">
                   {textContent && (
-                    <div className="py-[var(--space-3)] px-[var(--space-4)] rounded-[var(--radius-sm)_var(--radius-lg)_var(--radius-lg)_var(--radius-lg)] bg-[var(--material-thin)] border border-[var(--separator)] text-[var(--text-primary)] text-[length:var(--text-subheadline)] leading-[var(--leading-relaxed)]">
+                    <div className="user-msg-bubble py-[var(--space-3)] px-[var(--space-4)] rounded-[var(--radius-lg)_var(--radius-lg)_var(--radius-sm)_var(--radius-lg)] bg-[var(--accent)] text-[var(--accent-contrast)] text-[length:var(--text-subheadline)] leading-[var(--leading-relaxed)] font-[var(--weight-medium)] shadow-[var(--shadow-subtle)]">
                       {formatMessage(textContent)}
                     </div>
                   )}
-
-                  {/* Media attachments */}
-                  {media.length > 0 && renderMedia(media, false)}
+                  {media.length > 0 && <div className="user-msg-bubble">{renderMedia(media, true)}</div>}
                 </div>
-              </div>
-            )}
-          </div>
-        )
-      })}
+              )}
 
-      {/* Streaming message — shows text as it arrives */}
-      {streamingText && (
-        <div className="assistant-msg-row flex justify-start px-[var(--space-4)] mb-[var(--space-1)]">
-          <div className="assistant-msg-bubble flex flex-col">
-            <div className="py-[var(--space-3)] px-[var(--space-4)] rounded-[var(--radius-sm)_var(--radius-lg)_var(--radius-lg)_var(--radius-lg)] bg-[var(--material-thin)] border border-[var(--separator)] text-[var(--text-primary)] text-[length:var(--text-subheadline)] leading-[var(--leading-relaxed)]">
-              {formatMessage(closePartialMarkdown(streamingText))}
+              {/* Assistant message */}
+              {!isUser && !isNotification && (
+                <div className="assistant-msg-row flex justify-start px-[var(--space-4)] mb-[var(--space-1)]">
+                  <div className="assistant-msg-bubble flex flex-col">
+                    {/* Text bubble */}
+                    {textContent && (
+                      <div className="py-[var(--space-3)] px-[var(--space-4)] rounded-[var(--radius-sm)_var(--radius-lg)_var(--radius-lg)_var(--radius-lg)] bg-[var(--material-thin)] border border-[var(--separator)] text-[var(--text-primary)] text-[length:var(--text-subheadline)] leading-[var(--leading-relaxed)]">
+                        {formatMessage(textContent)}
+                      </div>
+                    )}
+
+                    {/* Media attachments */}
+                    {media.length > 0 && renderMedia(media, false)}
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })}
+
+        {/* Streaming message — shows text as it arrives */}
+        {streamingText && (
+          <div className="assistant-msg-row flex justify-start px-[var(--space-4)] mb-[var(--space-1)]">
+            <div className="assistant-msg-bubble flex flex-col">
+              <div className="py-[var(--space-3)] px-[var(--space-4)] rounded-[var(--radius-sm)_var(--radius-lg)_var(--radius-lg)_var(--radius-lg)] bg-[var(--material-thin)] border border-[var(--separator)] text-[var(--text-primary)] text-[length:var(--text-subheadline)] leading-[var(--leading-relaxed)]">
+                {formatMessage(closePartialMarkdown(streamingText))}
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Thinking indicator — visible while waiting, disappears when streaming or response arrives */}
-      {loading && !streamingText && messages.length > 0 && (
-        <div className="flex items-center gap-1.5 py-1.5 px-[var(--space-4)] mt-[var(--space-1)]">
-          <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent)] animate-[jinn-pulse_1.4s_infinite] shrink-0" />
-          <span className="text-[length:var(--text-caption1)] text-[var(--text-tertiary)] font-[var(--weight-medium)]">
-            Thinking
-          </span>
-        </div>
-      )}
+        {/* Thinking indicator — visible while waiting, disappears when streaming or response arrives */}
+        {loading && !streamingText && messages.length > 0 && (
+          <div className="flex items-center gap-1.5 py-1.5 px-[var(--space-4)] mt-[var(--space-1)]">
+            <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent)] animate-[jinn-pulse_1.4s_infinite] shrink-0" />
+            <span className="text-[length:var(--text-caption1)] text-[var(--text-tertiary)] font-[var(--weight-medium)]">
+              Thinking
+            </span>
+          </div>
+        )}
 
-      <div ref={bottomRef} />
+        <div ref={bottomRef} />
       </div>
 
       {/* Scroll-to-bottom button */}
@@ -633,7 +703,16 @@ export function ChatMessages({ messages, loading, streamingText }: ChatMessagesP
           aria-label="Scroll to bottom"
           className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 flex items-center gap-1.5 py-1.5 px-3 rounded-full bg-[var(--material-thick)] border border-[var(--separator)] text-[var(--text-secondary)] text-[length:var(--text-caption1)] shadow-[var(--shadow-elevated)] cursor-pointer transition-opacity duration-150 hover:bg-[var(--fill-secondary)]"
         >
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <svg
+            width="12"
+            height="12"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
             <polyline points="6 9 12 15 18 9" />
           </svg>
           New messages
@@ -692,5 +771,5 @@ export function ChatMessages({ messages, loading, streamingText }: ChatMessagesP
         }
       `}</style>
     </div>
-  )
+  );
 }

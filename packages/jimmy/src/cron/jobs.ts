@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
-import type { CronJob } from "../shared/types.js";
 import { CRON_JOBS, CRON_RUNS } from "../shared/paths.js";
+import type { CronJob } from "../shared/types.js";
 
 export function loadJobs(): CronJob[] {
   try {

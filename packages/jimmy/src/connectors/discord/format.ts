@@ -18,11 +18,7 @@ export function formatResponse(text: string): string[] {
   return chunks;
 }
 
-export async function downloadAttachment(
-  url: string,
-  destDir: string,
-  filename: string,
-): Promise<string> {
+export async function downloadAttachment(url: string, destDir: string, filename: string): Promise<string> {
   const { default: fs } = await import("node:fs");
   const { default: path } = await import("node:path");
   const destPath = path.join(destDir, filename);

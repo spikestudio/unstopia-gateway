@@ -1,9 +1,8 @@
 import fs from "node:fs";
 import path from "node:path";
-import os from "node:os";
-import type { McpGlobalConfig, McpServerConfig, McpServerUrlConfig, Employee } from "../shared/types.js";
-import { JINN_HOME } from "../shared/paths.js";
 import { logger } from "../shared/logger.js";
+import { JINN_HOME } from "../shared/paths.js";
+import type { Employee, McpGlobalConfig, McpServerConfig, McpServerUrlConfig } from "../shared/types.js";
 
 export interface ResolvedMcpConfig {
   mcpServers: Record<string, McpServerConfig>;
@@ -13,10 +12,7 @@ export interface ResolvedMcpConfig {
  * Resolve the MCP servers that should be available for a given employee
  * based on global config and employee-level overrides.
  */
-export function resolveMcpServers(
-  globalMcp: McpGlobalConfig | undefined,
-  employee?: Employee,
-): ResolvedMcpConfig {
+export function resolveMcpServers(globalMcp: McpGlobalConfig | undefined, employee?: Employee): ResolvedMcpConfig {
   const servers: Record<string, McpServerConfig> = {};
 
   if (!globalMcp) return { mcpServers: servers };

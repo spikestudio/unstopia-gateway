@@ -1,23 +1,14 @@
 "use client";
 
+import { Zap } from "lucide-react";
 import { useEffect, useState } from "react";
+import { useSettings } from "@/app/settings-provider";
+import { PageLayout } from "@/components/page-layout";
+import { Card, CardContent } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useBreadcrumbs } from "@/context/breadcrumb-context";
 import { api } from "@/lib/api";
 import { renderMarkdown } from "@/lib/sanitize";
-import { PageLayout } from "@/components/page-layout";
-import { useBreadcrumbs } from "@/context/breadcrumb-context";
-import {
-  Card,
-  CardContent,
-} from "@/components/ui/card";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
-import { Zap } from "lucide-react";
-import { useSettings } from "@/app/settings-provider";
 
 interface Skill {
   name: string;
@@ -27,7 +18,7 @@ interface Skill {
 }
 
 export default function SkillsPage() {
-  useBreadcrumbs([{ label: 'Skills' }])
+  useBreadcrumbs([{ label: "Skills" }]);
   const { settings } = useSettings();
   const portalName = settings.portalName ?? "Jinn";
   const [skills, setSkills] = useState<Skill[]>([]);
@@ -54,11 +45,7 @@ export default function SkillsPage() {
       .getSkill(skill.name)
       .then((data) => {
         const d = data as Record<string, unknown>;
-        setSkillContent(
-          (d.content as string) ||
-            (d.skillMd as string) ||
-            JSON.stringify(d, null, 2),
-        );
+        setSkillContent((d.content as string) || (d.skillMd as string) || JSON.stringify(d, null, 2));
       })
       .catch(() => setSkillContent("Failed to load skill content"))
       .finally(() => setContentLoading(false));
@@ -84,15 +71,10 @@ export default function SkillsPage() {
             </p>
           </div>
           <button
-            onClick={() =>
-              alert(
-                `To create a new skill, chat with ${portalName} and ask to learn something new.`,
-              )
-            }
+            onClick={() => alert(`To create a new skill, chat with ${portalName} and ask to learn something new.`)}
             className="py-[var(--space-2)] px-[var(--space-4)] rounded-[var(--radius-md,12px)] text-[var(--accent)] border-none cursor-pointer text-[length:var(--text-body)] font-[var(--weight-medium)]"
             style={{
-              background:
-                "color-mix(in srgb, var(--accent) 12%, transparent)",
+              background: "color-mix(in srgb, var(--accent) 12%, transparent)",
             }}
           >
             + Create Skill
@@ -103,10 +85,8 @@ export default function SkillsPage() {
           <div
             className="mb-[var(--space-4)] rounded-[var(--radius-md,12px)] py-[var(--space-3)] px-[var(--space-4)] text-[length:var(--text-body)] text-[var(--system-red)]"
             style={{
-              background:
-                "color-mix(in srgb, var(--system-red) 10%, transparent)",
-              border:
-                "1px solid color-mix(in srgb, var(--system-red) 30%, transparent)",
+              background: "color-mix(in srgb, var(--system-red) 10%, transparent)",
+              border: "1px solid color-mix(in srgb, var(--system-red) 30%, transparent)",
             }}
           >
             Failed to load skills: {error}
@@ -121,9 +101,7 @@ export default function SkillsPage() {
           <Card>
             <CardContent>
               <div className="text-center p-[var(--space-6)]">
-                <p className="text-[length:var(--text-body)] text-[var(--text-tertiary)]">
-                  No skills yet
-                </p>
+                <p className="text-[length:var(--text-body)] text-[var(--text-tertiary)]">No skills yet</p>
                 <p className="text-[length:var(--text-caption1)] text-[var(--text-quaternary)] mt-[var(--space-1)]">
                   Chat with {portalName} to teach new skills
                 </p>
@@ -142,8 +120,7 @@ export default function SkillsPage() {
                   <div
                     className="w-10 h-10 rounded-[var(--radius-md,12px)] flex items-center justify-center text-[var(--system-yellow)]"
                     style={{
-                      background:
-                        "color-mix(in srgb, var(--system-yellow) 12%, transparent)",
+                      background: "color-mix(in srgb, var(--system-yellow) 12%, transparent)",
                     }}
                   >
                     <Zap size={20} />
@@ -167,15 +144,11 @@ export default function SkillsPage() {
           <DialogContent className="sm:max-w-2xl max-h-[80vh] flex flex-col">
             <DialogHeader>
               <DialogTitle>{selectedSkill?.name ?? "Skill"}</DialogTitle>
-              <DialogDescription>
-                {selectedSkill?.description || "Skill details"}
-              </DialogDescription>
+              <DialogDescription>{selectedSkill?.description || "Skill details"}</DialogDescription>
             </DialogHeader>
             <div className="flex-1 overflow-y-auto py-[var(--space-2)]">
               {contentLoading ? (
-                <p className="text-[length:var(--text-body)] text-[var(--text-tertiary)]">
-                  Loading...
-                </p>
+                <p className="text-[length:var(--text-body)] text-[var(--text-tertiary)]">Loading...</p>
               ) : skillContent ? (
                 <div
                   className="text-[length:var(--text-body)] leading-[1.7] text-[var(--text-secondary)]"

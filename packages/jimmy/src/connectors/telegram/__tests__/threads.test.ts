@@ -1,23 +1,17 @@
-import { describe, it, expect } from "vitest";
-import { deriveSessionKey, buildReplyContext, isOldTelegramMessage } from "../threads.js";
+import { describe, expect, it } from "vitest";
+import { buildReplyContext, deriveSessionKey, isOldTelegramMessage } from "../threads.js";
 
 describe("deriveSessionKey", () => {
   it("returns telegram:<chatId> for a private chat", () => {
-    expect(
-      deriveSessionKey({ chat: { id: 12345, type: "private" }, message_id: 1 }),
-    ).toBe("telegram:12345");
+    expect(deriveSessionKey({ chat: { id: 12345, type: "private" }, message_id: 1 })).toBe("telegram:12345");
   });
 
   it("returns telegram:<chatId> for a group chat", () => {
-    expect(
-      deriveSessionKey({ chat: { id: -100999, type: "group" }, message_id: 1 }),
-    ).toBe("telegram:-100999");
+    expect(deriveSessionKey({ chat: { id: -100999, type: "group" }, message_id: 1 })).toBe("telegram:-100999");
   });
 
   it("returns telegram:<chatId> for a supergroup", () => {
-    expect(
-      deriveSessionKey({ chat: { id: -1001234, type: "supergroup" }, message_id: 1 }),
-    ).toBe("telegram:-1001234");
+    expect(deriveSessionKey({ chat: { id: -1001234, type: "supergroup" }, message_id: 1 })).toBe("telegram:-1001234");
   });
 });
 

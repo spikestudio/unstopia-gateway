@@ -1,11 +1,11 @@
 "use client";
 import { useEffect, useState } from "react";
-import { api } from "@/lib/api";
-import type { Employee } from "@/lib/api";
-import { EmployeeAvatar } from "@/components/ui/employee-avatar";
 import { useSettings } from "@/app/settings-provider";
-import { emojiForName } from "@/lib/emoji-pool";
 import { EmojiPicker } from "@/components/ui/emoji-picker";
+import { EmployeeAvatar } from "@/components/ui/employee-avatar";
+import type { Employee } from "@/lib/api";
+import { api } from "@/lib/api";
+import { emojiForName } from "@/lib/emoji-pool";
 
 interface SessionData {
   id: string;
@@ -63,7 +63,8 @@ export function EmployeeDetail({ name, prefetched }: { name: string; prefetched?
       setEmployee(prefetched);
       setLoading(true);
       setError(null);
-      api.getSessions()
+      api
+        .getSessions()
         .then((allSessions) => {
           const empSessions = (allSessions as SessionData[]).filter(
             (s) => s.employee === name || (!s.employee && name === prefetched.name),
@@ -81,9 +82,7 @@ export function EmployeeDetail({ name, prefetched }: { name: string; prefetched?
     Promise.all([api.getEmployee(name), api.getSessions()])
       .then(([emp, allSessions]) => {
         setEmployee(emp);
-        const empSessions = (allSessions as SessionData[]).filter(
-          (s) => s.employee === name,
-        );
+        const empSessions = (allSessions as SessionData[]).filter((s) => s.employee === name);
         setSessions(empSessions.slice(0, 10));
       })
       .catch((err) => setError(err.message))
@@ -102,7 +101,10 @@ export function EmployeeDetail({ name, prefetched }: { name: string; prefetched?
     return (
       <div
         className="rounded-[var(--radius-md,12px)] px-[var(--space-4)] py-[var(--space-3)] text-[length:var(--text-caption1)] text-[var(--system-red)]"
-        style={{ background: "color-mix(in srgb, var(--system-red) 10%, transparent)", border: "1px solid color-mix(in srgb, var(--system-red) 30%, transparent)" }}
+        style={{
+          background: "color-mix(in srgb, var(--system-red) 10%, transparent)",
+          border: "1px solid color-mix(in srgb, var(--system-red) 30%, transparent)",
+        }}
       >
         Failed to load employee: {error}
       </div>
@@ -114,10 +116,7 @@ export function EmployeeDetail({ name, prefetched }: { name: string; prefetched?
   const rank = employee.rank || "employee";
   const persona = employee.persona || "";
   const currentEmoji = settings.employeeOverrides[employee.name]?.emoji || emojiForName(employee.name);
-  const truncatedPersona =
-    persona.length > 200 && !personaExpanded
-      ? persona.slice(0, 200) + "..."
-      : persona;
+  const truncatedPersona = persona.length > 200 && !personaExpanded ? persona.slice(0, 200) + "..." : persona;
 
   return (
     <div className="flex flex-col gap-[var(--space-6)]">
@@ -126,16 +125,14 @@ export function EmployeeDetail({ name, prefetched }: { name: string; prefetched?
         <div className="flex items-start justify-between mb-[var(--space-4)]">
           <div className="flex items-center gap-[var(--space-3)]">
             <div className="relative">
-              <EmployeeAvatar
-                name={employee.name}
-                size={36}
-                onClick={() => setShowAvatarPicker(!showAvatarPicker)}
-              />
+              <EmployeeAvatar name={employee.name} size={36} onClick={() => setShowAvatarPicker(!showAvatarPicker)} />
               {showAvatarPicker && (
                 <EmojiPicker
                   current={currentEmoji}
                   onSelect={(emoji) => {
-                    setEmployeeOverride(employee.name, { emoji: emoji === emojiForName(employee.name) ? undefined : emoji });
+                    setEmployeeOverride(employee.name, {
+                      emoji: emoji === emojiForName(employee.name) ? undefined : emoji,
+                    });
                     setShowAvatarPicker(false);
                   }}
                   onClose={() => setShowAvatarPicker(false)}
@@ -169,9 +166,7 @@ export function EmployeeDetail({ name, prefetched }: { name: string; prefetched?
             </p>
             <p className="text-[length:var(--text-body)] text-[var(--text-primary)] m-0">
               {employee.engine || "claude"}{" "}
-              <span className="text-[var(--text-tertiary)]">
-                / {employee.model || "default"}
-              </span>
+              <span className="text-[var(--text-tertiary)]">/ {employee.model || "default"}</span>
             </p>
           </div>
         </div>
@@ -201,17 +196,14 @@ export function EmployeeDetail({ name, prefetched }: { name: string; prefetched?
             }}
             className="relative inline-flex h-[24px] w-[44px] shrink-0 cursor-pointer rounded-full border-none transition-colors duration-200 ease-in-out focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]"
             style={{
-              background: employee.alwaysNotify !== false
-                ? "var(--accent, var(--system-green))"
-                : "var(--fill-tertiary)",
+              background:
+                employee.alwaysNotify !== false ? "var(--accent, var(--system-green))" : "var(--fill-tertiary)",
             }}
           >
             <span
               className="pointer-events-none inline-block h-[20px] w-[20px] rounded-full bg-white shadow-sm transition-transform duration-200 ease-in-out"
               style={{
-                transform: employee.alwaysNotify !== false
-                  ? "translate(22px, 2px)"
-                  : "translate(2px, 2px)",
+                transform: employee.alwaysNotify !== false ? "translate(22px, 2px)" : "translate(2px, 2px)",
               }}
             />
           </button>
@@ -259,9 +251,7 @@ export function EmployeeDetail({ name, prefetched }: { name: string; prefetched?
                   </p>
                   <p className="text-[length:var(--text-caption2)] text-[var(--text-tertiary)] mt-[2px]">
                     {session.source || "unknown"}{" "}
-                    {session.createdAt
-                      ? new Date(session.createdAt).toLocaleDateString()
-                      : ""}
+                    {session.createdAt ? new Date(session.createdAt).toLocaleDateString() : ""}
                   </p>
                 </div>
                 <span
@@ -269,14 +259,12 @@ export function EmployeeDetail({ name, prefetched }: { name: string; prefetched?
                   style={
                     session.status === "running"
                       ? {
-                          background:
-                            "color-mix(in srgb, var(--system-green) 15%, transparent)",
+                          background: "color-mix(in srgb, var(--system-green) 15%, transparent)",
                           color: "var(--system-green)",
                         }
                       : session.status === "error"
                         ? {
-                            background:
-                              "color-mix(in srgb, var(--system-red) 15%, transparent)",
+                            background: "color-mix(in srgb, var(--system-red) 15%, transparent)",
                             color: "var(--system-red)",
                           }
                         : {

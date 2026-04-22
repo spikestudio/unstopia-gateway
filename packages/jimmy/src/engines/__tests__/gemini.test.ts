@@ -1,7 +1,7 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { EventEmitter } from "node:events";
-import { GeminiEngine } from "../gemini.js";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { EngineRunOpts, StreamDelta } from "../../shared/types.js";
+import { GeminiEngine } from "../gemini.js";
 
 // Mock child_process.spawn
 vi.mock("node:child_process", () => ({
@@ -9,6 +9,7 @@ vi.mock("node:child_process", () => ({
 }));
 
 import { spawn } from "node:child_process";
+
 const mockSpawn = vi.mocked(spawn);
 
 /** Creates a mock ChildProcess that emits events and has controllable stdout/stderr */
@@ -20,7 +21,9 @@ function createMockProcess() {
   proc.pid = 12345;
   proc.exitCode = null;
   proc.killed = false;
-  proc.kill = vi.fn(() => { proc.killed = true; });
+  proc.kill = vi.fn(() => {
+    proc.killed = true;
+  });
   return proc;
 }
 
@@ -302,12 +305,19 @@ describe("GeminiEngine", () => {
       });
 
       // Simulate streaming events
-      proc.stdout.emit("data", Buffer.from(
-        JSON.stringify({ type: "session.start", session_id: "gem-s2" }) + "\n" +
-        JSON.stringify({ type: "text", text: "Hello " }) + "\n" +
-        JSON.stringify({ type: "text", text: "world!" }) + "\n" +
-        JSON.stringify({ type: "turn.complete" }) + "\n",
-      ));
+      proc.stdout.emit(
+        "data",
+        Buffer.from(
+          JSON.stringify({ type: "session.start", session_id: "gem-s2" }) +
+            "\n" +
+            JSON.stringify({ type: "text", text: "Hello " }) +
+            "\n" +
+            JSON.stringify({ type: "text", text: "world!" }) +
+            "\n" +
+            JSON.stringify({ type: "turn.complete" }) +
+            "\n",
+        ),
+      );
 
       proc.exitCode = 0;
       proc.emit("close", 0);
@@ -402,11 +412,17 @@ describe("GeminiEngine", () => {
         onStream: (d) => deltas.push(d),
       });
 
-      proc.stdout.emit("data", Buffer.from(
-        JSON.stringify({ type: "tool.start", name: "read_file", id: "t-1" }) + "\n" +
-        JSON.stringify({ type: "tool.end", output: "file contents" }) + "\n" +
-        JSON.stringify({ type: "text", text: "I read the file." }) + "\n",
-      ));
+      proc.stdout.emit(
+        "data",
+        Buffer.from(
+          JSON.stringify({ type: "tool.start", name: "read_file", id: "t-1" }) +
+            "\n" +
+            JSON.stringify({ type: "tool.end", output: "file contents" }) +
+            "\n" +
+            JSON.stringify({ type: "text", text: "I read the file." }) +
+            "\n",
+        ),
+      );
 
       proc.exitCode = 0;
       proc.emit("close", 0);
@@ -435,11 +451,7 @@ describe("GeminiEngine", () => {
       proc.emit("close", 0);
 
       await resultPromise;
-      expect(mockSpawn).toHaveBeenCalledWith(
-        "/usr/local/bin/gemini",
-        expect.any(Array),
-        expect.any(Object),
-      );
+      expect(mockSpawn).toHaveBeenCalledWith("/usr/local/bin/gemini", expect.any(Array), expect.any(Object));
     });
 
     it("should default bin to 'gemini'", async () => {
@@ -453,11 +465,7 @@ describe("GeminiEngine", () => {
       proc.emit("close", 0);
 
       await resultPromise;
-      expect(mockSpawn).toHaveBeenCalledWith(
-        "gemini",
-        expect.any(Array),
-        expect.any(Object),
-      );
+      expect(mockSpawn).toHaveBeenCalledWith("gemini", expect.any(Array), expect.any(Object));
     });
 
     it("should preserve GEMINI_API_KEY in child env", async () => {

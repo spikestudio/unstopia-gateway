@@ -1,34 +1,35 @@
 import fs from "node:fs";
-import type {
-  Connector,
-  Employee,
-  Engine,
-  IncomingMessage,
-  JinnConfig,
-  Session,
-  Target,
-} from "../shared/types.js";
+import { loadJobs } from "../cron/jobs.js";
+import { setCronJobEnabled, triggerCronJob } from "../cron/scheduler.js";
+import { checkBudget } from "../gateway/budgets.js";
+import { cleanupMcpConfigFile, resolveMcpServers, writeMcpConfigFile } from "../mcp/resolver.js";
+import { resolveEffort } from "../shared/effort.js";
+import { logger } from "../shared/logger.js";
+import { JINN_HOME } from "../shared/paths.js";
+import {
+  computeNextRetryDelayMs,
+  computeRateLimitDeadlineMs,
+  detectRateLimit,
+  isDeadSessionError,
+} from "../shared/rateLimit.js";
+import type { Connector, Employee, Engine, IncomingMessage, JinnConfig, Session, Target } from "../shared/types.js";
+import {
+  getClaudeExpectedResetAt,
+  isLikelyNearClaudeUsageLimit,
+  recordClaudeRateLimit,
+} from "../shared/usageAwareness.js";
+import { notifyDiscordChannel, notifyParentSession, notifyRateLimited, notifyRateLimitResumed } from "./callbacks.js";
+import { buildContext } from "./context.js";
+import { SessionQueue } from "./queue.js";
 import {
   accumulateSessionCost,
   createSession,
   deleteSession,
-  getSessionBySessionKey,
   getMessages,
+  getSessionBySessionKey,
   insertMessage,
   updateSession,
 } from "./registry.js";
-import { notifyParentSession, notifyRateLimited, notifyRateLimitResumed, notifyDiscordChannel } from "./callbacks.js";
-import { buildContext } from "./context.js";
-import { SessionQueue } from "./queue.js";
-import { JINN_HOME } from "../shared/paths.js";
-import { logger } from "../shared/logger.js";
-import { resolveEffort } from "../shared/effort.js";
-import { computeNextRetryDelayMs, computeRateLimitDeadlineMs, detectRateLimit, isDeadSessionError } from "../shared/rateLimit.js";
-import { getClaudeExpectedResetAt, isLikelyNearClaudeUsageLimit, recordClaudeRateLimit } from "../shared/usageAwareness.js";
-import { loadJobs } from "../cron/jobs.js";
-import { setCronJobEnabled, triggerCronJob } from "../cron/scheduler.js";
-import { checkBudget } from "../gateway/budgets.js";
-import { resolveMcpServers, writeMcpConfigFile, cleanupMcpConfigFile } from "../mcp/resolver.js";
 
 export interface RouteOptions {
   employee?: Employee;
@@ -43,9 +44,8 @@ function maybeRevertEngineOverride(session: Session): Session {
   if (!override) return session;
 
   const originalEngine = typeof override.originalEngine === "string" ? override.originalEngine : null;
-  const originalEngineSessionId = typeof override.originalEngineSessionId === "string"
-    ? override.originalEngineSessionId
-    : null;
+  const originalEngineSessionId =
+    typeof override.originalEngineSessionId === "string" ? override.originalEngineSessionId : null;
   const syncSince = typeof override.syncSince === "string" ? override.syncSince : null;
   const untilIso = typeof override.until === "string" ? override.until : null;
   if (!originalEngine || !untilIso) return session;
@@ -55,41 +55,43 @@ function maybeRevertEngineOverride(session: Session): Session {
   if (until.getTime() > Date.now()) return session;
 
   const engineSessionsRaw = meta["engineSessions"];
-  const engineSessions = (engineSessionsRaw && typeof engineSessionsRaw === "object" && !Array.isArray(engineSessionsRaw))
-    ? { ...(engineSessionsRaw as Record<string, unknown>) }
-    : {};
+  const engineSessions =
+    engineSessionsRaw && typeof engineSessionsRaw === "object" && !Array.isArray(engineSessionsRaw)
+      ? { ...(engineSessionsRaw as Record<string, unknown>) }
+      : {};
 
   // Preserve the current engine session ID under its engine key
   if (session.engine && session.engineSessionId) {
     engineSessions[String(session.engine)] = session.engineSessionId;
   }
 
-  const restoredSessionId = originalEngineSessionId
-    ?? (typeof engineSessions[originalEngine] === "string" ? (engineSessions[originalEngine] as string) : null);
+  const restoredSessionId =
+    originalEngineSessionId ??
+    (typeof engineSessions[originalEngine] === "string" ? (engineSessions[originalEngine] as string) : null);
 
   const nextMeta = { ...meta, engineSessions } as Record<string, unknown>;
   if (originalEngine === "claude" && syncSince && session.engine !== "claude") {
     nextMeta["claudeSyncSince"] = syncSince;
   }
   delete (nextMeta as Record<string, unknown>)["engineOverride"];
-  return updateSession(session.id, {
-    engine: originalEngine,
-    engineSessionId: restoredSessionId,
-    transportMeta: nextMeta as any,
-    lastError: null,
-  }) ?? session;
+  return (
+    updateSession(session.id, {
+      engine: originalEngine,
+      engineSessionId: restoredSessionId,
+      transportMeta: nextMeta as any,
+      lastError: null,
+    }) ?? session
+  );
 }
 
 function mergeTransportMeta(
   existing: Session["transportMeta"],
   incoming: IncomingMessage["transportMeta"],
 ): Session["transportMeta"] {
-  const baseExisting = (existing && typeof existing === "object" && !Array.isArray(existing))
-    ? (existing as Record<string, unknown>)
-    : {};
-  const baseIncoming = (incoming && typeof incoming === "object" && !Array.isArray(incoming))
-    ? (incoming as Record<string, unknown>)
-    : {};
+  const baseExisting =
+    existing && typeof existing === "object" && !Array.isArray(existing) ? (existing as Record<string, unknown>) : {};
+  const baseIncoming =
+    incoming && typeof incoming === "object" && !Array.isArray(incoming) ? (incoming as Record<string, unknown>) : {};
 
   const merged: Record<string, unknown> = { ...baseExisting, ...baseIncoming };
 
@@ -108,11 +110,7 @@ export class SessionManager {
   private queue = new SessionQueue();
   private connectorProvider: () => Map<string, Connector> = () => new Map();
 
-  constructor(
-    config: JinnConfig,
-    engines: Map<string, Engine>,
-    connectorNames: string[] = [],
-  ) {
+  constructor(config: JinnConfig, engines: Map<string, Engine>, connectorNames: string[] = []) {
     this.config = config;
     this.engines = engines;
     this.connectorNames = connectorNames;
@@ -130,7 +128,11 @@ export class SessionManager {
     return this.queue;
   }
 
-  async route(msg: IncomingMessage, connector: Connector, opts: RouteOptions = {}): Promise<{ sessionId: string } | void> {
+  async route(
+    msg: IncomingMessage,
+    connector: Connector,
+    opts: RouteOptions = {},
+  ): Promise<{ sessionId: string } | void> {
     if (await this.handleCommand(msg, connector)) return;
 
     let session = getSessionBySessionKey(msg.sessionKey);
@@ -152,16 +154,17 @@ export class SessionManager {
       });
       logger.info(
         `Created new session ${session.id} for ${msg.sessionKey}` +
-        (opts.employee ? ` (employee: ${opts.employee.name})` : ""),
+          (opts.employee ? ` (employee: ${opts.employee.name})` : ""),
       );
     } else {
       const mergedMeta = mergeTransportMeta(session.transportMeta, msg.transportMeta);
-      session = updateSession(session.id, {
-        replyContext: msg.replyContext,
-        messageId: msg.messageId ?? null,
-        transportMeta: mergedMeta,
-        ...(opts.model ? { model: opts.model } : {}),
-      }) ?? session;
+      session =
+        updateSession(session.id, {
+          replyContext: msg.replyContext,
+          messageId: msg.messageId ?? null,
+          transportMeta: mergedMeta,
+          ...(opts.model ? { model: opts.model } : {}),
+        }) ?? session;
     }
 
     session = maybeRevertEngineOverride(session);
@@ -176,12 +179,20 @@ export class SessionManager {
     if (session.status === "waiting") {
       const expectedResetAt = getClaudeExpectedResetAt();
       const resumeText = expectedResetAt
-        ? expectedResetAt.toLocaleString("en-GB", { weekday: "short", day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })
+        ? expectedResetAt.toLocaleString("en-GB", {
+            weekday: "short",
+            day: "2-digit",
+            month: "short",
+            hour: "2-digit",
+            minute: "2-digit",
+          })
         : null;
-      await connector.replyMessage(
-        target,
-        `⏳ Still paused due to Claude usage limit${resumeText ? ` (resets ${resumeText})` : ""}. I queued this message and will respond automatically.`,
-      ).catch(() => {});
+      await connector
+        .replyMessage(
+          target,
+          `⏳ Still paused due to Claude usage limit${resumeText ? ` (resets ${resumeText})` : ""}. I queued this message and will respond automatically.`,
+        )
+        .catch(() => {});
     }
 
     if (session.status === "running" && this.queue.isRunning(msg.sessionKey) && connector.getCapabilities().reactions) {
@@ -243,7 +254,9 @@ export class SessionManager {
       const { scanOrg } = await import("../gateway/org.js");
       const { resolveOrgHierarchy } = await import("../gateway/org-hierarchy.js");
       hierarchy = resolveOrgHierarchy(scanOrg());
-    } catch { /* fallback to filesystem scan in context builder */ }
+    } catch {
+      /* fallback to filesystem scan in context builder */
+    }
 
     try {
       const systemPrompt = buildContext({
@@ -259,11 +272,12 @@ export class SessionManager {
         hierarchy,
       });
 
-      const engineConfig = session.engine === "codex"
-        ? this.config.engines.codex
-        : session.engine === "gemini"
-          ? this.config.engines.gemini ?? this.config.engines.claude
-          : this.config.engines.claude;
+      const engineConfig =
+        session.engine === "codex"
+          ? this.config.engines.codex
+          : session.engine === "gemini"
+            ? (this.config.engines.gemini ?? this.config.engines.claude)
+            : this.config.engines.claude;
       if (session.engine === "claude") {
         const mcpConfig = resolveMcpServers(this.config.mcp, employee);
         if (Object.keys(mcpConfig.mcpServers).length > 0) {
@@ -278,14 +292,14 @@ export class SessionManager {
       const syncSinceIso = (session.transportMeta as any)?.claudeSyncSince;
       let promptToRun = msg.text;
       const syncSinceMs = typeof syncSinceIso === "string" ? new Date(syncSinceIso).getTime() : NaN;
-      const syncRequested = session.engine === "claude" && typeof syncSinceIso === "string" && Number.isFinite(syncSinceMs);
+      const syncRequested =
+        session.engine === "claude" && typeof syncSinceIso === "string" && Number.isFinite(syncSinceMs);
       if (syncRequested) {
         const sinceMessages = getMessages(session.id)
           .filter((m) => (m.role === "user" || m.role === "assistant") && m.timestamp >= syncSinceMs)
           .map((m) => `${m.role.toUpperCase()}: ${m.content}`);
         const transcript = sinceMessages.slice(-20).join("\n\n");
-        promptToRun =
-          `We temporarily switched to GPT due to a Claude usage limit. Sync your context with this transcript (most recent last), then respond to the last USER message.\n\n${transcript}`;
+        promptToRun = `We temporarily switched to GPT due to a Claude usage limit. Sync your context with this transcript (most recent last), then respond to the last USER message.\n\n${transcript}`;
       }
 
       // Budget enforcement — check BEFORE engine.run()
@@ -293,20 +307,20 @@ export class SessionManager {
         const budgetConfig = (this.config as any).budgets?.employees as Record<string, number> | undefined;
         if (budgetConfig && session.employee in budgetConfig) {
           const budgetStatus = checkBudget(session.employee, budgetConfig);
-          if (budgetStatus === 'paused') {
+          if (budgetStatus === "paused") {
             logger.warn(`Session ${session.id} blocked: employee "${session.employee}" has exceeded their budget`);
             const pausedMsg = `Budget limit exceeded for employee "${session.employee}". Session blocked.`;
             updateSession(session.id, {
-              status: 'error',
+              status: "error",
               lastActivity: new Date().toISOString(),
               lastError: pausedMsg,
             });
             if (decorateMessages && connector.setTypingStatus) {
-              await connector.setTypingStatus(target.channel, threadTs, '').catch(() => {});
+              await connector.setTypingStatus(target.channel, threadTs, "").catch(() => {});
             }
             await connector.replyMessage(target, `⛔ ${pausedMsg}`).catch(() => {});
             if (decorateMessages && capabilities.reactions) {
-              await connector.removeReaction(target, 'eyes').catch(() => {});
+              await connector.removeReaction(target, "eyes").catch(() => {});
             }
             return;
           }
@@ -323,12 +337,20 @@ export class SessionManager {
         if ((heavyEffort || heavyModel) && looksBig) {
           const expectedResetAt = getClaudeExpectedResetAt();
           const resumeText = expectedResetAt
-            ? expectedResetAt.toLocaleString("en-GB", { weekday: "short", day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })
+            ? expectedResetAt.toLocaleString("en-GB", {
+                weekday: "short",
+                day: "2-digit",
+                month: "short",
+                hour: "2-digit",
+                minute: "2-digit",
+              })
             : null;
-          await connector.replyMessage(
-            target,
-            `⚠️ Heads up: Claude usage limits were hit recently, and this looks like a bigger task. If you're near the limit, it may pause${resumeText ? ` until ~${resumeText}` : ""}.`,
-          ).catch(() => {});
+          await connector
+            .replyMessage(
+              target,
+              `⚠️ Heads up: Claude usage limits were hit recently, and this looks like a bigger task. If you're near the limit, it may pause${resumeText ? ` until ~${resumeText}` : ""}.`,
+            )
+            .catch(() => {});
         }
       }
 
@@ -368,7 +390,7 @@ export class SessionManager {
 
       // Detect rate limit / usage limit errors and auto-retry.
       // Skip entirely for dead sessions — they are not rate limits.
-      const rateLimit = (!wasInterrupted && !isDead) ? detectRateLimit(result) : { limited: false as const };
+      const rateLimit = !wasInterrupted && !isDead ? detectRateLimit(result) : { limited: false as const };
       if (rateLimit.limited) {
         recordClaudeRateLimit(rateLimit.resetsAt);
 
@@ -383,28 +405,42 @@ export class SessionManager {
             const until = resumeAt ?? new Date(Date.now() + 6 * 60 * 60_000);
             const syncSince = new Date().toISOString();
             const resumeText = resumeAt
-              ? resumeAt.toLocaleString("en-GB", { weekday: "short", day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })
+              ? resumeAt.toLocaleString("en-GB", {
+                  weekday: "short",
+                  day: "2-digit",
+                  month: "short",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })
               : null;
 
             notifyDiscordChannel(
               `⚠️ Claude usage limit reached. Session ${session.id}${session.employee ? ` (${session.employee})` : ""} switching to GPT.`,
             );
 
-            await connector.replyMessage(
-              target,
-              `⚠️ Claude usage limit reached${resumeText ? `. Resets ${resumeText}` : ""}. Switching to GPT for now.`,
-            ).catch(() => {});
+            await connector
+              .replyMessage(
+                target,
+                `⚠️ Claude usage limit reached${resumeText ? `. Resets ${resumeText}` : ""}. Switching to GPT for now.`,
+              )
+              .catch(() => {});
 
             const nextMeta = { ...(session.transportMeta || {}) } as Record<string, unknown>;
             const engineSessionsRaw = nextMeta.engineSessions;
-            const engineSessions = (engineSessionsRaw && typeof engineSessionsRaw === "object" && !Array.isArray(engineSessionsRaw))
-              ? { ...(engineSessionsRaw as Record<string, unknown>) }
-              : {};
+            const engineSessions =
+              engineSessionsRaw && typeof engineSessionsRaw === "object" && !Array.isArray(engineSessionsRaw)
+                ? { ...(engineSessionsRaw as Record<string, unknown>) }
+                : {};
             if (session.engineSessionId) {
               engineSessions.claude = session.engineSessionId;
             }
             nextMeta.engineSessions = engineSessions;
-            nextMeta.engineOverride = { originalEngine: "claude", originalEngineSessionId: session.engineSessionId, until: until.toISOString(), syncSince };
+            nextMeta.engineOverride = {
+              originalEngine: "claude",
+              originalEngineSessionId: session.engineSessionId,
+              until: until.toISOString(),
+              syncSince,
+            };
 
             updateSession(session.id, {
               engine: fallbackName,
@@ -454,7 +490,10 @@ export class SessionManager {
             if (fallbackResult.sessionId) {
               nextEngineSessions.codex = fallbackResult.sessionId;
             }
-            const metaAfter = { ...(getSessionBySessionKey(msg.sessionKey)?.transportMeta || nextMeta) } as Record<string, unknown>;
+            const metaAfter = { ...(getSessionBySessionKey(msg.sessionKey)?.transportMeta || nextMeta) } as Record<
+              string,
+              unknown
+            >;
             metaAfter.engineSessions = nextEngineSessions;
             updateSession(session.id, { transportMeta: metaAfter as any });
 
@@ -471,12 +510,24 @@ export class SessionManager {
               status: fallbackResult.error ? "error" : "idle",
               replyContext: msg.replyContext,
               messageId: msg.messageId ?? null,
-              transportMeta: mergeTransportMeta(getSessionBySessionKey(msg.sessionKey)?.transportMeta ?? session.transportMeta, msg.transportMeta),
+              transportMeta: mergeTransportMeta(
+                getSessionBySessionKey(msg.sessionKey)?.transportMeta ?? session.transportMeta,
+                msg.transportMeta,
+              ),
               lastActivity: new Date().toISOString(),
               lastError: fallbackResult.error ?? null,
             });
             if (updated) {
-              notifyParentSession(updated, { result: fallbackResult.result, error: fallbackResult.error ?? null, cost: fallbackResult.cost, durationMs: fallbackResult.durationMs }, { alwaysNotify: employee?.alwaysNotify });
+              notifyParentSession(
+                updated,
+                {
+                  result: fallbackResult.result,
+                  error: fallbackResult.error ?? null,
+                  cost: fallbackResult.cost,
+                  durationMs: fallbackResult.durationMs,
+                },
+                { alwaysNotify: employee?.alwaysNotify },
+              );
             }
             return;
           }
@@ -491,7 +542,13 @@ export class SessionManager {
         );
 
         const resumeText = resumeAt
-          ? resumeAt.toLocaleString("en-GB", { weekday: "short", day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })
+          ? resumeAt.toLocaleString("en-GB", {
+              weekday: "short",
+              day: "2-digit",
+              month: "short",
+              hour: "2-digit",
+              minute: "2-digit",
+            })
           : null;
 
         logger.info(
@@ -512,26 +569,27 @@ export class SessionManager {
           await connector.addReaction(target, waitEmoji).catch(() => {});
         }
 
-        const waitingSession = updateSession(session.id, {
-          ...(result.sessionId?.trim() ? { engineSessionId: result.sessionId } : {}),
-          status: "waiting",
-          lastActivity: new Date().toISOString(),
-          lastError: resumeAt
-            ? `Claude usage limit — resumes ${resumeAt.toISOString()}`
-            : "Claude usage limit — waiting for reset",
-        }) ?? session;
+        const waitingSession =
+          updateSession(session.id, {
+            ...(result.sessionId?.trim() ? { engineSessionId: result.sessionId } : {}),
+            status: "waiting",
+            lastActivity: new Date().toISOString(),
+            lastError: resumeAt
+              ? `Claude usage limit — resumes ${resumeAt.toISOString()}`
+              : "Claude usage limit — waiting for reset",
+          }) ?? session;
 
         notifyRateLimited(
           waitingSession,
-          resumeAt
-            ? resumeAt.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })
-            : undefined,
+          resumeAt ? resumeAt.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }) : undefined,
         );
 
-        await connector.replyMessage(
-          target,
-          `⏳ Claude usage limit reached${resumeText ? `. Resets ${resumeText}` : ""} — I'll continue automatically.`,
-        ).catch(() => {});
+        await connector
+          .replyMessage(
+            target,
+            `⏳ Claude usage limit reached${resumeText ? `. Resets ${resumeText}` : ""} — I'll continue automatically.`,
+          )
+          .catch(() => {});
 
         // Keep lastActivity fresh while waiting (UI / status endpoints)
         const heartbeat = setInterval(() => {
@@ -543,7 +601,7 @@ export class SessionManager {
           let nextDelayMs = delayMs;
 
           while (Date.now() < deadlineMs) {
-            await new Promise(r => setTimeout(r, nextDelayMs));
+            await new Promise((r) => setTimeout(r, nextDelayMs));
             attempt++;
 
             // Check if session was stopped while waiting
@@ -641,7 +699,16 @@ export class SessionManager {
               notifyDiscordChannel(
                 `✅ Claude usage limit cleared. Session ${session.id}${session.employee ? ` (${session.employee})` : ""} resumed.`,
               );
-              notifyParentSession(retryUpdated, { result: retryResult.result, error: retryResult.error ?? null, cost: retryResult.cost, durationMs: retryResult.durationMs }, { alwaysNotify: employee?.alwaysNotify });
+              notifyParentSession(
+                retryUpdated,
+                {
+                  result: retryResult.result,
+                  error: retryResult.error ?? null,
+                  cost: retryResult.cost,
+                  durationMs: retryResult.durationMs,
+                },
+                { alwaysNotify: employee?.alwaysNotify },
+              );
             }
             logger.info(`Session ${session.id} resumed after usage reset`);
             return;
@@ -651,7 +718,9 @@ export class SessionManager {
           notifyDiscordChannel(
             `❌ Claude usage limit did not clear in time. Session ${session.id}${session.employee ? ` (${session.employee})` : ""} has been stopped.`,
           );
-          await connector.replyMessage(target, "Usage limit didn't reset in time. Please try again later.").catch(() => {});
+          await connector
+            .replyMessage(target, "Usage limit didn't reset in time. Please try again later.")
+            .catch(() => {});
           updateSession(session.id, {
             status: "error",
             lastActivity: new Date().toISOString(),
@@ -669,9 +738,7 @@ export class SessionManager {
         }
       }
 
-      const responseText = result.result?.trim()
-        ? result.result
-        : result.error || "(No response from engine)";
+      const responseText = result.result?.trim() ? result.result : result.error || "(No response from engine)";
 
       insertMessage(session.id, "assistant", responseText);
       if (result.cost || result.numTurns) {
@@ -688,11 +755,14 @@ export class SessionManager {
       }
       const updatedSession = updateSession(session.id, {
         ...(result.sessionId?.trim() ? { engineSessionId: result.sessionId } : {}),
-        status: wasInterrupted ? "idle" : (result.error ? "error" : "idle"),
+        status: wasInterrupted ? "idle" : result.error ? "error" : "idle",
         replyContext: msg.replyContext,
         messageId: msg.messageId ?? null,
         transportMeta: (() => {
-          const merged = mergeTransportMeta(getSessionBySessionKey(msg.sessionKey)?.transportMeta ?? session.transportMeta, msg.transportMeta) as Record<string, unknown>;
+          const merged = mergeTransportMeta(
+            getSessionBySessionKey(msg.sessionKey)?.transportMeta ?? session.transportMeta,
+            msg.transportMeta,
+          ) as Record<string, unknown>;
           if (syncRequested && !rateLimit.limited && !wasInterrupted) {
             delete merged["claudeSyncSince"];
           }
@@ -702,12 +772,21 @@ export class SessionManager {
         lastError: wasInterrupted ? null : (result.error ?? null),
       });
       if (updatedSession) {
-        notifyParentSession(updatedSession, { result: result.result, error: wasInterrupted ? null : (result.error ?? null), cost: result.cost, durationMs: result.durationMs }, { alwaysNotify: employee?.alwaysNotify });
+        notifyParentSession(
+          updatedSession,
+          {
+            result: result.result,
+            error: wasInterrupted ? null : (result.error ?? null),
+            cost: result.cost,
+            durationMs: result.durationMs,
+          },
+          { alwaysNotify: employee?.alwaysNotify },
+        );
       }
 
       logger.info(
         `Session ${session.id} completed in ${result.durationMs ?? 0}ms` +
-        (result.cost ? ` ($${result.cost.toFixed(4)})` : ""),
+          (result.cost ? ` ($${result.cost.toFixed(4)})` : ""),
       );
     } catch (err) {
       const errMsg = err instanceof Error ? err.message : String(err);
@@ -778,7 +857,9 @@ export class SessionManager {
         `Created: ${session.createdAt}`,
         `Last activity: ${session.lastActivity}`,
         session.lastError ? `Last error: ${session.lastError}` : null,
-      ].filter(Boolean).join("\n");
+      ]
+        .filter(Boolean)
+        .join("\n");
 
       await connector.replyMessage(target, info);
       return true;
@@ -807,12 +888,13 @@ export class SessionManager {
 
     if (text === "/doctor" || text.startsWith("/doctor ")) {
       const connectors = Array.from(this.connectorProvider().values());
-      const connectorLines = connectors.length > 0
-        ? connectors.map((candidate) => {
-            const health = candidate.getHealth();
-            return `- ${candidate.name}: ${health.status}${health.detail ? ` (${health.detail})` : ""}`;
-          })
-        : ["- none"];
+      const connectorLines =
+        connectors.length > 0
+          ? connectors.map((candidate) => {
+              const health = candidate.getHealth();
+              return `- ${candidate.name}: ${health.status}${health.detail ? ` (${health.detail})` : ""}`;
+            })
+          : ["- none"];
       const info = [
         `Default engine: ${this.config.engines.default}`,
         `Claude: ${this.config.engines.claude.model}`,
@@ -851,8 +933,8 @@ export class SessionManager {
         return true;
       }
 
-      const lines = jobs.map((job) =>
-        `- ${job.name} (${job.id}) — ${job.enabled ? "enabled" : "disabled"} — ${job.schedule}`,
+      const lines = jobs.map(
+        (job) => `- ${job.name} (${job.id}) — ${job.enabled ? "enabled" : "disabled"} — ${job.schedule}`,
       );
       await connector.replyMessage(target, ["Cron jobs:", ...lines].join("\n"));
       return true;
@@ -864,10 +946,7 @@ export class SessionManager {
         return true;
       }
       const job = await triggerCronJob(arg);
-      await connector.replyMessage(
-        target,
-        job ? `Triggered cron job "${job.name}".` : `Cron job "${arg}" not found.`,
-      );
+      await connector.replyMessage(target, job ? `Triggered cron job "${job.name}".` : `Cron job "${arg}" not found.`);
       return true;
     }
 
@@ -879,9 +958,7 @@ export class SessionManager {
       const job = setCronJobEnabled(arg, subcommand === "enable");
       await connector.replyMessage(
         target,
-        job
-          ? `Cron job "${job.name}" ${job.enabled ? "enabled" : "disabled"}.`
-          : `Cron job "${arg}" not found.`,
+        job ? `Cron job "${job.name}" ${job.enabled ? "enabled" : "disabled"}.` : `Cron job "${arg}" not found.`,
       );
       return true;
     }

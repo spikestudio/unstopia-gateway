@@ -1,9 +1,9 @@
 import fs from "node:fs";
 import path from "node:path";
-import type { Employee, JinnConfig } from "../shared/types.js";
-import { JINN_HOME, ORG_DIR, CRON_JOBS, DOCS_DIR } from "../shared/paths.js";
 import { scanOrg } from "../gateway/org.js";
 import { buildServiceRegistry } from "../gateway/services.js";
+import { CRON_JOBS, DOCS_DIR, JINN_HOME, ORG_DIR } from "../shared/paths.js";
+import type { Employee, JinnConfig } from "../shared/types.js";
 
 /**
  * Token budget strategy:
@@ -25,7 +25,7 @@ import { buildServiceRegistry } from "../gateway/services.js";
 const DEFAULT_MAX_CONTEXT_CHARS = 100_000;
 
 // ── Tier enum for progressive trimming ────────────────────────
-const enum Tier {
+enum Tier {
   ESSENTIAL = 0,
   STANDARD = 1,
   OPTIONAL = 2,
@@ -164,7 +164,8 @@ export function buildContext(opts: {
       tier: Tier.OPTIONAL,
       marker: "## Knowledge base",
       content: knowledgeCtx,
-      summary: "## Knowledge base\nKnowledge files are in `~/.jinn/knowledge/` and `~/.jinn/docs/`. Read them directly when needed.",
+      summary:
+        "## Knowledge base\nKnowledge files are in `~/.jinn/knowledge/` and `~/.jinn/docs/`. Read them directly when needed.",
     });
   }
 
@@ -232,9 +233,10 @@ function buildEmployeeIdentity(
   node?: import("../shared/types.js").OrgNode,
   hierarchy?: import("../shared/types.js").OrgHierarchy,
 ): string {
-  const languageInstruction = language !== "English"
-    ? `\n**Language**: Always respond in ${language}. All your communication with the user must be in ${language}.\n`
-    : "";
+  const languageInstruction =
+    language !== "English"
+      ? `\n**Language**: Always respond in ${language}. All your communication with the user must be in ${language}.\n`
+      : "";
 
   const chainOfCommand = buildChainOfCommand(employee, portalName, node, hierarchy);
 
@@ -324,13 +326,17 @@ function buildServicesContext(employee: Employee, gatewayUrl: string): string | 
 
     const lines: string[] = ["## Available services"];
     lines.push("Other employees provide the following services. To request one, use the cross-request API:");
-    lines.push(`\`POST ${gatewayUrl}/api/org/cross-request\` with \`{"fromEmployee": "${employee.name}", "service": "<name>", "prompt": "<what you need>"}\``);
+    lines.push(
+      `\`POST ${gatewayUrl}/api/org/cross-request\` with \`{"fromEmployee": "${employee.name}", "service": "<name>", "prompt": "<what you need>"}\``,
+    );
     lines.push("");
 
     for (const [svcName, entry] of services) {
       // Skip services from own department
       if (entry.provider.department === employee.department) continue;
-      lines.push(`- **${svcName}** — ${entry.declaration.description} (provided by ${entry.provider.displayName}, ${entry.provider.department})`);
+      lines.push(
+        `- **${svcName}** — ${entry.declaration.description} (provided by ${entry.provider.displayName}, ${entry.provider.department})`,
+      );
     }
 
     // If no external services remain after filtering, skip
@@ -347,9 +353,10 @@ function buildIdentity(portalName: string, operatorName?: string, language?: str
     ? `\nThe user's name is **${operatorName}**. Address them by name when appropriate.`
     : "";
 
-  const languageInstruction = language && language !== "English"
-    ? `\n**Language**: Always respond in ${language}. All your communication with the user must be in ${language}.`
-    : "";
+  const languageInstruction =
+    language && language !== "English"
+      ? `\n**Language**: Always respond in ${language}. All your communication with the user must be in ${language}.`
+      : "";
 
   return `# You are ${portalName}
 
@@ -462,10 +469,7 @@ function buildOrgContext(hierarchy?: import("../shared/types.js").OrgHierarchy):
         const fullPath = path.join(dir, entry.name);
         if (entry.isDirectory()) {
           scanDir(fullPath);
-        } else if (
-          (entry.name.endsWith(".yaml") || entry.name.endsWith(".yml")) &&
-          entry.name !== "department.yaml"
-        ) {
+        } else if ((entry.name.endsWith(".yaml") || entry.name.endsWith(".yml")) && entry.name !== "department.yaml") {
           employeeFiles.push({ fullPath, name: entry.name.replace(/\.ya?ml$/, "") });
         }
       }
@@ -533,9 +537,7 @@ function buildKnowledgeContext(): string | null {
 
   for (const { dir, label } of dirs) {
     try {
-      const files = fs.readdirSync(dir).filter(f =>
-        f.endsWith(".md") || f.endsWith(".txt") || f.endsWith(".yaml"),
-      );
+      const files = fs.readdirSync(dir).filter((f) => f.endsWith(".md") || f.endsWith(".txt") || f.endsWith(".yaml"));
       for (const f of files) {
         try {
           const stat = fs.statSync(path.join(dir, f));
@@ -563,7 +565,7 @@ function buildKnowledgeContext(): string | null {
 
   // Group by directory
   for (const label of ["docs", "knowledge"]) {
-    const group = entries.filter(e => e.dir === label);
+    const group = entries.filter((e) => e.dir === label);
     if (group.length === 0) continue;
     lines.push(`**${label}/** (${group.length} files):`);
     for (const e of group) {
@@ -582,9 +584,13 @@ function buildConnectorContext(connectors: string[], gatewayUrl: string, portalN
 
   for (const name of connectors) {
     lines.push(`### ${name}`);
-    lines.push(`- **Send message**: \`curl -X POST ${gatewayUrl}/api/connectors/${name}/send -H 'Content-Type: application/json' -d '{"channel":"CHANNEL_ID","text":"message"}'\``);
+    lines.push(
+      `- **Send message**: \`curl -X POST ${gatewayUrl}/api/connectors/${name}/send -H 'Content-Type: application/json' -d '{"channel":"CHANNEL_ID","text":"message"}'\``,
+    );
     lines.push(`- **Send threaded reply**: add \`"thread":"THREAD_TS"\` to the JSON body`);
-    lines.push(`- You can proactively send messages without being asked — e.g., to notify about completed tasks, errors, or status updates`);
+    lines.push(
+      `- You can proactively send messages without being asked — e.g., to notify about completed tasks, errors, or status updates`,
+    );
   }
 
   lines.push(`\n- **List all connectors**: \`curl ${gatewayUrl}/api/connectors\``);
@@ -598,7 +604,11 @@ function buildEnvironmentContext(): string | null {
   let hasContent = false;
 
   const toolDirs: { dir: string; label: string; description: string }[] = [
-    { dir: ".openclaw", label: "OpenClaw", description: "AI agent platform (agents, cron, memory, hooks, credentials)" },
+    {
+      dir: ".openclaw",
+      label: "OpenClaw",
+      description: "AI agent platform (agents, cron, memory, hooks, credentials)",
+    },
     { dir: ".claude", label: "Claude Code", description: "Claude Code CLI config and projects" },
     { dir: ".codex", label: "Codex", description: "OpenAI Codex CLI config" },
   ];
@@ -608,10 +618,12 @@ function buildEnvironmentContext(): string | null {
     try {
       const stat = fs.statSync(toolPath);
       if (stat.isDirectory()) {
-        const contents = fs.readdirSync(toolPath).filter(f => !f.startsWith("."));
+        const contents = fs.readdirSync(toolPath).filter((f) => !f.startsWith("."));
         lines.push(`- **${tool.label}** (\`~/${tool.dir}/\`): ${tool.description}`);
         if (contents.length > 0) {
-          lines.push(`  Contents: ${contents.slice(0, 15).join(", ")}${contents.length > 15 ? `, ... (${contents.length} total)` : ""}`);
+          lines.push(
+            `  Contents: ${contents.slice(0, 15).join(", ")}${contents.length > 15 ? `, ... (${contents.length} total)` : ""}`,
+          );
         }
         hasContent = true;
       }
@@ -623,8 +635,12 @@ function buildEnvironmentContext(): string | null {
   // Scan ~/Projects for user's codebases
   const projectsDir = path.join(home, "Projects");
   try {
-    const projects = fs.readdirSync(projectsDir).filter(f => {
-      try { return fs.statSync(path.join(projectsDir, f)).isDirectory(); } catch { return false; }
+    const projects = fs.readdirSync(projectsDir).filter((f) => {
+      try {
+        return fs.statSync(path.join(projectsDir, f)).isDirectory();
+      } catch {
+        return false;
+      }
     });
     if (projects.length > 0) {
       lines.push(`- **Projects** (\`~/Projects/\`): ${projects.join(", ")}`);
@@ -636,14 +652,18 @@ function buildEnvironmentContext(): string | null {
 
   if (!hasContent) return null;
 
-  lines.push(`\nWhen the user asks about tools or systems on their machine, check these directories first before saying you don't know. Be resourceful — explore the filesystem.`);
+  lines.push(
+    `\nWhen the user asks about tools or systems on their machine, check these directories first before saying you don't know. Be resourceful — explore the filesystem.`,
+  );
   return lines.join("\n");
 }
 
 function buildEvolutionContext(portalName: string): string {
   const profilePath = path.join(JINN_HOME, "knowledge", "user-profile.md");
   let profileContent = "";
-  try { profileContent = fs.readFileSync(profilePath, "utf-8").trim(); } catch {}
+  try {
+    profileContent = fs.readFileSync(profilePath, "utf-8").trim();
+  } catch {}
 
   const isNew = profileContent.length < 50;
 
@@ -656,14 +676,20 @@ function buildEvolutionContext(portalName: string): string {
     lines.push(`2. What should ${portalName} help you automate? (code reviews, deployments, monitoring, etc.)`);
     lines.push(`3. Communication preferences — emoji style, verbosity (concise vs detailed), language`);
     lines.push(`4. Any active projects ${portalName} should know about?`);
-    lines.push(`\nAfter the user responds, write their answers to \`~/.jinn/knowledge/user-profile.md\` and \`~/.jinn/knowledge/preferences.md\`.`);
+    lines.push(
+      `\nAfter the user responds, write their answers to \`~/.jinn/knowledge/user-profile.md\` and \`~/.jinn/knowledge/preferences.md\`.`,
+    );
     lines.push(`Then proceed to help with their original request.`);
   } else {
-    lines.push(`You learn and evolve over time. When you discover new information about the user, their projects, or their preferences:`);
+    lines.push(
+      `You learn and evolve over time. When you discover new information about the user, their projects, or their preferences:`,
+    );
     lines.push(`- Update \`~/.jinn/knowledge/user-profile.md\` with business/identity info`);
     lines.push(`- Update \`~/.jinn/knowledge/preferences.md\` with style/communication preferences`);
     lines.push(`- Update \`~/.jinn/knowledge/projects.md\` with project details`);
-    lines.push(`- If the user gives you persistent feedback (e.g. "always do X", "never do Y"), update \`~/.jinn/CLAUDE.md\``);
+    lines.push(
+      `- If the user gives you persistent feedback (e.g. "always do X", "never do Y"), update \`~/.jinn/CLAUDE.md\``,
+    );
     lines.push(`\nDo this silently — don't announce every file update. Just evolve.`);
   }
 
@@ -676,11 +702,12 @@ function buildEvolutionContext(portalName: string): string {
  */
 function buildDelegationProtocol(gatewayUrl: string, _portalName: string, config?: JinnConfig): string {
   const defaultEngine = config?.engines.default || "claude";
-  const engineConfig = defaultEngine === "codex"
-    ? config?.engines.codex
-    : defaultEngine === "gemini"
-      ? config?.engines.gemini ?? config?.engines.claude
-      : config?.engines.claude;
+  const engineConfig =
+    defaultEngine === "codex"
+      ? config?.engines.codex
+      : defaultEngine === "gemini"
+        ? (config?.engines.gemini ?? config?.engines.claude)
+        : config?.engines.claude;
   const childOverride = engineConfig?.childEffortOverride;
 
   const effortOverrideNote = childOverride
@@ -779,7 +806,7 @@ You can call these endpoints with curl to inspect and manage the gateway:
  * then STANDARD, then (as a last resort) ESSENTIAL sections.
  */
 function trimContext(sections: Section[], maxChars: number): string {
-  let parts = sections.map(s => s.content);
+  const parts = sections.map((s) => s.content);
   let result = parts.join("\n\n");
   if (result.length <= maxChars) return result;
 

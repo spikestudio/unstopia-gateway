@@ -1,45 +1,39 @@
-"use client"
+"use client";
 
-import { useState } from 'react'
-import { Plus } from 'lucide-react'
-import type { KanbanColumn as KanbanColumnType, KanbanTicket, TicketStatus } from '@/lib/kanban/types'
+import { Plus } from "lucide-react";
+import { useState } from "react";
+import type { KanbanColumn as KanbanColumnType, KanbanTicket, TicketStatus } from "@/lib/kanban/types";
 
 interface KanbanColumnProps {
-  column: KanbanColumnType
-  tickets: KanbanTicket[]
-  onDrop: (ticketId: string, status: TicketStatus) => void
-  onCreateTicket?: () => void
-  renderTicket: (ticket: KanbanTicket) => React.ReactNode
+  column: KanbanColumnType;
+  tickets: KanbanTicket[];
+  onDrop: (ticketId: string, status: TicketStatus) => void;
+  onCreateTicket?: () => void;
+  renderTicket: (ticket: KanbanTicket) => React.ReactNode;
 }
 
-export function KanbanColumn({
-  column,
-  tickets,
-  onDrop,
-  onCreateTicket,
-  renderTicket,
-}: KanbanColumnProps) {
-  const [isDragOver, setIsDragOver] = useState(false)
+export function KanbanColumn({ column, tickets, onDrop, onCreateTicket, renderTicket }: KanbanColumnProps) {
+  const [isDragOver, setIsDragOver] = useState(false);
 
   function handleDragOver(e: React.DragEvent) {
-    e.preventDefault()
-    e.dataTransfer.dropEffect = 'move'
-    setIsDragOver(true)
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    setIsDragOver(true);
   }
 
   function handleDragLeave(e: React.DragEvent) {
     // Only set false when leaving the column itself, not a child
     if (!e.currentTarget.contains(e.relatedTarget as Node)) {
-      setIsDragOver(false)
+      setIsDragOver(false);
     }
   }
 
   function handleDrop(e: React.DragEvent) {
-    e.preventDefault()
-    setIsDragOver(false)
-    const ticketId = e.dataTransfer.getData('text/plain')
+    e.preventDefault();
+    setIsDragOver(false);
+    const ticketId = e.dataTransfer.getData("text/plain");
     if (ticketId) {
-      onDrop(ticketId, column.id)
+      onDrop(ticketId, column.id);
     }
   }
 
@@ -50,10 +44,8 @@ export function KanbanColumn({
       onDrop={handleDrop}
       className="flex flex-col min-w-[280px] max-w-[320px] flex-[1_0_280px] h-full rounded-[var(--radius-lg)] transition-[background,border-color] duration-200 ease-[var(--ease-smooth)]"
       style={{
-        background: isDragOver ? 'var(--fill-secondary)' : 'var(--fill-tertiary)',
-        border: isDragOver
-          ? '2px dashed var(--accent)'
-          : '2px dashed transparent',
+        background: isDragOver ? "var(--fill-secondary)" : "var(--fill-tertiary)",
+        border: isDragOver ? "2px dashed var(--accent)" : "2px dashed transparent",
       }}
     >
       {/* Column header */}
@@ -67,7 +59,7 @@ export function KanbanColumn({
           </span>
         </div>
 
-        {column.id === 'backlog' && onCreateTicket && (
+        {column.id === "backlog" && onCreateTicket && (
           <button
             onClick={onCreateTicket}
             aria-label="Create new ticket"
@@ -81,9 +73,7 @@ export function KanbanColumn({
       {/* Scrollable ticket area */}
       <div className="flex-1 overflow-y-auto px-[var(--space-2)] pb-[var(--space-2)] flex flex-col gap-[var(--space-2)]">
         {tickets.map((ticket) => (
-          <div key={ticket.id}>
-            {renderTicket(ticket)}
-          </div>
+          <div key={ticket.id}>{renderTicket(ticket)}</div>
         ))}
 
         {/* Empty state */}
@@ -94,5 +84,5 @@ export function KanbanColumn({
         )}
       </div>
     </div>
-  )
+  );
 }

@@ -1,9 +1,9 @@
+import { execFile, spawn } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
-import { execFile, spawn } from "node:child_process";
 import { promisify } from "node:util";
-import { STT_MODELS_DIR, TMP_DIR } from "../shared/paths.js";
 import { logger } from "../shared/logger.js";
+import { STT_MODELS_DIR } from "../shared/paths.js";
 
 const execFileAsync = promisify(execFile);
 
@@ -12,14 +12,45 @@ const FFMPEG = "ffmpeg";
 
 /** Valid Whisper language codes (ISO 639-1). */
 export const WHISPER_LANGUAGES: Record<string, string> = {
-  en: "English", bg: "Bulgarian", de: "German", fr: "French", es: "Spanish",
-  it: "Italian", pt: "Portuguese", ru: "Russian", zh: "Chinese", ja: "Japanese",
-  ko: "Korean", ar: "Arabic", hi: "Hindi", tr: "Turkish", pl: "Polish",
-  nl: "Dutch", sv: "Swedish", cs: "Czech", el: "Greek", ro: "Romanian",
-  uk: "Ukrainian", he: "Hebrew", da: "Danish", fi: "Finnish", hu: "Hungarian",
-  no: "Norwegian", sk: "Slovak", hr: "Croatian", ca: "Catalan", th: "Thai",
-  vi: "Vietnamese", id: "Indonesian", ms: "Malay", tl: "Filipino", sr: "Serbian",
-  lt: "Lithuanian", lv: "Latvian", sl: "Slovenian", et: "Estonian",
+  en: "English",
+  bg: "Bulgarian",
+  de: "German",
+  fr: "French",
+  es: "Spanish",
+  it: "Italian",
+  pt: "Portuguese",
+  ru: "Russian",
+  zh: "Chinese",
+  ja: "Japanese",
+  ko: "Korean",
+  ar: "Arabic",
+  hi: "Hindi",
+  tr: "Turkish",
+  pl: "Polish",
+  nl: "Dutch",
+  sv: "Swedish",
+  cs: "Czech",
+  el: "Greek",
+  ro: "Romanian",
+  uk: "Ukrainian",
+  he: "Hebrew",
+  da: "Danish",
+  fi: "Finnish",
+  hu: "Hungarian",
+  no: "Norwegian",
+  sk: "Slovak",
+  hr: "Croatian",
+  ca: "Catalan",
+  th: "Thai",
+  vi: "Vietnamese",
+  id: "Indonesian",
+  ms: "Malay",
+  tl: "Filipino",
+  sr: "Serbian",
+  lt: "Lithuanian",
+  lv: "Latvian",
+  sl: "Slovenian",
+  et: "Estonian",
 };
 
 const MODEL_URLS: Record<string, string> = {
@@ -96,10 +127,7 @@ export function getSttStatus(configModel?: string, languages?: string[]): SttSta
   };
 }
 
-export async function downloadModel(
-  model: string,
-  onProgress: (progress: number) => void,
-): Promise<void> {
+export async function downloadModel(model: string, onProgress: (progress: number) => void): Promise<void> {
   if (downloading) throw new Error("Download already in progress");
 
   const url = MODEL_URLS[model];
@@ -125,19 +153,24 @@ export async function downloadModel(
       // Use curl for download — handles redirects, progress, and is reliable
       const curl = spawn("curl", [
         "-L", // follow redirects
-        "-o", tmpPath,
+        "-o",
+        tmpPath,
         url,
       ]);
 
       // Poll file size for progress
       const progressInterval = setInterval(() => {
         try {
-          const stat = fs.statSync(tmpPath, { throwIfNoEntry: false } as fs.StatSyncOptions & { throwIfNoEntry: false });
+          const stat = fs.statSync(tmpPath, { throwIfNoEntry: false } as fs.StatSyncOptions & {
+            throwIfNoEntry: false;
+          });
           if (stat && stat.size > 0) {
             downloadProgress = Math.min(95, Math.round(((stat.size as number) / expectedSize) * 100));
             onProgress(downloadProgress);
           }
-        } catch { /* file not created yet */ }
+        } catch {
+          /* file not created yet */
+        }
       }, 1000);
 
       curl.on("close", (code) => {
@@ -160,7 +193,11 @@ export async function downloadModel(
     logger.info(`STT model '${model}' downloaded to ${destPath}`);
   } catch (err) {
     // Clean up partial download
-    try { fs.unlinkSync(tmpPath); } catch { /* ignore */ }
+    try {
+      fs.unlinkSync(tmpPath);
+    } catch {
+      /* ignore */
+    }
     throw err;
   } finally {
     downloading = false;
@@ -173,27 +210,30 @@ export async function downloadModel(
  */
 async function convertToWav(inputPath: string): Promise<string> {
   const wavPath = inputPath.replace(/\.[^.]+$/, "") + ".wav";
-  await execFileAsync(FFMPEG, [
-    "-i", inputPath,
-    "-ar", "16000",    // 16kHz sample rate
-    "-ac", "1",        // mono
-    "-c:a", "pcm_s16le", // 16-bit PCM
-    "-y",              // overwrite
-    wavPath,
-  ], {
-    timeout: 2 * 60 * 1000, // 2 min timeout
-  });
+  await execFileAsync(
+    FFMPEG,
+    [
+      "-i",
+      inputPath,
+      "-ar",
+      "16000", // 16kHz sample rate
+      "-ac",
+      "1", // mono
+      "-c:a",
+      "pcm_s16le", // 16-bit PCM
+      "-y", // overwrite
+      wavPath,
+    ],
+    {
+      timeout: 2 * 60 * 1000, // 2 min timeout
+    },
+  );
   return wavPath;
 }
 
-export async function transcribe(
-  audioPath: string,
-  model: string,
-  language?: string,
-): Promise<string> {
+export async function transcribe(audioPath: string, model: string, language?: string): Promise<string> {
   const modelPath = getModelPath(model);
-  if (!modelPath)
-    throw new Error(`Model '${model}' not found. Download it first.`);
+  if (!modelPath) throw new Error(`Model '${model}' not found. Download it first.`);
 
   // Convert to WAV if not already
   let wavPath = audioPath;
@@ -204,15 +244,14 @@ export async function transcribe(
   }
 
   try {
-    const { stdout } = await execFileAsync(WHISPER_CLI, [
-      "-m", modelPath,
-      "-l", language || "en",
-      "--no-timestamps",
-      "-f", wavPath,
-    ], {
-      maxBuffer: 10 * 1024 * 1024,
-      timeout: 15 * 60 * 1000, // 15 min timeout for long recordings
-    });
+    const { stdout } = await execFileAsync(
+      WHISPER_CLI,
+      ["-m", modelPath, "-l", language || "en", "--no-timestamps", "-f", wavPath],
+      {
+        maxBuffer: 10 * 1024 * 1024,
+        timeout: 15 * 60 * 1000, // 15 min timeout for long recordings
+      },
+    );
 
     // Clean up whisper output: remove blank lines, trim whitespace
     const text = stdout
@@ -225,7 +264,11 @@ export async function transcribe(
     return text;
   } finally {
     if (needsCleanup) {
-      try { fs.unlinkSync(wavPath); } catch { /* ignore */ }
+      try {
+        fs.unlinkSync(wavPath);
+      } catch {
+        /* ignore */
+      }
     }
   }
 }

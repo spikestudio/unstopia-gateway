@@ -29,7 +29,9 @@ export async function runRemove(name: string, opts: { force?: boolean }): Promis
     try {
       const pid = parseInt(fs.readFileSync(pidFile, "utf-8").trim(), 10);
       process.kill(pid, 0);
-      console.error(`${RED}Error:${RESET} Instance "${name}" is still running. Stop it first with: jinn -i ${name} stop`);
+      console.error(
+        `${RED}Error:${RESET} Instance "${name}" is still running. Stop it first with: jinn -i ${name} stop`,
+      );
       process.exit(1);
     } catch {
       // Process not alive, continue
@@ -46,7 +48,9 @@ export async function runRemove(name: string, opts: { force?: boolean }): Promis
   } else {
     console.log(`${GREEN}Instance "${name}" removed from registry.${RESET}`);
     if (fs.existsSync(instance.home)) {
-      console.log(`  ${YELLOW}Note:${RESET} Home directory ${DIM}${instance.home}${RESET} still exists. Use --force to delete it.`);
+      console.log(
+        `  ${YELLOW}Note:${RESET} Home directory ${DIM}${instance.home}${RESET} still exists. Use --force to delete it.`,
+      );
     }
   }
 }

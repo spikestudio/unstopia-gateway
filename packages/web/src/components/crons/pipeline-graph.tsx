@@ -1,48 +1,42 @@
-"use client"
+"use client";
 
-import { describeCron } from "@/lib/cron-utils"
+import { describeCron } from "@/lib/cron-utils";
 
 interface CronJob {
-  id: string
-  name: string
-  schedule: string
-  enabled: boolean
-  employee?: string
-  engine?: string
-  [key: string]: unknown
+  id: string;
+  name: string;
+  schedule: string;
+  enabled: boolean;
+  employee?: string;
+  engine?: string;
+  [key: string]: unknown;
 }
 
 interface PipelineGraphProps {
-  crons: CronJob[]
+  crons: CronJob[];
 }
 
 export function PipelineGraph({ crons }: PipelineGraphProps) {
   if (crons.length === 0) {
     return (
       <div className="bg-[var(--material-regular)] border border-[var(--separator)] rounded-[var(--radius-md)] px-6 py-8 text-center">
-        <div className="text-sm font-bold text-[var(--text-primary)] mb-2">
-          No cron jobs configured
-        </div>
+        <div className="text-sm font-bold text-[var(--text-primary)] mb-2">No cron jobs configured</div>
         <div className="text-xs text-[var(--text-secondary)] max-w-[480px] mx-auto leading-[1.6]">
           Cron jobs will appear here as cards once configured.
         </div>
       </div>
-    )
+    );
   }
 
-  const enabled = crons.filter(c => c.enabled)
-  const disabled = crons.filter(c => !c.enabled)
+  const enabled = crons.filter((c) => c.enabled);
+  const disabled = crons.filter((c) => !c.enabled);
 
   return (
     <div>
-      {enabled.length > 0 && (
-        <CronCardGroup crons={enabled} label="Enabled" />
-      )}
-      {disabled.length > 0 && (
-        <CronCardGroup crons={disabled} label="Disabled" />
-      )}
+      {enabled.length > 0 && <CronCardGroup crons={enabled} label="Enabled" />}
+      {disabled.length > 0 && <CronCardGroup crons={disabled} label="Disabled" />}
     </div>
-  )
+  );
 }
 
 function CronCardGroup({ crons, label }: { crons: CronJob[]; label: string }) {
@@ -52,8 +46,8 @@ function CronCardGroup({ crons, label }: { crons: CronJob[]; label: string }) {
         {label} ({crons.length})
       </div>
       <div className="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-2.5">
-        {crons.map(cron => {
-          const borderColor = cron.enabled ? "var(--system-green)" : "var(--text-tertiary)"
+        {crons.map((cron) => {
+          const borderColor = cron.enabled ? "var(--system-green)" : "var(--text-tertiary)";
 
           return (
             <div
@@ -74,9 +68,7 @@ function CronCardGroup({ crons, label }: { crons: CronJob[]; label: string }) {
               </div>
 
               {/* Schedule (human-readable) */}
-              <div className="text-[10px] text-[var(--text-secondary)] mb-0.5">
-                {describeCron(cron.schedule)}
-              </div>
+              <div className="text-[10px] text-[var(--text-secondary)] mb-0.5">{describeCron(cron.schedule)}</div>
 
               {/* Raw schedule */}
               <div className="text-[10px] font-[var(--font-mono)] text-[var(--text-tertiary)] mb-1">
@@ -102,9 +94,9 @@ function CronCardGroup({ crons, label }: { crons: CronJob[]; label: string }) {
                 )}
               </div>
             </div>
-          )
+          );
         })}
       </div>
     </div>
-  )
+  );
 }

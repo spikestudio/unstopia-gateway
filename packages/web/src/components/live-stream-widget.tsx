@@ -1,50 +1,48 @@
-"use client"
+"use client";
 
-import { useCallback, useEffect, useRef, useState } from "react"
-import { Copy, Minimize2, X } from "lucide-react"
-import { api } from "@/lib/api"
-import { useGateway } from "@/hooks/use-gateway"
-import { parseLogLine } from "@/components/activity/log-browser"
-import type { ParsedLogEntry } from "@/components/activity/log-browser"
+import { Copy, Minimize2, X } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import type { ParsedLogEntry } from "@/components/activity/log-browser";
+import { parseLogLine } from "@/components/activity/log-browser";
+import { useGateway } from "@/hooks/use-gateway";
+import { api } from "@/lib/api";
 
 /* ── Constants ────────────────────────────────────────────────── */
 
-const MAX_LINES = 500
-const WIDGET_EVENT = "open-live-stream"
+const MAX_LINES = 500;
+const WIDGET_EVENT = "open-live-stream";
 
 const LEVEL_STYLE: Record<string, { bg: string; color: string; label: string }> = {
   info: { bg: "rgba(48,209,88,0.12)", color: "var(--system-green)", label: "INF" },
   warn: { bg: "rgba(255,159,10,0.12)", color: "var(--system-orange)", label: "WRN" },
   error: { bg: "rgba(255,69,58,0.12)", color: "var(--system-red)", label: "ERR" },
   debug: { bg: "var(--fill-secondary)", color: "var(--text-tertiary)", label: "DBG" },
-}
+};
 
 function formatTime(ts: string): string {
-  if (!ts) return ""
+  if (!ts) return "";
   // Already formatted as "2026-03-07 12:00:00", show just the time portion
-  const parts = ts.split(" ")
-  return parts.length > 1 ? parts[1] : ts
+  const parts = ts.split(" ");
+  return parts.length > 1 ? parts[1] : ts;
 }
 
 function formatCopyLine(entry: ParsedLogEntry): string {
-  return `[${entry.timestamp}] [${entry.level.toUpperCase()}] ${entry.message}`
+  return `[${entry.timestamp}] [${entry.level.toUpperCase()}] ${entry.message}`;
 }
 
 /* ── Visual states ────────────────────────────────────────────── */
 
-type WidgetState = "hidden" | "collapsed" | "expanded"
+type WidgetState = "hidden" | "collapsed" | "expanded";
 
 /* ── LogRow ───────────────────────────────────────────────────── */
 
 function LogRow({ entry }: { entry: ParsedLogEntry }) {
-  const [open, setOpen] = useState(false)
-  const lvl = LEVEL_STYLE[entry.level] ?? LEVEL_STYLE.debug
-  const isLong = entry.message.length > 100
+  const [open, setOpen] = useState(false);
+  const lvl = LEVEL_STYLE[entry.level] ?? LEVEL_STYLE.debug;
+  const isLong = entry.message.length > 100;
 
   return (
-    <div
-      className={`border-b border-[var(--separator)] ${entry.level === "error" ? "bg-[rgba(255,69,58,0.03)]" : ""}`}
-    >
+    <div className={`border-b border-[var(--separator)] ${entry.level === "error" ? "bg-[rgba(255,69,58,0.03)]" : ""}`}>
       <button
         onClick={() => isLong && setOpen((o) => !o)}
         className={`flex items-center w-full px-3 py-[5px] gap-2 border-none bg-transparent text-left ${isLong ? "cursor-pointer" : "cursor-default"}`}
@@ -95,94 +93,94 @@ function LogRow({ entry }: { entry: ParsedLogEntry }) {
         </div>
       )}
     </div>
-  )
+  );
 }
 
 /* ── Component ────────────────────────────────────────────────── */
 
 export function LiveStreamWidget() {
-  const [state, setState] = useState<WidgetState>("hidden")
-  const [entries, setEntries] = useState<ParsedLogEntry[]>([])
-  const [autoScroll, setAutoScroll] = useState(true)
-  const [copied, setCopied] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [state, setState] = useState<WidgetState>("hidden");
+  const [entries, setEntries] = useState<ParsedLogEntry[]>([]);
+  const [autoScroll, setAutoScroll] = useState(true);
+  const [copied, setCopied] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const scrollRef = useRef<HTMLDivElement>(null)
-  const logIndexRef = useRef(0)
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const logIndexRef = useRef(0);
 
-  const { events } = useGateway()
+  const { events } = useGateway();
 
   /* ── Auto-scroll ──────────────────────────────────────────── */
 
   useEffect(() => {
     if (autoScroll && scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [entries, autoScroll])
+  }, [entries, autoScroll]);
 
   const handleScroll = useCallback(() => {
-    if (!scrollRef.current) return
-    const { scrollTop, scrollHeight, clientHeight } = scrollRef.current
-    const atBottom = scrollHeight - scrollTop - clientHeight < 40
-    if (!atBottom) setAutoScroll(false)
-    else setAutoScroll(true)
-  }, [])
+    if (!scrollRef.current) return;
+    const { scrollTop, scrollHeight, clientHeight } = scrollRef.current;
+    const atBottom = scrollHeight - scrollTop - clientHeight < 40;
+    if (!atBottom) setAutoScroll(false);
+    else setAutoScroll(true);
+  }, []);
 
   /* ── Fetch initial logs when expanded ─────────────────────── */
 
   useEffect(() => {
-    if (state !== "expanded") return
+    if (state !== "expanded") return;
     api
       .getLogs(50)
       .then((data) => {
-        const parsed = (data.lines ?? []).map(parseLogLine)
-        setEntries(parsed)
-        setError(null)
+        const parsed = (data.lines ?? []).map(parseLogLine);
+        setEntries(parsed);
+        setError(null);
       })
       .catch((err) => {
-        setError(err instanceof Error ? err.message : "Failed to load logs")
-      })
-  }, [state])
+        setError(err instanceof Error ? err.message : "Failed to load logs");
+      });
+  }, [state]);
 
   /* ── Listen for WebSocket events ──────────────────────────── */
 
   useEffect(() => {
-    if (state === "hidden" || events.length === 0) return
-    const latest = events[events.length - 1]
+    if (state === "hidden" || events.length === 0) return;
+    const latest = events[events.length - 1];
     if (latest.event === "log" && typeof latest.payload === "object" && latest.payload !== null) {
-      const p = latest.payload as Record<string, unknown>
-      const line = (p.line as string) || (p.message as string) || JSON.stringify(latest.payload)
-      const newEntry = parseLogLine(line, logIndexRef.current++)
-      setEntries((prev) => [...prev, newEntry].slice(-MAX_LINES))
+      const p = latest.payload as Record<string, unknown>;
+      const line = (p.line as string) || (p.message as string) || JSON.stringify(latest.payload);
+      const newEntry = parseLogLine(line, logIndexRef.current++);
+      setEntries((prev) => [...prev, newEntry].slice(-MAX_LINES));
     }
-  }, [events, state])
+  }, [events, state]);
 
   /* ── Actions ──────────────────────────────────────────────── */
 
   const handleClose = useCallback(() => {
-    setState("hidden")
-  }, [])
+    setState("hidden");
+  }, []);
 
   const handleCopy = useCallback(async () => {
-    const text = entries.map(formatCopyLine).join("\n")
-    await navigator.clipboard.writeText(text)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 1500)
-  }, [entries])
+    const text = entries.map(formatCopyLine).join("\n");
+    await navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  }, [entries]);
 
   /* ── DOM event listener ───────────────────────────────────── */
 
   useEffect(() => {
     function onOpen() {
-      setState("expanded")
+      setState("expanded");
     }
-    window.addEventListener(WIDGET_EVENT, onOpen)
-    return () => window.removeEventListener(WIDGET_EVENT, onOpen)
-  }, [])
+    window.addEventListener(WIDGET_EVENT, onOpen);
+    return () => window.removeEventListener(WIDGET_EVENT, onOpen);
+  }, []);
 
   /* ── Hidden ───────────────────────────────────────────────── */
 
-  if (state === "hidden") return null
+  if (state === "hidden") return null;
 
   /* ── Collapsed pill ───────────────────────────────────────── */
 
@@ -206,7 +204,7 @@ export function LiveStreamWidget() {
         )}
         <style>{`@keyframes lsw-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }`}</style>
       </button>
-    )
+    );
   }
 
   /* ── Expanded panel ───────────────────────────────────────── */
@@ -266,11 +264,7 @@ export function LiveStreamWidget() {
       )}
 
       {/* Log area */}
-      <div
-        ref={scrollRef}
-        onScroll={handleScroll}
-        className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden"
-      >
+      <div ref={scrollRef} onScroll={handleScroll} className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden">
         {entries.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-[var(--text-secondary)] gap-[var(--space-2)] p-[var(--space-4)]">
             <svg
@@ -313,5 +307,5 @@ export function LiveStreamWidget() {
 
       <style>{`@keyframes lsw-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }`}</style>
     </div>
-  )
+  );
 }

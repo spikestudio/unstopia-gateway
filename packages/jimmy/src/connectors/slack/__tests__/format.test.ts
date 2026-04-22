@@ -1,5 +1,5 @@
-import { describe, it, expect } from "vitest";
-import { markdownToSlackMrkdwn, formatResponse } from "../format.js";
+import { describe, expect, it } from "vitest";
+import { formatResponse, markdownToSlackMrkdwn } from "../format.js";
 
 describe("markdownToSlackMrkdwn", () => {
   describe("headings", () => {

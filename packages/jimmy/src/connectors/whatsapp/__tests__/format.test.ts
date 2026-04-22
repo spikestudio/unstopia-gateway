@@ -1,5 +1,5 @@
-import { describe, it, expect } from "vitest";
-import { markdownToWhatsApp, formatResponse } from "../format.js";
+import { describe, expect, it } from "vitest";
+import { formatResponse, markdownToWhatsApp } from "../format.js";
 
 describe("markdownToWhatsApp", () => {
   describe("headings", () => {
@@ -36,9 +36,7 @@ describe("markdownToWhatsApp", () => {
 
   describe("links", () => {
     it("converts [text](url) to text (url) since WA auto-links", () => {
-      expect(markdownToWhatsApp("click [here](https://example.com)")).toBe(
-        "click here (https://example.com)",
-      );
+      expect(markdownToWhatsApp("click [here](https://example.com)")).toBe("click here (https://example.com)");
     });
   });
 

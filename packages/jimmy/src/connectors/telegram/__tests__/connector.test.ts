@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { IncomingMessage, Target } from "../../../shared/types.js";
 
 // Mock node-telegram-bot-api before importing connector
@@ -103,9 +103,7 @@ describe("TelegramConnector", () => {
       await connector.start();
 
       // Get the registered message callback
-      const messageCallback = mockOn.mock.calls.find(
-        (call) => call[0] === "message",
-      )?.[1];
+      const messageCallback = mockOn.mock.calls.find((call) => call[0] === "message")?.[1];
       expect(messageCallback).toBeDefined();
 
       // Simulate incoming Telegram message
@@ -134,9 +132,7 @@ describe("TelegramConnector", () => {
       connector.onMessage(handler);
       await connector.start();
 
-      const messageCallback = mockOn.mock.calls.find(
-        (call) => call[0] === "message",
-      )?.[1];
+      const messageCallback = mockOn.mock.calls.find((call) => call[0] === "message")?.[1];
 
       const botMsg = {
         message_id: 1,
@@ -159,9 +155,7 @@ describe("TelegramConnector", () => {
       restricted.onMessage(handler);
       await restricted.start();
 
-      const messageCallback = mockOn.mock.calls.find(
-        (call) => call[0] === "message",
-      )?.[1];
+      const messageCallback = mockOn.mock.calls.find((call) => call[0] === "message")?.[1];
 
       // Unauthorized user
       const msg = {
@@ -184,9 +178,7 @@ describe("TelegramConnector", () => {
       restricted.onMessage(handler);
       await restricted.start();
 
-      const messageCallback = mockOn.mock.calls.find(
-        (call) => call[0] === "message",
-      )?.[1];
+      const messageCallback = mockOn.mock.calls.find((call) => call[0] === "message")?.[1];
 
       // Channel post or forwarded message with no `from`
       const msg = {
@@ -208,9 +200,7 @@ describe("TelegramConnector", () => {
       restricted.onMessage(handler);
       await restricted.start();
 
-      const messageCallback = mockOn.mock.calls.find(
-        (call) => call[0] === "message",
-      )?.[1];
+      const messageCallback = mockOn.mock.calls.find((call) => call[0] === "message")?.[1];
 
       const msg = {
         message_id: 1,

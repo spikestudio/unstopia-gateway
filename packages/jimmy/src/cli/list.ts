@@ -1,7 +1,6 @@
-import { loadInstances, ensureDefaultInstance } from "./instances.js";
-import { getStatus } from "../gateway/lifecycle.js";
 import fs from "node:fs";
 import path from "node:path";
+import { ensureDefaultInstance, loadInstances } from "./instances.js";
 
 const GREEN = "\x1b[32m";
 const RED = "\x1b[31m";
@@ -13,7 +12,7 @@ export async function runList(): Promise<void> {
   const instances = loadInstances();
 
   if (instances.length === 0) {
-    console.log("No instances found. Run \"jinn setup\" to create the default instance.");
+    console.log('No instances found. Run "jinn setup" to create the default instance.');
     return;
   }
 
@@ -38,7 +37,7 @@ export async function runList(): Promise<void> {
     const statusColor = status === "running" ? GREEN : RED;
     const homeDisplay = inst.home.replace(process.env.HOME || process.env.USERPROFILE || "", "~");
     console.log(
-      `  ${inst.name.padEnd(16)} ${String(inst.port).padEnd(8)} ${statusColor}${status.padEnd(12)}${RESET} ${DIM}${homeDisplay}${RESET}`
+      `  ${inst.name.padEnd(16)} ${String(inst.port).padEnd(8)} ${statusColor}${status.padEnd(12)}${RESET} ${DIM}${homeDisplay}${RESET}`,
     );
   }
   console.log("");
