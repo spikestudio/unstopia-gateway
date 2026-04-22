@@ -31,7 +31,7 @@
       "undici": ">=6.24.0",
       "picomatch": ">=4.0.4",
       "vite": ">=8.0.5",
-      "next": ">=15.5.15",
+      "next": "^15.5.15",
       "request>form-data": "^2.5.4",
       "request>qs": "^6.14.1",
       "@whiskeysockets/baileys>protobufjs": ">=7.5.5"
