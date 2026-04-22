@@ -7,3 +7,4 @@ dist/
 .env.local
 .worktrees/
 .DS_Store
+.direnv/
