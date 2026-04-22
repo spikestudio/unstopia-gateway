@@ -44,6 +44,7 @@ function EmployeeNode({
   return (
     <button
       type="button"
+      onClick={() => onSelect(employee.name)}
       className="w-full text-left flex items-center gap-2 py-[6px] px-3 rounded-[var(--radius-md)] text-[length:var(--text-subheadline)] border-none cursor-pointer transition-[background,color] duration-150 ease-in-out"
       style={{
         background: selected ? "var(--accent-fill)" : "transparent",
@@ -173,6 +174,7 @@ function DepartmentNode({
         </button>
         <button
           type="button"
+          onClick={() => onSelectDepartment(name)}
           className="flex-1 text-left py-[6px] px-2 rounded-[var(--radius-md)] text-[length:var(--text-subheadline)] font-medium border-none cursor-pointer transition-[background,color] duration-150 ease-in-out"
           style={{
             background: isSelected ? "var(--accent-fill)" : "transparent",
@@ -218,6 +220,7 @@ function ViewToggle({
     <div className="flex gap-1 mb-2 px-1">
       <button
         type="button"
+        onClick={() => setViewMode("hierarchy")}
         className="text-[10px] py-[2px] px-[8px] rounded-full border-none cursor-pointer"
         style={{
           background: viewMode === "hierarchy" ? "var(--accent-fill)" : "var(--fill-tertiary)",
@@ -228,6 +231,7 @@ function ViewToggle({
       </button>
       <button
         type="button"
+        onClick={() => setViewMode("department")}
         className="text-[10px] py-[2px] px-[8px] rounded-full border-none cursor-pointer"
         style={{
           background: viewMode === "department" ? "var(--accent-fill)" : "var(--fill-tertiary)",

@@ -1,4 +1,5 @@
 "use client";
+import Image from "next/image";
 import type React from "react";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { MediaAttachment, Message } from "@/lib/conversations";
@@ -433,9 +434,12 @@ function renderMedia(media: MediaAttachment[], isUser: boolean) {
       {images.map((m) => (
         <div key={m.url} className="mt-[var(--space-2)] rounded-[var(--radius-lg)] overflow-hidden max-w-[280px]">
           <a href={m.url} target="_blank" rel="noreferrer" aria-label={m.name || "Open image"}>
-            <img
+            <Image
               src={m.url}
               alt={m.name || "Image"}
+              width={280}
+              height={280}
+              unoptimized
               className="w-full block rounded-[var(--radius-lg)] cursor-pointer"
             />
           </a>

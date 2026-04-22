@@ -22,6 +22,7 @@ function EmployeeCard({
   return (
     <button
       type="button"
+      onClick={onSelect}
       className={`flex items-center gap-[var(--space-3)] px-[var(--space-4)] py-[var(--space-3)] rounded-[var(--radius-md,12px)] bg-[var(--material-regular)] cursor-pointer w-full text-left transition-all duration-150 ease-in-out ${selected ? "border-[1.5px] border-[var(--accent)]" : "border border-[var(--separator)]"}`}
       style={{
         boxShadow: selected ? "0 0 0 1px var(--accent), var(--shadow-subtle)" : "var(--shadow-subtle)",

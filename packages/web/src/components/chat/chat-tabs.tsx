@@ -32,7 +32,7 @@ export function ChatTabBar({
   activeIndex,
   onSwitch,
   onClose,
-  onNew,
+  onNew: _onNew,
   onPin,
   onMove,
   toolbarActions,

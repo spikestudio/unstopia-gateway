@@ -309,7 +309,7 @@ export interface McpGlobalConfig {
   custom?: Record<string, (McpServerStdioConfig | McpServerUrlConfig) & { enabled?: boolean }>;
 }
 
-export type WebConnectorConfig = {};
+export type WebConnectorConfig = Record<string, never>;
 
 export interface SlackConnectorConfig {
   /** Unique instance identifier (e.g. "slack-support") */
