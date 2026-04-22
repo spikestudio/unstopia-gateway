@@ -394,7 +394,9 @@ export function ChatPane({
         // Upload any attached files to the server in parallel and collect file IDs
         let attachmentIds: string[] | undefined;
         if (media && media.length > 0) {
-          const uploadPromises = media.filter((att) => att.file).map((att) => api.uploadFile(att.file!));
+          const uploadPromises = media
+            .filter((att): att is typeof att & { file: NonNullable<typeof att.file> } => att.file != null)
+            .map((att) => api.uploadFile(att.file));
           if (uploadPromises.length > 0) {
             const uploaded = await Promise.all(uploadPromises);
             attachmentIds = uploaded.map((u) => u.id);

@@ -11,16 +11,16 @@ export function useOrg() {
 
 export function useEmployee(name: string | null) {
   return useQuery({
-    queryKey: queryKeys.org.employee(name!),
-    queryFn: () => api.getEmployee(name!),
+    queryKey: queryKeys.org.employee(name ?? ""),
+    queryFn: () => api.getEmployee(name ?? ""),
     enabled: !!name,
   });
 }
 
 export function useDepartmentBoard(dept: string | null) {
   return useQuery({
-    queryKey: queryKeys.org.board(dept!),
-    queryFn: () => api.getDepartmentBoard(dept!),
+    queryKey: queryKeys.org.board(dept ?? ""),
+    queryFn: () => api.getDepartmentBoard(dept ?? ""),
     enabled: !!dept,
   });
 }

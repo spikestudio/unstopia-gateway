@@ -145,8 +145,8 @@ export function resolveOrgHierarchy(registry: Map<string, Employee>): OrgHierarc
 
   for (const [, children] of childrenMap) {
     children.sort((a, b) => {
-      const empA = registry.get(a)!;
-      const empB = registry.get(b)!;
+      const empA = nodes[a].employee;
+      const empB = nodes[b].employee;
       const deptCmp = empA.department.localeCompare(empB.department);
       if (deptCmp !== 0) return deptCmp;
       return a.localeCompare(b);
@@ -164,8 +164,8 @@ export function resolveOrgHierarchy(registry: Map<string, Employee>): OrgHierarc
       return parent === null || !registry.has(parent);
     })
     .sort((a, b) => {
-      const empA = registry.get(a)!;
-      const empB = registry.get(b)!;
+      const empA = nodes[a].employee;
+      const empB = nodes[b].employee;
       const deptCmp = empA.department.localeCompare(empB.department);
       if (deptCmp !== 0) return deptCmp;
       return a.localeCompare(b);
@@ -173,7 +173,7 @@ export function resolveOrgHierarchy(registry: Map<string, Employee>): OrgHierarc
 
   const queue: string[] = [...rootNodes];
   while (queue.length > 0) {
-    const name = queue.shift()!;
+    const name = queue.shift() as string;
     sorted.push(name);
     const node = nodes[name];
     const parent = node.parentName;

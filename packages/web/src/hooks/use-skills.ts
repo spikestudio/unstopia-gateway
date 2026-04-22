@@ -11,8 +11,8 @@ export function useSkills() {
 
 export function useSkill(name: string | null) {
   return useQuery({
-    queryKey: queryKeys.skills.detail(name!),
-    queryFn: () => api.getSkill(name!),
+    queryKey: queryKeys.skills.detail(name ?? ""),
+    queryFn: () => api.getSkill(name ?? ""),
     enabled: !!name,
   });
 }

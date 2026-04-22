@@ -64,7 +64,9 @@ export function createGoal(db: Database, data: Partial<Goal>): Goal {
     now,
     now,
   );
-  return getGoal(db, id)!;
+  const created = getGoal(db, id);
+  if (!created) throw new Error(`Failed to retrieve newly created goal: ${id}`);
+  return created;
 }
 
 export function updateGoal(db: Database, id: string, updates: Partial<Goal>): Goal | null {

@@ -499,7 +499,8 @@ export function duplicateSession(sourceId: string, newTitle?: string): { session
   });
   txn();
 
-  const newSession = getSession(newId)!;
+  const newSession = getSession(newId);
+  if (!newSession) throw new Error(`Failed to retrieve newly duplicated session: ${newId}`);
   return { session: newSession, messageCount: messages.length };
 }
 

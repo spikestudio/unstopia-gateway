@@ -202,7 +202,7 @@ export class SessionManager {
     const sessionId = session.id;
 
     await this.queue.enqueue(msg.sessionKey, () =>
-      this.runSession(session!, msg, attachmentPaths, connector, target, opts.employee),
+      this.runSession(session as Session, msg, attachmentPaths, connector, target, opts.employee),
     );
 
     return { sessionId };

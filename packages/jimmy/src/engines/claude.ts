@@ -106,7 +106,8 @@ export class ClaudeEngine implements InterruptibleEngine {
       return result;
     }
 
-    return lastResult!;
+    if (!lastResult) throw new Error("Claude engine: no result after retries");
+    return lastResult;
   }
 
   private async runOnce(opts: EngineRunOpts): Promise<EngineResult> {
