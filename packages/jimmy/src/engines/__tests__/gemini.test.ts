@@ -1,3 +1,4 @@
+import type { ChildProcess } from "node:child_process";
 import { EventEmitter } from "node:events";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { EngineRunOpts, StreamDelta } from "../../shared/types.js";
@@ -12,17 +13,32 @@ import { spawn } from "node:child_process";
 
 const mockSpawn = vi.mocked(spawn);
 
+/** Shape of the mock ChildProcess used in tests */
+interface MockProcess {
+  emit: EventEmitter["emit"];
+  stdout: EventEmitter;
+  stderr: EventEmitter;
+  stdin: { end: ReturnType<typeof vi.fn> };
+  pid: number;
+  exitCode: number | null;
+  killed: boolean;
+  kill: ReturnType<typeof vi.fn>;
+}
+
 /** Creates a mock ChildProcess that emits events and has controllable stdout/stderr */
-function createMockProcess() {
-  const proc = new EventEmitter() as any;
-  proc.stdout = new EventEmitter();
-  proc.stderr = new EventEmitter();
-  proc.stdin = { end: vi.fn() };
-  proc.pid = 12345;
-  proc.exitCode = null;
-  proc.killed = false;
-  proc.kill = vi.fn(() => {
-    proc.killed = true;
+function createMockProcess(): MockProcess {
+  const emitter = new EventEmitter();
+  const proc: MockProcess = Object.assign(emitter, {
+    stdout: new EventEmitter(),
+    stderr: new EventEmitter(),
+    stdin: { end: vi.fn() },
+    pid: 12345,
+    exitCode: null as number | null,
+    killed: false,
+    kill: vi.fn(() => {
+      proc.killed = true;
+      return true;
+    }),
   });
   return proc;
 }
@@ -276,7 +292,7 @@ describe("GeminiEngine", () => {
 
     it("should resolve with result on successful non-streaming run", async () => {
       const proc = createMockProcess();
-      mockSpawn.mockReturnValue(proc as any);
+      mockSpawn.mockReturnValue(proc as unknown as ChildProcess); // test mock
 
       const resultPromise = engine.run({ prompt: "hello", cwd: "/tmp" });
 
@@ -294,7 +310,7 @@ describe("GeminiEngine", () => {
 
     it("should resolve with streamed text on streaming run", async () => {
       const proc = createMockProcess();
-      mockSpawn.mockReturnValue(proc as any);
+      mockSpawn.mockReturnValue(proc as unknown as ChildProcess); // test mock
 
       const deltas: StreamDelta[] = [];
       const resultPromise = engine.run({
@@ -334,7 +350,7 @@ describe("GeminiEngine", () => {
 
     it("should handle non-zero exit code as error", async () => {
       const proc = createMockProcess();
-      mockSpawn.mockReturnValue(proc as any);
+      mockSpawn.mockReturnValue(proc as unknown as ChildProcess); // test mock
 
       const resultPromise = engine.run({ prompt: "hello", cwd: "/tmp" });
 
@@ -349,7 +365,7 @@ describe("GeminiEngine", () => {
 
     it("should reject on spawn error", async () => {
       const proc = createMockProcess();
-      mockSpawn.mockReturnValue(proc as any);
+      mockSpawn.mockReturnValue(proc as unknown as ChildProcess); // test mock
 
       const resultPromise = engine.run({ prompt: "hello", cwd: "/tmp" });
 
@@ -360,7 +376,7 @@ describe("GeminiEngine", () => {
 
     it("should handle termination reason from kill()", async () => {
       const proc = createMockProcess();
-      mockSpawn.mockReturnValue(proc as any);
+      mockSpawn.mockReturnValue(proc as unknown as ChildProcess); // test mock
 
       const resultPromise = engine.run({
         prompt: "long task",
@@ -380,7 +396,7 @@ describe("GeminiEngine", () => {
 
     it("should track live processes and report isAlive correctly", async () => {
       const proc = createMockProcess();
-      mockSpawn.mockReturnValue(proc as any);
+      mockSpawn.mockReturnValue(proc as unknown as ChildProcess); // test mock
 
       const resultPromise = engine.run({
         prompt: "hello",
@@ -402,7 +418,7 @@ describe("GeminiEngine", () => {
 
     it("should stream tool use events", async () => {
       const proc = createMockProcess();
-      mockSpawn.mockReturnValue(proc as any);
+      mockSpawn.mockReturnValue(proc as unknown as ChildProcess); // test mock
 
       const deltas: StreamDelta[] = [];
       const resultPromise = engine.run({
@@ -438,7 +454,7 @@ describe("GeminiEngine", () => {
 
     it("should use custom bin from opts", async () => {
       const proc = createMockProcess();
-      mockSpawn.mockReturnValue(proc as any);
+      mockSpawn.mockReturnValue(proc as unknown as ChildProcess); // test mock
 
       const resultPromise = engine.run({
         prompt: "hello",
@@ -456,7 +472,7 @@ describe("GeminiEngine", () => {
 
     it("should default bin to 'gemini'", async () => {
       const proc = createMockProcess();
-      mockSpawn.mockReturnValue(proc as any);
+      mockSpawn.mockReturnValue(proc as unknown as ChildProcess); // test mock
 
       const resultPromise = engine.run({ prompt: "hello", cwd: "/tmp" });
 
@@ -470,7 +486,7 @@ describe("GeminiEngine", () => {
 
     it("should preserve GEMINI_API_KEY in child env", async () => {
       const proc = createMockProcess();
-      mockSpawn.mockReturnValue(proc as any);
+      mockSpawn.mockReturnValue(proc as unknown as ChildProcess); // test mock
 
       const origKey = process.env.GEMINI_API_KEY;
       process.env.GEMINI_API_KEY = "test-gemini-key";
@@ -492,7 +508,7 @@ describe("GeminiEngine", () => {
 
     it("should strip CLAUDE_CODE_ vars from child env", async () => {
       const proc = createMockProcess();
-      mockSpawn.mockReturnValue(proc as any);
+      mockSpawn.mockReturnValue(proc as unknown as ChildProcess); // test mock
 
       const origVar = process.env.CLAUDE_CODE_SOMETHING;
       process.env.CLAUDE_CODE_SOMETHING = "should-be-stripped";

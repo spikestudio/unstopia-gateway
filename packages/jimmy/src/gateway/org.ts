@@ -20,32 +20,38 @@ export function scanOrg(): Map<string, Employee> {
       } else if (entry.name.endsWith(".yaml") && entry.name !== "department.yaml") {
         try {
           const raw = fs.readFileSync(fullPath, "utf-8");
-          const data = yaml.load(raw) as any;
+          const data = yaml.load(raw) as Record<string, unknown>;
           if (data?.name && data.persona) {
             const employee: Employee = {
-              name: data.name,
-              displayName: data.displayName || data.name,
-              department: data.department || path.basename(path.dirname(fullPath)),
-              rank: data.rank || "employee",
-              engine: data.engine || "claude",
-              model: data.model || "sonnet",
-              persona: data.persona,
+              name: data.name as string,
+              displayName: typeof data.displayName === "string" ? data.displayName : (data.name as string),
+              department: typeof data.department === "string" ? data.department : path.basename(path.dirname(fullPath)),
+              rank: (["executive", "manager", "senior", "employee"] as const).includes(data.rank as Employee["rank"])
+                ? (data.rank as Employee["rank"])
+                : "employee",
+              engine: typeof data.engine === "string" ? data.engine : "claude",
+              model: typeof data.model === "string" ? data.model : "sonnet",
+              persona: data.persona as string,
               emoji: typeof data.emoji === "string" ? data.emoji : undefined,
               cliFlags: Array.isArray(data.cliFlags) ? data.cliFlags : undefined,
               effortLevel: typeof data.effortLevel === "string" ? data.effortLevel : undefined,
               alwaysNotify: typeof data.alwaysNotify === "boolean" ? data.alwaysNotify : true,
-              reportsTo: data.reportsTo ?? undefined,
-              mcp: data.mcp ?? undefined,
+              reportsTo: data.reportsTo !== undefined ? (data.reportsTo as string) : undefined,
+              mcp:
+                typeof data.mcp === "boolean" || Array.isArray(data.mcp) ? (data.mcp as boolean | string[]) : undefined,
               provides: Array.isArray(data.provides)
                 ? data.provides
                     .filter(
                       (s: unknown) =>
                         s &&
                         typeof s === "object" &&
-                        typeof (s as any).name === "string" &&
-                        typeof (s as any).description === "string",
+                        typeof (s as Record<string, unknown>).name === "string" &&
+                        typeof (s as Record<string, unknown>).description === "string",
                     )
-                    .map((s: any) => ({ name: s.name as string, description: s.description as string }))
+                    .map((s: unknown) => ({
+                      name: (s as Record<string, unknown>).name as string,
+                      description: (s as Record<string, unknown>).description as string,
+                    }))
                 : undefined,
             };
             registry.set(employee.name, employee);
@@ -78,7 +84,7 @@ function findEmployeeYamlPath(name: string): string | undefined {
       } else if ((entry.name.endsWith(".yaml") || entry.name.endsWith(".yml")) && entry.name !== "department.yaml") {
         try {
           const raw = fs.readFileSync(fullPath, "utf-8");
-          const data = yaml.load(raw) as any;
+          const data = yaml.load(raw) as Record<string, unknown>;
           if (data?.name === name) return fullPath;
         } catch {
           // skip unreadable files

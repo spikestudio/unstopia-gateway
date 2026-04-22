@@ -26,8 +26,12 @@ export function getPackageVersion(): string {
 export function getInstanceVersion(): string {
   if (!fs.existsSync(CONFIG_PATH)) return "0.0.0";
   try {
-    const config = yaml.load(fs.readFileSync(CONFIG_PATH, "utf-8")) as any;
-    return config?.jinn?.version ?? "0.0.0";
+    const config = yaml.load(fs.readFileSync(CONFIG_PATH, "utf-8")) as Record<string, unknown>;
+    const jinn = config?.jinn;
+    if (jinn && typeof jinn === "object" && "version" in jinn) {
+      return String((jinn as Record<string, unknown>).version ?? "0.0.0");
+    }
+    return "0.0.0";
   } catch {
     return "0.0.0";
   }

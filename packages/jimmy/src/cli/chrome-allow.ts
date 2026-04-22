@@ -4,6 +4,27 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
+/** Minimal interface for a LevelDB instance (classic-level) */
+interface LevelDb {
+  get(key: string): Promise<string>;
+  put(key: string, value: string): Promise<void>;
+  close(): Promise<void>;
+}
+
+/** Minimal interface for the ClassicLevel constructor */
+interface ClassicLevelConstructor {
+  new (path: string, options: { keyEncoding: string; valueEncoding: string }): LevelDb;
+}
+
+/** Shape of a Chrome extension permission entry */
+interface PermissionEntry {
+  action: string;
+  createdAt: number;
+  duration: string;
+  id: string;
+  scope: { netloc: string; type: string };
+}
+
 const GREEN = "\x1b[32m";
 const YELLOW = "\x1b[33m";
 const RED = "\x1b[31m";
@@ -357,7 +378,7 @@ function openBrowser(browser: BrowserConfig): void {
 
 async function allowAllForBrowser(
   browser: BrowserConfig,
-  ClassicLevel: any,
+  ClassicLevel: ClassicLevelConstructor,
   opts: { restart?: boolean },
 ): Promise<void> {
   const label = browser.name;
@@ -388,16 +409,16 @@ async function allowAllForBrowser(
   // Open LevelDB and write permissions
   const db = new ClassicLevel(dbPath, { keyEncoding: "utf8", valueEncoding: "utf8" });
 
-  let data: { permissions: any[] };
+  let data: { permissions: PermissionEntry[] };
   try {
     const raw = await db.get("permissionStorage");
-    data = JSON.parse(raw);
+    data = JSON.parse(raw) as { permissions: PermissionEntry[] };
   } catch {
     data = { permissions: [] };
   }
 
   const existingNetlocs = new Set(
-    data.permissions.filter((p: any) => p.scope?.type === "netloc").map((p: any) => p.scope.netloc),
+    data.permissions.filter((p) => p.scope?.type === "netloc").map((p) => p.scope.netloc),
   );
 
   const now = Date.now();
@@ -435,10 +456,10 @@ async function allowAllForBrowser(
 
 export async function runChromeAllow(opts: { restart?: boolean; cometBrowser?: boolean }): Promise<void> {
   // Check for classic-level
-  let ClassicLevel: any;
+  let ClassicLevel: ClassicLevelConstructor;
   try {
     const mod = await import("classic-level");
-    ClassicLevel = mod.ClassicLevel;
+    ClassicLevel = mod.ClassicLevel as unknown as ClassicLevelConstructor;
   } catch {
     console.error(`${RED}Error:${RESET} classic-level is required but not installed.`);
     console.error(`Run: ${DIM}npm install -g classic-level${RESET} or ${DIM}pnpm add classic-level${RESET}`);

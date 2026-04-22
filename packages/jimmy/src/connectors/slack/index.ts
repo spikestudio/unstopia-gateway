@@ -11,7 +11,15 @@ import type {
   Target,
 } from "../../shared/types.js";
 import { downloadAttachment, formatResponse } from "./format.js";
-import { buildReplyContext, deriveSessionKey, isOldSlackMessage } from "./threads.js";
+import { buildReplyContext, deriveSessionKey, isOldSlackMessage, type SlackMessageEventLike } from "./threads.js";
+
+/** Extended shape of a Slack message event as seen in the bolt handler */
+interface SlackMessageEvent extends SlackMessageEventLike {
+  bot_id?: string;
+  text?: string;
+  team?: string;
+  files?: Array<{ name: string; url_private: string; mimetype: string }>;
+}
 
 export class SlackConnector implements Connector {
   name = "slack";
@@ -45,7 +53,10 @@ export class SlackConnector implements Connector {
       status,
     };
     try {
-      const client = this.app.client as any;
+      const client = this.app.client as unknown as {
+        assistant?: { threads?: { setStatus?: (payload: unknown) => Promise<void> } };
+        apiCall?: (method: string, payload: unknown) => Promise<void>;
+      };
       if (client.assistant?.threads?.setStatus) {
         await client.assistant.threads.setStatus(payload);
       } else if (typeof client.apiCall === "function") {
@@ -94,16 +105,17 @@ export class SlackConnector implements Connector {
 
   async start() {
     this.app.message(async ({ event }) => {
+      const evt = event as unknown as SlackMessageEvent;
       logger.info(
-        `[slack] Received message event: user=${(event as any).user} channel=${(event as any).channel} text="${((event as any).text || "").slice(0, 50)}"`,
+        `[slack] Received message event: user=${evt.user} channel=${evt.channel} text="${(evt.text || "").slice(0, 50)}"`,
       );
       // Skip bot's own messages
-      if ((event as any).bot_id) {
+      if (evt.bot_id) {
         logger.info(`[slack] Skipping bot message`);
         return;
       }
       // Skip ghost events from URL unfurls (user=undefined, text="")
-      if (!(event as any).user) {
+      if (!evt.user) {
         logger.debug(`[slack] Skipping event with no user (likely URL unfurl)`);
         return;
       }
@@ -111,25 +123,25 @@ export class SlackConnector implements Connector {
         logger.info(`[slack] No handler registered, dropping message`);
         return;
       }
-      if (this.ignoreOldMessagesOnBoot && isOldSlackMessage((event as any).ts, this.bootTimeMs)) {
-        logger.debug(`Ignoring old Slack message ${(event as any).ts}`);
+      if (this.ignoreOldMessagesOnBoot && isOldSlackMessage(evt.ts, this.bootTimeMs)) {
+        logger.debug(`Ignoring old Slack message ${evt.ts}`);
         return;
       }
-      if (this.allowedUsers && !this.allowedUsers.has((event as any).user)) {
-        logger.debug(`Ignoring Slack message from unauthorized user ${(event as any).user}`);
+      if (this.allowedUsers && !this.allowedUsers.has(evt.user)) {
+        logger.debug(`Ignoring Slack message from unauthorized user ${evt.user}`);
         return;
       }
 
-      const sessionKey = deriveSessionKey(event as any);
-      const replyContext = buildReplyContext(event as any);
+      const sessionKey = deriveSessionKey(evt);
+      const replyContext = buildReplyContext(evt);
 
       // Fetch parent message for thread replies so the session has full context
       let parentContext = "";
-      const threadTs = (event as any).thread_ts;
-      if (threadTs && threadTs !== (event as any).ts) {
+      const threadTs = evt.thread_ts;
+      if (threadTs && threadTs !== evt.ts) {
         try {
           const parentResult = await this.app.client.conversations.replies({
-            channel: (event as any).channel,
+            channel: evt.channel,
             ts: threadTs,
             limit: 1,
             inclusive: true,
@@ -145,8 +157,8 @@ export class SlackConnector implements Connector {
 
       // Download attachments if present
       const attachments = [];
-      if ((event as any).files) {
-        for (const file of (event as any).files) {
+      if (evt.files) {
+        for (const file of evt.files) {
           try {
             const localPath = await downloadAttachment(file.url_private, this.app.client.token ?? "", TMP_DIR);
             attachments.push({
@@ -161,24 +173,24 @@ export class SlackConnector implements Connector {
         }
       }
 
-      const channelName = await this.resolveChannelName((event as any).channel);
+      const channelName = await this.resolveChannelName(evt.channel);
 
       const msg: IncomingMessage = {
         connector: this.name,
         source: "slack",
         sessionKey,
         replyContext,
-        messageId: (event as any).ts,
-        channel: (event as any).channel,
-        thread: (event as any).thread_ts,
-        user: (event as any).user,
-        userId: (event as any).user,
-        text: parentContext + ((event as any).text || ""),
+        messageId: evt.ts,
+        channel: evt.channel,
+        thread: evt.thread_ts,
+        user: evt.user,
+        userId: evt.user,
+        text: parentContext + (evt.text || ""),
         attachments,
         raw: event,
         transportMeta: {
-          channelType: ((event as any).channel_type as string) || "channel",
-          team: ((event as any).team as string) || null,
+          channelType: evt.channel_type || "channel",
+          team: evt.team || null,
           channelName: channelName || null,
         },
       };

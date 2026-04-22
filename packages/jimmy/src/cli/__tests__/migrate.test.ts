@@ -81,8 +81,8 @@ describe("migrate: AI session launcher", () => {
 
     // The cwd should be set in the options object
     expect(options).toBeDefined();
-    expect((options as any).cwd).toBeDefined();
-    expect(typeof (options as any).cwd).toBe("string");
+    expect((options as Record<string, unknown>).cwd).toBeDefined();
+    expect(typeof (options as Record<string, unknown>).cwd).toBe("string");
   });
 
   it("should pass -p flag with the migration prompt", async () => {

@@ -388,7 +388,7 @@ export interface JinnConfig {
     codex: { bin: string; model: string; effortLevel?: string; childEffortOverride?: string };
     gemini?: { bin: string; model: string; effortLevel?: string; childEffortOverride?: string };
   };
-  connectors: Record<string, any> & {
+  connectors: Record<string, unknown> & {
     web?: WebConnectorConfig;
     slack?: SlackConnectorConfig;
     telegram?: TelegramConnectorConfig;
