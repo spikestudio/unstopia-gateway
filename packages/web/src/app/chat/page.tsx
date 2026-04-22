@@ -47,6 +47,7 @@ class ChatErrorBoundary extends React.Component<{ children: React.ReactNode }, {
               {this.state.error.stack?.split("\n").slice(0, 5).join("\n")}
             </pre>
             <button
+              type="button"
               onClick={() => {
                 this.setState({ error: null });
                 window.location.reload();
@@ -505,6 +506,7 @@ function ChatPage() {
   const moreMenu = selectedId ? (
     <div ref={moreMenuRef} className="relative">
       <button
+        type="button"
         onClick={() => setShowMoreMenu((v) => !v)}
         aria-label="More options"
         className="flex items-center rounded-md p-1 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
@@ -515,6 +517,7 @@ function ChatPage() {
       {showMoreMenu && (
         <div className="absolute right-0 top-full z-[200] mt-1 min-w-[220px] overflow-hidden rounded-[var(--radius-md)] border border-border bg-[var(--material-thick)] shadow-[var(--shadow-overlay)] backdrop-blur-xl">
           <button
+            type="button"
             onClick={() => copyToClipboard(selectedId, "id")}
             className="block w-full px-3 py-2 text-left text-sm text-foreground transition-colors hover:bg-accent"
           >
@@ -522,6 +525,7 @@ function ChatPage() {
           </button>
           {sessionMeta?.engineSessionId && (
             <button
+              type="button"
               onClick={() => {
                 const cli = sessionMeta.engine === "codex" ? "codex" : "claude";
                 copyToClipboard(`${cli} --resume ${sessionMeta.engineSessionId}`, "cli");
@@ -532,6 +536,7 @@ function ChatPage() {
             </button>
           )}
           <button
+            type="button"
             onClick={() => {
               if (selectedId) handleDuplicate(selectedId);
             }}
@@ -543,6 +548,7 @@ function ChatPage() {
           </button>
           <div className="my-0.5 border-t border-border" />
           <button
+            type="button"
             onClick={() => {
               setShowMoreMenu(false);
               if (selectedId && window.confirm("Delete this session?")) handleDeleteSession(selectedId);
@@ -564,6 +570,7 @@ function ChatPage() {
       {selectedId && (
         <div className="flex items-center gap-0.5 rounded-full bg-[var(--fill-tertiary)] p-0.5">
           <button
+            type="button"
             onClick={() => setViewMode("chat")}
             className={cn(
               "rounded-full px-2.5 py-1 text-[11px] font-medium transition-all",
@@ -575,6 +582,7 @@ function ChatPage() {
             Chat
           </button>
           <button
+            type="button"
             onClick={() => setViewMode("cli")}
             className={cn(
               "rounded-full px-2.5 py-1 font-mono text-[11px] font-medium transition-all",

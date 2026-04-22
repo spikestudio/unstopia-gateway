@@ -38,7 +38,8 @@ export function KanbanColumn({ column, tickets, onDrop, onCreateTicket, renderTi
   }
 
   return (
-    <div
+    <section
+      aria-label={`${column.title} column`}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
@@ -61,7 +62,7 @@ export function KanbanColumn({ column, tickets, onDrop, onCreateTicket, renderTi
 
         {column.id === "backlog" && onCreateTicket && (
           <button
-            onClick={onCreateTicket}
+            type="button"
             aria-label="Create new ticket"
             className="flex items-center justify-center w-6 h-6 rounded-[var(--radius-sm)] border-none bg-transparent text-[var(--text-secondary)] cursor-pointer p-0 transition-colors duration-150 ease-[var(--ease-smooth)]"
           >
@@ -83,6 +84,6 @@ export function KanbanColumn({ column, tickets, onDrop, onCreateTicket, renderTi
           </div>
         )}
       </div>
-    </div>
+    </section>
   );
 }

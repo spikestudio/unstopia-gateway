@@ -39,7 +39,7 @@ export function VoiceMessage({ src, duration, waveform, isUser }: VoiceMessagePr
     };
   }, [src]);
 
-  const toggle = useCallback(() => {
+  const _toggle = useCallback(() => {
     const audio = audioRef.current;
     if (!audio) return;
     if (playing) {
@@ -68,7 +68,7 @@ export function VoiceMessage({ src, duration, waveform, isUser }: VoiceMessagePr
     >
       {/* Play/Pause button */}
       <button
-        onClick={toggle}
+        type="button"
         aria-label={playing ? "Pause" : "Play"}
         style={{
           width: 28,
@@ -85,12 +85,12 @@ export function VoiceMessage({ src, duration, waveform, isUser }: VoiceMessagePr
         }}
       >
         {playing ? (
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false">
             <rect x="6" y="4" width="4" height="16" rx="1" />
             <rect x="14" y="4" width="4" height="16" rx="1" />
           </svg>
         ) : (
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false">
             <polygon points="6,4 20,12 6,20" />
           </svg>
         )}

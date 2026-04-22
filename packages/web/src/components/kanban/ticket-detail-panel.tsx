@@ -63,7 +63,7 @@ export function TicketDetailPanel({
     closeRef.current?.focus();
   }, []);
 
-  function handleDelete() {
+  function _handleDelete() {
     onDelete();
   }
 
@@ -81,7 +81,7 @@ export function TicketDetailPanel({
           {/* Panel controls */}
           <div className="pt-[var(--space-4)] px-[var(--space-5)] pb-0 flex justify-end gap-[var(--space-2)]">
             <button
-              ref={closeRef}
+              type="button"
               onClick={onClose}
               aria-label="Close detail panel"
               className="w-7 h-7 rounded-full flex items-center justify-center bg-[var(--fill-secondary)] text-[var(--text-secondary)] border-none cursor-pointer text-[length:var(--text-footnote)] transition-all duration-150 ease-[var(--ease-spring)]"
@@ -126,6 +126,7 @@ export function TicketDetailPanel({
                 const isCurrent = col.id === ticket.status;
                 return (
                   <button
+                    type="button"
                     key={col.id}
                     onClick={() => {
                       if (!isCurrent) onStatusChange(col.id);
@@ -175,7 +176,7 @@ export function TicketDetailPanel({
         {/* Delete button */}
         <div className="shrink-0 py-[var(--space-2)] px-[var(--space-5)] pb-[var(--space-4)] border-t border-[var(--separator)]">
           <button
-            onClick={handleDelete}
+            type="button"
             className="w-full py-[var(--space-2)] px-[var(--space-3)] rounded-[var(--radius-md)] border border-[var(--system-red)] bg-transparent text-[var(--system-red)] text-[length:var(--text-footnote)] font-semibold cursor-pointer transition-all duration-[120ms] ease-linear"
           >
             Delete Ticket

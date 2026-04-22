@@ -94,6 +94,7 @@ export function FeedView({ employees, selectedName, onSelect }: FeedViewProps) {
 
             return (
               <button
+                type="button"
                 key={emp.name}
                 onClick={() => onSelect(emp)}
                 className={cn(

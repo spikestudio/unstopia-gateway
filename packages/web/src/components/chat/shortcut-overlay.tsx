@@ -28,7 +28,7 @@ interface ShortcutOverlayProps {
 }
 
 export function ShortcutOverlay({ shortcuts, onClose }: ShortcutOverlayProps) {
-  const ref = useRef<HTMLDivElement>(null);
+  const ref = useRef<HTMLElement>(null);
   const [isClosing, setIsClosing] = useState(false);
 
   const handleClose = useCallback(() => {
@@ -53,16 +53,15 @@ export function ShortcutOverlay({ shortcuts, onClose }: ShortcutOverlayProps) {
   })).filter((g) => g.items.length > 0);
 
   return (
-    <div
+    <aside
       ref={ref}
-      role="complementary"
       aria-label="Keyboard shortcuts"
       className={`fixed bottom-4 right-4 z-40 w-[280px] overflow-hidden rounded-[var(--radius-lg)] border border-border bg-[var(--material-thick)] shadow-[var(--shadow-overlay)] backdrop-blur-xl transition-opacity duration-150 ${isClosing ? "opacity-0" : "animate-fade-in"}`}
     >
       <div className="flex items-center justify-between px-3 py-2.5 border-b border-border">
         <span className="text-sm font-semibold text-foreground">Keyboard Shortcuts</span>
         <button
-          onClick={handleClose}
+          type="button"
           className="rounded-sm p-0.5 text-muted-foreground transition-colors hover:text-foreground"
           aria-label="Close"
         >
@@ -89,6 +88,6 @@ export function ShortcutOverlay({ shortcuts, onClose }: ShortcutOverlayProps) {
           </div>
         ))}
       </div>
-    </div>
+    </aside>
   );
 }

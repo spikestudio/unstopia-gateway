@@ -124,7 +124,14 @@ export function ChatEmployeePicker({ employees, selectedEmployee, onSelect, port
           aria-selected={selectedEmployee === null}
           aria-label={portalName}
           data-picker-option
+          tabIndex={0}
           onClick={() => onSelect(null)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              onSelect(null);
+            }
+          }}
           onMouseEnter={() => setHighlightIdx(-1)}
           className={cn(
             "flex items-center gap-3 px-3 py-2.5 cursor-pointer transition-colors border-b border-[var(--separator)]",
@@ -163,7 +170,14 @@ export function ChatEmployeePicker({ employees, selectedEmployee, onSelect, port
                   role="option"
                   aria-selected={isSelected}
                   data-picker-option
+                  tabIndex={0}
                   onClick={() => onSelect(emp.name)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      onSelect(emp.name);
+                    }
+                  }}
                   onMouseEnter={() => setHighlightIdx(empIdx)}
                   className={cn(
                     "flex items-center gap-3 px-3 py-2 cursor-pointer transition-colors",

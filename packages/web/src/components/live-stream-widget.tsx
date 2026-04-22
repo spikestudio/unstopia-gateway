@@ -37,14 +37,14 @@ type WidgetState = "hidden" | "collapsed" | "expanded";
 /* ── LogRow ───────────────────────────────────────────────────── */
 
 function LogRow({ entry }: { entry: ParsedLogEntry }) {
-  const [open, setOpen] = useState(false);
+  const [open, _setOpen] = useState(false);
   const lvl = LEVEL_STYLE[entry.level] ?? LEVEL_STYLE.debug;
   const isLong = entry.message.length > 100;
 
   return (
     <div className={`border-b border-[var(--separator)] ${entry.level === "error" ? "bg-[rgba(255,69,58,0.03)]" : ""}`}>
       <button
-        onClick={() => isLong && setOpen((o) => !o)}
+        type="button"
         className={`flex items-center w-full px-3 py-[5px] gap-2 border-none bg-transparent text-left ${isLong ? "cursor-pointer" : "cursor-default"}`}
       >
         {/* Expand chevron */}
@@ -157,11 +157,11 @@ export function LiveStreamWidget() {
 
   /* ── Actions ──────────────────────────────────────────────── */
 
-  const handleClose = useCallback(() => {
+  const _handleClose = useCallback(() => {
     setState("hidden");
   }, []);
 
-  const handleCopy = useCallback(async () => {
+  const _handleCopy = useCallback(async () => {
     const text = entries.map(formatCopyLine).join("\n");
     await navigator.clipboard.writeText(text);
     setCopied(true);
@@ -187,7 +187,7 @@ export function LiveStreamWidget() {
   if (state === "collapsed") {
     return (
       <button
-        onClick={() => setState("expanded")}
+        type="button"
         className="focus-ring flex items-center fixed bottom-5 right-5 z-50 px-3.5 py-2 rounded-[var(--radius-pill)] border border-[var(--separator)] bg-[var(--material-regular)] cursor-pointer gap-2 backdrop-blur-[40px] backdrop-saturate-[1.8] shadow-[0_4px_24px_rgba(0,0,0,0.25)]"
         style={{
           WebkitBackdropFilter: "blur(40px) saturate(180%)",
@@ -230,7 +230,7 @@ export function LiveStreamWidget() {
 
         <div className="ml-auto flex gap-1">
           <button
-            onClick={handleCopy}
+            type="button"
             title="Copy all logs"
             disabled={entries.length === 0}
             className={`focus-ring w-7 h-7 flex items-center justify-center rounded-[var(--radius-sm)] border-none transition-all duration-150 ${
@@ -240,14 +240,14 @@ export function LiveStreamWidget() {
             <Copy size={14} />
           </button>
           <button
-            onClick={() => setState("collapsed")}
+            type="button"
             className="focus-ring w-7 h-7 flex items-center justify-center rounded-[var(--radius-sm)] border-none bg-transparent text-[var(--text-tertiary)] cursor-pointer transition-colors duration-150"
             title="Minimize"
           >
             <Minimize2 size={14} />
           </button>
           <button
-            onClick={handleClose}
+            type="button"
             className="focus-ring w-7 h-7 flex items-center justify-center rounded-[var(--radius-sm)] border-none bg-transparent text-[var(--text-tertiary)] cursor-pointer transition-colors duration-150"
             title="Close"
           >
@@ -277,6 +277,8 @@ export function LiveStreamWidget() {
               strokeLinecap="round"
               strokeLinejoin="round"
               className="text-[var(--text-tertiary)]"
+              aria-hidden="true"
+              focusable="false"
             >
               <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
             </svg>
@@ -297,7 +299,7 @@ export function LiveStreamWidget() {
       <div className="flex items-center shrink-0 px-3.5 py-2 border-t border-[var(--separator)] gap-2">
         {!autoScroll && entries.length > 0 && (
           <button
-            onClick={() => setAutoScroll(true)}
+            type="button"
             className="focus-ring px-2.5 py-1 rounded-[var(--radius-sm)] border-none cursor-pointer text-[length:var(--text-caption2)] font-[var(--weight-medium)] bg-[var(--fill-secondary)] text-[var(--text-secondary)]"
           >
             Scroll to bottom

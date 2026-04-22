@@ -72,6 +72,7 @@ export function EmojiPicker({ current, onSelect, onClose }: EmojiPickerProps) {
             <div className="grid grid-cols-8 gap-1">
               {EMOJI_POOL.map((emoji) => (
                 <button
+                  type="button"
                   key={emoji}
                   onClick={() => onSelect(emoji)}
                   className={`flex items-center justify-center rounded-[var(--radius-md,12px)] p-1.5 text-xl transition-colors ${emoji === current ? "bg-[var(--accent-fill)] border border-[var(--accent)]" : "bg-transparent border border-transparent hover:bg-[var(--fill-secondary)]"}`}
@@ -93,6 +94,7 @@ export function EmojiPicker({ current, onSelect, onClose }: EmojiPickerProps) {
             <div className="grid grid-cols-8 gap-1">
               {filtered.map((e) => (
                 <button
+                  type="button"
                   key={e.emoji}
                   onClick={() => onSelect(e.emoji)}
                   title={e.label}

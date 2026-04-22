@@ -431,6 +431,7 @@ export function ChatInput({
             const isHighlighted = idx === commandIndex;
             return (
               <button
+                type="button"
                 key={cmd.name}
                 ref={(el) => {
                   if (isHighlighted && el) el.scrollIntoView({ block: "nearest" });
@@ -457,6 +458,7 @@ export function ChatInput({
             const isHighlighted = idx === mentionIndex;
             return (
               <button
+                type="button"
                 key={emp.name}
                 ref={(el) => {
                   if (el) mentionItemRefs.current.set(idx, el);
@@ -501,6 +503,7 @@ export function ChatInput({
       >
         {/* Attach button */}
         <button
+          type="button"
           aria-label="Attach file"
           onClick={() => fileInputRef.current?.click()}
           className="w-8 h-8 shrink-0 rounded-[var(--radius-sm)] flex items-center justify-center bg-transparent border-none cursor-pointer text-[var(--text-secondary)] mb-0"
@@ -514,6 +517,8 @@ export function ChatInput({
             strokeWidth="2"
             strokeLinecap="round"
             strokeLinejoin="round"
+            aria-hidden="true"
+            focusable="false"
           >
             <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" />
           </svg>
@@ -549,6 +554,7 @@ export function ChatInput({
         {/* Language picker — only shown when multiple STT languages configured */}
         {stt.languages.length > 1 && (
           <button
+            type="button"
             aria-label={`STT language: ${stt.selectedLanguage.toUpperCase()}. Click to switch.`}
             onClick={stt.cycleLanguage}
             className="h-6 px-1.5 shrink-0 rounded-[var(--radius-sm)] flex items-center justify-center bg-[var(--fill-tertiary)] border-none cursor-pointer text-[var(--text-secondary)] text-[11px] font-semibold font-[family-name:var(--font-mono)] tracking-[0.5px] uppercase transition-all duration-150 ease-in-out"
@@ -560,6 +566,7 @@ export function ChatInput({
 
         {/* Voice input / STT button */}
         <button
+          type="button"
           aria-label={
             stt.state === "recording"
               ? "Stop recording"
@@ -587,6 +594,8 @@ export function ChatInput({
               stroke="currentColor"
               strokeWidth="2"
               className="animate-[stt-spin_1s_linear_infinite]"
+              aria-hidden="true"
+              focusable="false"
             >
               <path d="M12 2a10 10 0 0 1 10 10" />
             </svg>
@@ -600,6 +609,8 @@ export function ChatInput({
               strokeWidth="2"
               strokeLinecap="round"
               strokeLinejoin="round"
+              aria-hidden="true"
+              focusable="false"
             >
               <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
               <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
@@ -615,11 +626,12 @@ export function ChatInput({
         {/* Stop button — shown when loading */}
         {loading && onInterrupt && (
           <button
+            type="button"
             onClick={onInterrupt}
             aria-label="Stop"
             className="w-8 h-8 rounded-full bg-[var(--system-red)] text-white border-none cursor-pointer flex items-center justify-center shrink-0 transition-all duration-150 ease-in-out"
           >
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false">
               <rect x="4" y="4" width="16" height="16" rx="2" />
             </svg>
           </button>
@@ -627,6 +639,7 @@ export function ChatInput({
 
         {/* Send button */}
         <button
+          type="button"
           onClick={handleSubmit}
           disabled={!hasContent || disabled}
           aria-label="Send message"
@@ -641,6 +654,8 @@ export function ChatInput({
             strokeWidth="2.5"
             strokeLinecap="round"
             strokeLinejoin="round"
+            aria-hidden="true"
+            focusable="false"
           >
             <line x1="12" y1="19" x2="12" y2="5" />
             <polyline points="5 12 12 5 19 12" />
@@ -655,6 +670,7 @@ export function ChatInput({
         <span>@name - mention</span>
         {onShortcutsClick && (
           <button
+            type="button"
             onClick={onShortcutsClick}
             className="flex items-center gap-1 text-[length:var(--text-caption2)] text-[var(--text-quaternary)] hover:text-[var(--text-tertiary)] transition-colors bg-transparent border-none cursor-pointer p-0 font-[inherit]"
           >
@@ -672,6 +688,7 @@ export function ChatInput({
         >
           <span className="flex-1">Voice input error: {stt.error}</span>
           <button
+            type="button"
             onClick={stt.dismissError}
             className="bg-none border-none cursor-pointer text-[var(--system-red)] text-[length:var(--text-caption1)] font-semibold py-0.5 px-1.5"
           >

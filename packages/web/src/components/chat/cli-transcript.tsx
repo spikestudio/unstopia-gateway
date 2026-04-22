@@ -6,7 +6,7 @@ import { api } from "@/lib/api";
 /* ── Tool input collapse ─────────────────────────────────── */
 
 function ToolInput({ input }: { input: Record<string, unknown> }) {
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, _setExpanded] = useState(false);
   const serialised = JSON.stringify(input, null, 2);
   const isLong = serialised.length > 300;
 
@@ -21,7 +21,7 @@ function ToolInput({ input }: { input: Record<string, unknown> }) {
   return (
     <div>
       <button
-        onClick={() => setExpanded((v) => !v)}
+        type="button"
         className="mt-1 px-2 py-0.5 text-[11px] rounded bg-white/[0.08] border border-white/[0.12] text-[var(--text-tertiary)] cursor-pointer font-[SF_Mono,Menlo,Cascadia_Code,monospace]"
       >
         {expanded ? "collapse input" : `show input (${serialised.length} chars)`}
@@ -38,12 +38,12 @@ function ToolInput({ input }: { input: Record<string, unknown> }) {
 /* ── Thinking block ──────────────────────────────────────── */
 
 function ThinkingBlock({ text }: { text: string }) {
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, _setExpanded] = useState(false);
 
   return (
     <div className="mb-1.5">
       <button
-        onClick={() => setExpanded((v) => !v)}
+        type="button"
         className="px-2 py-0.5 text-[11px] rounded bg-white/[0.06] border border-white/10 text-[var(--text-quaternary,var(--text-tertiary))] cursor-pointer font-[SF_Mono,Menlo,Cascadia_Code,monospace] italic"
       >
         {expanded ? "hide thinking" : "show thinking"}
@@ -60,7 +60,7 @@ function ThinkingBlock({ text }: { text: string }) {
 /* ── Tool result collapse ────────────────────────────────── */
 
 function ToolResult({ text }: { text: string }) {
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, _setExpanded] = useState(false);
   const isLong = text.length > 500;
 
   if (!isLong) {
@@ -74,7 +74,7 @@ function ToolResult({ text }: { text: string }) {
   return (
     <div>
       <button
-        onClick={() => setExpanded((v) => !v)}
+        type="button"
         className="mt-1 px-2 py-0.5 text-[11px] rounded bg-white/[0.08] border border-white/[0.12] text-[var(--text-tertiary)] cursor-pointer font-[SF_Mono,Menlo,Cascadia_Code,monospace]"
       >
         {expanded ? "collapse output" : `show output (${text.length} chars)`}

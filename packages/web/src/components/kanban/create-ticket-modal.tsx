@@ -145,9 +145,9 @@ export function CreateTicketModal({ open, onOpenChange, employees, onSubmit }: C
 
           {/* Assignee */}
           <div className="flex flex-col gap-[var(--space-1)]">
-            <label className="text-[length:var(--text-caption1)] font-[var(--weight-medium)] text-[var(--text-secondary)]">
+            <span className="text-[length:var(--text-caption1)] font-[var(--weight-medium)] text-[var(--text-secondary)]">
               Assignee
-            </label>
+            </span>
             <EmployeePicker
               employees={employees}
               value={form.assigneeId}

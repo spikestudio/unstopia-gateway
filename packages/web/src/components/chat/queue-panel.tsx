@@ -45,7 +45,7 @@ export function QueuePanel({ sessionId, events, paused: initialPaused = false }:
 
   if (!sessionId || pendingItems.length === 0) return null;
 
-  async function handleCancel(itemId: string) {
+  async function _handleCancel(itemId: string) {
     if (!sessionId) return;
     try {
       await api.cancelQueueItem(sessionId, itemId);
@@ -55,7 +55,7 @@ export function QueuePanel({ sessionId, events, paused: initialPaused = false }:
     }
   }
 
-  async function handleClear() {
+  async function _handleClear() {
     if (!sessionId) return;
     try {
       await api.clearSessionQueue(sessionId);
@@ -65,7 +65,7 @@ export function QueuePanel({ sessionId, events, paused: initialPaused = false }:
     }
   }
 
-  async function handlePauseResume() {
+  async function _handlePauseResume() {
     if (!sessionId) return;
     try {
       if (paused) {
@@ -88,14 +88,14 @@ export function QueuePanel({ sessionId, events, paused: initialPaused = false }:
         </span>
         <div className="flex gap-[var(--space-1)]">
           <button
-            onClick={handlePauseResume}
+            type="button"
             title={paused ? "Resume queue" : "Pause queue"}
             className="bg-transparent border-none cursor-pointer text-[var(--text-secondary)] p-0.5 flex items-center"
           >
             {paused ? <Play size={13} /> : <Pause size={13} />}
           </button>
           <button
-            onClick={handleClear}
+            type="button"
             title="Clear all queued messages"
             className="bg-transparent border-none cursor-pointer text-[var(--text-secondary)] p-0.5 flex items-center"
           >
@@ -116,7 +116,7 @@ export function QueuePanel({ sessionId, events, paused: initialPaused = false }:
               {item.prompt.length > 60 ? `${item.prompt.slice(0, 57)}...` : item.prompt}
             </span>
             <button
-              onClick={() => handleCancel(item.id)}
+              type="button"
               title="Cancel this message"
               className="bg-transparent border-none cursor-pointer text-[var(--text-tertiary)] p-px flex items-center shrink-0"
             >
