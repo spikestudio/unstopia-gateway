@@ -16,7 +16,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useSettings } from "@/app/settings-provider";
 import { PageLayout } from "@/components/page-layout";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { useBreadcrumbs } from "@/context/breadcrumb-context";
 import { useGateway } from "@/hooks/use-gateway";
 import { api } from "@/lib/api";
@@ -129,7 +129,10 @@ export default function DashboardPage() {
 
   // Merge live WebSocket events with initial activity from API
   const allEvents = events.length > 0 ? events : initialActivity;
-  const recentEvents = [...allEvents].reverse().slice(0, 20);
+  const recentEvents = [...allEvents]
+    .reverse()
+    .slice(0, 20)
+    .map((evt, idx) => ({ ...evt, _key: `${evt.event}-${idx}` }));
 
   return (
     <PageLayout>
@@ -295,7 +298,7 @@ export default function DashboardPage() {
               <div className="max-h-80 overflow-y-auto">
                 {recentEvents.map((evt, i) => (
                   <div
-                    key={i}
+                    key={evt._key}
                     className="flex items-start gap-[var(--space-3)] px-[var(--space-4)] py-[var(--space-3)]"
                     style={i < recentEvents.length - 1 ? { borderBottom: "1px solid var(--separator)" } : undefined}
                   >

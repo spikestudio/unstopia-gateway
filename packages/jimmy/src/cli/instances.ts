@@ -21,7 +21,7 @@ export function loadInstances(): Instance[] {
 
 export function saveInstances(instances: Instance[]): void {
   fs.mkdirSync(path.dirname(INSTANCES_REGISTRY), { recursive: true });
-  fs.writeFileSync(INSTANCES_REGISTRY, JSON.stringify(instances, null, 2) + "\n");
+  fs.writeFileSync(INSTANCES_REGISTRY, `${JSON.stringify(instances, null, 2)}\n`);
 }
 
 /** Find the next available port starting from 7777, skipping ports already used by instances. */

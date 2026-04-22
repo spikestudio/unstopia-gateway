@@ -1,13 +1,7 @@
 "use client";
 
-import { createContext, type ReactNode, useCallback, useContext, useEffect, useRef, useState } from "react";
-import {
-  type AppNotification,
-  generateId,
-  loadNotifications,
-  saveNotifications,
-  wsEventToNotification,
-} from "@/lib/notifications";
+import { createContext, useContext } from "react";
+import type { AppNotification } from "@/lib/notifications";
 
 // ---------------------------------------------------------------------------
 // Context

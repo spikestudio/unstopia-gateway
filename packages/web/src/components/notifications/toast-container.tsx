@@ -23,7 +23,7 @@ function formatTime(ts: number): string {
 }
 
 export function ToastContainer() {
-  const { toasts, dismissToast } = useNotifications();
+  const { toasts } = useNotifications();
 
   if (toasts.length === 0) return null;
 
@@ -49,7 +49,7 @@ export function ToastContainer() {
               <div className="text-[11px] text-[var(--text-quaternary)] mt-1">{formatTime(toast.timestamp)}</div>
             </div>
             <button
-              onClick={() => dismissToast(toast.id)}
+              type="button"
               aria-label="Dismiss"
               className="bg-transparent border-none cursor-pointer text-[var(--text-tertiary)] p-0.5 shrink-0"
             >

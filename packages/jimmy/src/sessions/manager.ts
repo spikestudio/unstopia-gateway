@@ -12,7 +12,16 @@ import {
   detectRateLimit,
   isDeadSessionError,
 } from "../shared/rateLimit.js";
-import type { Connector, Employee, Engine, IncomingMessage, JinnConfig, Session, Target } from "../shared/types.js";
+import type {
+  Connector,
+  Employee,
+  Engine,
+  IncomingMessage,
+  JinnConfig,
+  JsonObject,
+  Session,
+  Target,
+} from "../shared/types.js";
 import {
   getClaudeExpectedResetAt,
   isLikelyNearClaudeUsageLimit,
@@ -40,7 +49,7 @@ export interface RouteOptions {
 
 function maybeRevertEngineOverride(session: Session): Session {
   const meta = (session.transportMeta || {}) as Record<string, unknown>;
-  const override = meta["engineOverride"] as Record<string, unknown> | undefined;
+  const override = meta.engineOverride as Record<string, unknown> | undefined;
   if (!override) return session;
 
   const originalEngine = typeof override.originalEngine === "string" ? override.originalEngine : null;
@@ -54,7 +63,7 @@ function maybeRevertEngineOverride(session: Session): Session {
   if (Number.isNaN(until.getTime())) return session;
   if (until.getTime() > Date.now()) return session;
 
-  const engineSessionsRaw = meta["engineSessions"];
+  const engineSessionsRaw = meta.engineSessions;
   const engineSessions =
     engineSessionsRaw && typeof engineSessionsRaw === "object" && !Array.isArray(engineSessionsRaw)
       ? { ...(engineSessionsRaw as Record<string, unknown>) }
@@ -71,14 +80,14 @@ function maybeRevertEngineOverride(session: Session): Session {
 
   const nextMeta = { ...meta, engineSessions } as Record<string, unknown>;
   if (originalEngine === "claude" && syncSince && session.engine !== "claude") {
-    nextMeta["claudeSyncSince"] = syncSince;
+    nextMeta.claudeSyncSince = syncSince;
   }
-  delete (nextMeta as Record<string, unknown>)["engineOverride"];
+  delete (nextMeta as Record<string, unknown>).engineOverride;
   return (
     updateSession(session.id, {
       engine: originalEngine,
       engineSessionId: restoredSessionId,
-      transportMeta: nextMeta as any,
+      transportMeta: nextMeta as JsonObject,
       lastError: null,
     }) ?? session
   );
@@ -100,7 +109,7 @@ function mergeTransportMeta(
     if (baseExisting[key] !== undefined) merged[key] = baseExisting[key];
   }
 
-  return merged as any;
+  return merged as JsonObject;
 }
 
 export class SessionManager {
@@ -132,7 +141,7 @@ export class SessionManager {
     msg: IncomingMessage,
     connector: Connector,
     opts: RouteOptions = {},
-  ): Promise<{ sessionId: string } | void> {
+  ): Promise<{ sessionId: string } | undefined> {
     if (await this.handleCommand(msg, connector)) return;
 
     let session = getSessionBySessionKey(msg.sessionKey);
@@ -202,7 +211,7 @@ export class SessionManager {
     const sessionId = session.id;
 
     await this.queue.enqueue(msg.sessionKey, () =>
-      this.runSession(session!, msg, attachmentPaths, connector, target, opts.employee),
+      this.runSession(session as Session, msg, attachmentPaths, connector, target, opts.employee),
     );
 
     return { sessionId };
@@ -289,7 +298,7 @@ export class SessionManager {
 
       // If we previously switched to GPT while Claude was rate-limited, inject a sync transcript
       // so Claude can resume with full context when it comes back online.
-      const syncSinceIso = (session.transportMeta as any)?.claudeSyncSince;
+      const syncSinceIso = (session.transportMeta as Record<string, unknown> | null)?.claudeSyncSince;
       let promptToRun = msg.text;
       const syncSinceMs = typeof syncSinceIso === "string" ? new Date(syncSinceIso).getTime() : NaN;
       const syncRequested =
@@ -304,7 +313,11 @@ export class SessionManager {
 
       // Budget enforcement — check BEFORE engine.run()
       if (session.employee) {
-        const budgetConfig = (this.config as any).budgets?.employees as Record<string, number> | undefined;
+        const configAsUnknown = this.config as unknown as Record<string, unknown>;
+        const budgetConfig =
+          configAsUnknown.budgets !== undefined
+            ? ((configAsUnknown.budgets as Record<string, unknown>).employees as Record<string, number> | undefined)
+            : undefined;
         if (budgetConfig && session.employee in budgetConfig) {
           const budgetStatus = checkBudget(session.employee, budgetConfig);
           if (budgetStatus === "paused") {
@@ -378,14 +391,14 @@ export class SessionManager {
       if (isDead) {
         logger.warn(`Dead session detected for ${session.id} — clearing stale engine IDs`);
         const meta = { ...(session.transportMeta || {}) } as Record<string, unknown>;
-        delete meta["engineSessions"];
-        delete meta["engineOverride"];
+        delete meta.engineSessions;
+        delete meta.engineOverride;
         updateSession(session.id, {
           engineSessionId: null,
-          transportMeta: meta as any,
+          transportMeta: meta as JsonObject,
         });
         // Update local reference so subsequent code doesn't re-read stale IDs
-        session = { ...session, engineSessionId: null, transportMeta: meta as any };
+        session = { ...session, engineSessionId: null, transportMeta: meta as JsonObject };
       }
 
       // Detect rate limit / usage limit errors and auto-retry.
@@ -445,7 +458,7 @@ export class SessionManager {
             updateSession(session.id, {
               engine: fallbackName,
               // Keep Claude engine_session_id intact for later restore; Codex will return its own thread id.
-              transportMeta: nextMeta as any,
+              transportMeta: nextMeta as JsonObject,
               status: "running",
               lastActivity: new Date().toISOString(),
               lastError: resumeAt
@@ -495,7 +508,7 @@ export class SessionManager {
               unknown
             >;
             metaAfter.engineSessions = nextEngineSessions;
-            updateSession(session.id, { transportMeta: metaAfter as any });
+            updateSession(session.id, { transportMeta: metaAfter as JsonObject });
 
             if (decorateMessages && connector.setTypingStatus) {
               await connector.setTypingStatus(target.channel, threadTs, "").catch(() => {});
@@ -764,9 +777,9 @@ export class SessionManager {
             msg.transportMeta,
           ) as Record<string, unknown>;
           if (syncRequested && !rateLimit.limited && !wasInterrupted) {
-            delete merged["claudeSyncSince"];
+            delete merged.claudeSyncSince;
           }
-          return merged as any;
+          return merged as JsonObject;
         })(),
         lastActivity: new Date().toISOString(),
         lastError: wasInterrupted ? null : (result.error ?? null),

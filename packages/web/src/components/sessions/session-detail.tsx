@@ -55,7 +55,7 @@ function formatDate(iso: string): string {
 
 export function SessionDetail({
   session,
-  onClose,
+  onClose: _onClose,
   onNavigate,
 }: {
   session: Session;
@@ -128,7 +128,7 @@ export function SessionDetail({
               label="Parent Session"
               value={
                 <button
-                  onClick={() => onNavigate?.(session.parentSessionId!)}
+                  type="button"
                   className="font-[family-name:var(--font-mono)] text-[length:var(--text-caption1)] text-[var(--accent)] bg-none border-none cursor-pointer underline p-0"
                 >
                   {session.parentSessionId.slice(0, 12)}...
@@ -146,6 +146,7 @@ export function SessionDetail({
               <div className="flex flex-col gap-[var(--space-1)]">
                 {children.map((child) => (
                   <button
+                    type="button"
                     key={child.id}
                     onClick={() => onNavigate?.(child.id)}
                     className="flex items-center justify-between py-[var(--space-2)] px-[var(--space-3)] bg-[var(--fill-secondary)] rounded-[var(--radius-sm,8px)] border-none cursor-pointer text-left"
@@ -179,7 +180,7 @@ export function SessionDetail({
           {canReset && (
             <div className="mt-[var(--space-4)]">
               <button
-                onClick={() => resetSession.mutate(session.id)}
+                type="button"
                 disabled={resetSession.isPending}
                 className="w-full py-[var(--space-2)] px-[var(--space-4)] text-[length:var(--text-body)] font-[var(--weight-medium)] rounded-[var(--radius-sm,8px)] border border-[var(--separator)] bg-[var(--fill-secondary)] text-[var(--text-primary)] cursor-pointer hover:bg-[var(--fill-tertiary)] disabled:opacity-50 disabled:cursor-not-allowed"
               >

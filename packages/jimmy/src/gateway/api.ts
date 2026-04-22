@@ -51,7 +51,7 @@ import {
   TMP_DIR,
 } from "../shared/paths.js";
 import { computeNextRetryDelayMs, computeRateLimitDeadlineMs, detectRateLimit } from "../shared/rateLimit.js";
-import type { CronJob, Engine, IncomingMessage, JinnConfig, Session, Target } from "../shared/types.js";
+import type { CronJob, Engine, IncomingMessage, JinnConfig, JsonObject, Session, Target } from "../shared/types.js";
 import { isInterruptibleEngine } from "../shared/types.js";
 import { getClaudeExpectedResetAt, recordClaudeRateLimit } from "../shared/usageAwareness.js";
 import {
@@ -113,7 +113,7 @@ export function resumePendingWebQueueItems(context: ApiContext): void {
 
 function maybeRevertEngineOverride(session: Session): Session {
   const meta = (session.transportMeta || {}) as Record<string, unknown>;
-  const override = meta["engineOverride"] as Record<string, unknown> | undefined;
+  const override = meta.engineOverride as Record<string, unknown> | undefined;
   if (!override) return session;
 
   const originalEngine = typeof override.originalEngine === "string" ? override.originalEngine : null;
@@ -127,7 +127,7 @@ function maybeRevertEngineOverride(session: Session): Session {
   if (Number.isNaN(until.getTime())) return session;
   if (until.getTime() > Date.now()) return session;
 
-  const engineSessionsRaw = meta["engineSessions"];
+  const engineSessionsRaw = meta.engineSessions;
   const engineSessions =
     engineSessionsRaw && typeof engineSessionsRaw === "object" && !Array.isArray(engineSessionsRaw)
       ? { ...(engineSessionsRaw as Record<string, unknown>) }
@@ -144,14 +144,14 @@ function maybeRevertEngineOverride(session: Session): Session {
 
   const nextMeta = { ...meta, engineSessions } as Record<string, unknown>;
   if (originalEngine === "claude" && syncSince && session.engine !== "claude") {
-    nextMeta["claudeSyncSince"] = syncSince;
+    nextMeta.claudeSyncSince = syncSince;
   }
-  delete (nextMeta as Record<string, unknown>)["engineOverride"];
+  delete (nextMeta as Record<string, unknown>).engineOverride;
   return (
     updateSession(session.id, {
       engine: originalEngine,
       engineSessionId: restoredSessionId,
-      transportMeta: nextMeta as any,
+      transportMeta: nextMeta as JsonObject,
       lastError: null,
     }) ?? session
   );
@@ -453,7 +453,7 @@ export async function handleApiRequest(req: HttpRequest, res: ServerResponse, co
       const _parsed = await readJsonBody(req, res);
       if (!_parsed.ok) return;
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const body = _parsed.body as any;
+      const body = _parsed.body as Record<string, unknown>;
       const updates: UpdateSessionFields = {};
       if (body.title !== undefined) {
         if (typeof body.title !== "string") return badRequest(res, "title must be a string");
@@ -514,14 +514,14 @@ export async function handleApiRequest(req: HttpRequest, res: ServerResponse, co
       }
       context.sessionManager.getQueue().clearQueue(session.sessionKey || session.sourceRef || session.id);
       const meta = { ...(session.transportMeta || {}) } as Record<string, unknown>;
-      delete meta["engineSessions"];
-      delete meta["engineOverride"];
+      delete meta.engineSessions;
+      delete meta.engineOverride;
       updateSession(params.id, {
         status: "idle",
         engineSessionId: null,
         lastActivity: new Date().toISOString(),
         lastError: null,
-        transportMeta: meta as any,
+        transportMeta: meta as JsonObject,
       });
       logger.info(
         `Session ${params.id} reset via API (cleared engineSessions, engineOverride, engineSessionId, lastError)`,
@@ -553,13 +553,14 @@ export async function handleApiRequest(req: HttpRequest, res: ServerResponse, co
         // 3. Store the new engine session ID
         updateSession(newSession.id, { engineSessionId: forkResult.engineSessionId });
 
-        const result = getSession(newSession.id)!;
+        const result = getSession(newSession.id);
+        if (!result) return serverError(res, "Failed to retrieve duplicated session");
         logger.info(
           `Session duplicated: ${params.id} → ${newSession.id} (engine: ${forkResult.engineSessionId}, ${messageCount} messages)`,
         );
         context.emit("session:created", { sessionId: newSession.id });
         return json(res, serializeSession(result, context));
-      } catch (err: any) {
+      } catch (err) {
         // Clean up orphaned session if the engine fork failed after DB insert
         if (newSessionId) {
           try {
@@ -568,9 +569,10 @@ export async function handleApiRequest(req: HttpRequest, res: ServerResponse, co
             /* best effort */
           }
         }
-        logger.error(`Failed to duplicate session ${params.id}: ${err.message}`);
+        const errMsg = err instanceof Error ? err.message : String(err);
+        logger.error(`Failed to duplicate session ${params.id}: ${errMsg}`);
         res.writeHead(500, { "Content-Type": "application/json" });
-        res.end(JSON.stringify({ error: `Duplicate failed: ${err.message}` }));
+        res.end(JSON.stringify({ error: `Duplicate failed: ${errMsg}` }));
         return;
       }
     }
@@ -638,9 +640,9 @@ export async function handleApiRequest(req: HttpRequest, res: ServerResponse, co
       const _parsed = await readJsonBody(req, res);
       if (!_parsed.ok) return;
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const body = _parsed.body as any;
-      const ids: string[] = body.ids;
-      if (!Array.isArray(ids) || ids.length === 0) return badRequest(res, "ids array is required");
+      const body = _parsed.body as Record<string, unknown>;
+      const ids: string[] = Array.isArray(body.ids) ? (body.ids as string[]) : [];
+      if (ids.length === 0) return badRequest(res, "ids array is required");
 
       // Kill any live engine processes before deleting
       for (const id of ids) {
@@ -663,7 +665,7 @@ export async function handleApiRequest(req: HttpRequest, res: ServerResponse, co
     // GET /api/sessions/:id/children
     params = matchRoute("/api/sessions/:id/children", pathname);
     if (method === "GET" && params) {
-      const children = listSessions().filter((s) => s.parentSessionId === params!.id);
+      const children = listSessions().filter((s) => s.parentSessionId === params?.id);
       return json(
         res,
         children.map((child) => serializeSession(child, context)),
@@ -686,10 +688,10 @@ export async function handleApiRequest(req: HttpRequest, res: ServerResponse, co
       const _parsed = await readJsonBody(req, res);
       if (!_parsed.ok) return;
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const body = _parsed.body as any;
-      const greeting = body.greeting || "Hey! Say hi when you're ready to get started.";
+      const body = _parsed.body as Record<string, unknown>;
+      const greeting = (body.greeting as string | undefined) || "Hey! Say hi when you're ready to get started.";
       const config = context.getConfig();
-      const engineName = body.engine || config.engines.default;
+      const engineName = (body.engine as string | undefined) || config.engines.default;
       const sessionKey = `web:${Date.now()}`;
       const session = createSession({
         engine: engineName,
@@ -698,8 +700,8 @@ export async function handleApiRequest(req: HttpRequest, res: ServerResponse, co
         connector: "web",
         sessionKey,
         replyContext: { source: "web" },
-        employee: body.employee,
-        title: body.title,
+        employee: body.employee as string | undefined,
+        title: body.title as string | undefined,
         portalName: config.portal?.portalName,
       });
       insertMessage(session.id, "assistant", greeting);
@@ -712,11 +714,11 @@ export async function handleApiRequest(req: HttpRequest, res: ServerResponse, co
       const _parsed = await readJsonBody(req, res);
       if (!_parsed.ok) return;
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const body = _parsed.body as any;
-      const prompt = body.prompt || body.message;
+      const body = _parsed.body as Record<string, unknown>;
+      const prompt = (body.prompt as string | undefined) || (body.message as string | undefined);
       if (!prompt) return badRequest(res, "prompt or message is required");
       const config = context.getConfig();
-      const engineName = body.engine || config.engines.default;
+      const engineName = (body.engine as string | undefined) || config.engines.default;
       const sessionKey = `web:${Date.now()}`;
       const session = createSession({
         engine: engineName,
@@ -725,9 +727,9 @@ export async function handleApiRequest(req: HttpRequest, res: ServerResponse, co
         connector: "web",
         sessionKey,
         replyContext: { source: "web" },
-        employee: body.employee,
-        parentSessionId: body.parentSessionId,
-        effortLevel: body.effortLevel,
+        employee: body.employee as string | undefined,
+        parentSessionId: body.parentSessionId as string | undefined,
+        effortLevel: body.effortLevel as string | undefined,
         prompt,
         portalName: config.portal?.portalName,
       });
@@ -785,8 +787,8 @@ export async function handleApiRequest(req: HttpRequest, res: ServerResponse, co
       const _parsed = await readJsonBody(req, res);
       if (!_parsed.ok) return;
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const body = _parsed.body as any;
-      const prompt = body.message || body.prompt;
+      const body = _parsed.body as Record<string, unknown>;
+      const prompt = (body.message as string | undefined) || (body.prompt as string | undefined);
       if (!prompt) return badRequest(res, "message is required");
 
       // Allow internal callers (e.g. child session callbacks) to specify a non-user role
@@ -909,19 +911,19 @@ export async function handleApiRequest(req: HttpRequest, res: ServerResponse, co
       const _parsed = await readJsonBody(req, res);
       if (!_parsed.ok) return;
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const body = _parsed.body as any;
+      const body = _parsed.body as Record<string, unknown>;
       const jobs = loadJobs();
       const newJob: CronJob = {
-        id: body.id || crypto.randomUUID(),
-        name: body.name || "untitled",
-        enabled: body.enabled ?? true,
-        schedule: body.schedule || "0 * * * *",
-        timezone: body.timezone,
-        engine: body.engine,
-        model: body.model,
-        employee: body.employee,
-        prompt: body.prompt || "",
-        delivery: body.delivery,
+        id: (body.id as string | undefined) || crypto.randomUUID(),
+        name: (body.name as string | undefined) || "untitled",
+        enabled: typeof body.enabled === "boolean" ? body.enabled : true,
+        schedule: (body.schedule as string | undefined) || "0 * * * *",
+        timezone: body.timezone as string | undefined,
+        engine: body.engine as string | undefined,
+        model: body.model as string | undefined,
+        employee: body.employee as string | undefined,
+        prompt: (body.prompt as string | undefined) || "",
+        delivery: body.delivery as CronJob["delivery"],
       };
       jobs.push(newJob);
       saveJobs(jobs);
@@ -933,12 +935,12 @@ export async function handleApiRequest(req: HttpRequest, res: ServerResponse, co
     params = matchRoute("/api/cron/:id", pathname);
     if (method === "PUT" && params) {
       const jobs = loadJobs();
-      const idx = jobs.findIndex((j) => j.id === params!.id);
+      const idx = jobs.findIndex((j) => j.id === params?.id);
       if (idx === -1) return notFound(res);
       const _parsed = await readJsonBody(req, res);
       if (!_parsed.ok) return;
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const body = _parsed.body as any;
+      const body = _parsed.body as Record<string, unknown>;
       jobs[idx] = { ...jobs[idx], ...body, id: params.id };
       saveJobs(jobs);
       reloadScheduler(jobs);
@@ -949,7 +951,7 @@ export async function handleApiRequest(req: HttpRequest, res: ServerResponse, co
     params = matchRoute("/api/cron/:id", pathname);
     if (method === "DELETE" && params) {
       const jobs = loadJobs();
-      const idx = jobs.findIndex((j) => j.id === params!.id);
+      const idx = jobs.findIndex((j) => j.id === params?.id);
       if (idx === -1) return notFound(res);
       const removed = jobs.splice(idx, 1)[0];
       saveJobs(jobs);
@@ -961,7 +963,7 @@ export async function handleApiRequest(req: HttpRequest, res: ServerResponse, co
     params = matchRoute("/api/cron/:id/trigger", pathname);
     if (method === "POST" && params) {
       const jobs = loadJobs();
-      const job = jobs.find((j) => j.id === params!.id);
+      const job = jobs.find((j) => j.id === params?.id);
       if (!job) return notFound(res);
 
       logger.info(`Manual trigger for cron job "${job.name}" (${job.id})`);
@@ -1042,7 +1044,7 @@ export async function handleApiRequest(req: HttpRequest, res: ServerResponse, co
     if (method === "PATCH" && params) {
       const _parsed = await readJsonBody(req, res);
       if (!_parsed.ok) return;
-      const body = _parsed.body as any;
+      const body = _parsed.body as Record<string, unknown>;
       const { updateEmployeeYaml } = await import("./org.js");
       const updated = updateEmployeeYaml(params.name, {
         alwaysNotify: typeof body.alwaysNotify === "boolean" ? body.alwaysNotify : undefined,
@@ -1075,8 +1077,11 @@ export async function handleApiRequest(req: HttpRequest, res: ServerResponse, co
     if (method === "POST" && pathname === "/api/org/cross-request") {
       const parsed = await readJsonBody(req, res);
       if (!parsed.ok) return;
-      const body = parsed.body as any;
-      const { fromEmployee, service, prompt, parentSessionId } = body;
+      const body = parsed.body as Record<string, unknown>;
+      const fromEmployee = body.fromEmployee as string | undefined;
+      const service = body.service as string | undefined;
+      const prompt = body.prompt as string | undefined;
+      const parentSessionId = body.parentSessionId as string | undefined;
       if (!fromEmployee || !service || !prompt) {
         return badRequest(res, "Missing required fields: fromEmployee, service, prompt");
       }
@@ -1157,15 +1162,16 @@ Handle this as a priority request from a colleague.`;
     }
 
     // PUT /api/org/departments/:name/board
-    if (method === "PUT" && matchRoute("/api/org/departments/:name/board", pathname)) {
-      const p = matchRoute("/api/org/departments/:name/board", pathname)!;
+    const putBoardParams = matchRoute("/api/org/departments/:name/board", pathname);
+    if (method === "PUT" && putBoardParams) {
+      const p = putBoardParams;
       const boardPath = path.join(ORG_DIR, p.name, "board.json");
       const deptDir = path.join(ORG_DIR, p.name);
       if (!fs.existsSync(deptDir)) return notFound(res);
       const _parsed = await readJsonBody(req, res);
       if (!_parsed.ok) return;
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const body = _parsed.body as any;
+      const body = _parsed.body as Record<string, unknown>;
       fs.writeFileSync(boardPath, JSON.stringify(body, null, 2));
       context.emit("board:updated", { department: p.name });
       return json(res, { status: "ok" });
@@ -1184,7 +1190,7 @@ Handle this as a priority request from a colleague.`;
         const results = parseSkillsSearchOutput(output);
         return json(res, results);
       } catch (err) {
-        const msg = err instanceof Error ? (err as any).stderr || err.message : String(err);
+        const msg = err instanceof Error ? (err as Error & { stderr?: string }).stderr || err.message : String(err);
         return json(res, { results: [], error: msg });
       }
     }
@@ -1200,8 +1206,8 @@ Handle this as a priority request from a colleague.`;
       const _parsed = await readJsonBody(req, res);
       if (!_parsed.ok) return;
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const body = _parsed.body as any;
-      const source = body.source;
+      const body = _parsed.body as Record<string, unknown>;
+      const source = body.source as string | undefined;
       if (!source) return badRequest(res, "source is required");
       try {
         const {
@@ -1315,20 +1321,24 @@ Handle this as a priority request from a colleague.`;
       const sanitizedConnectors: Record<string, unknown> = {};
       for (const [k, v] of Object.entries(rawConnectors)) {
         if (k === "instances" && Array.isArray(v)) {
-          sanitizedConnectors.instances = v.map((inst: any) => ({
-            ...inst,
-            token: inst?.token ? "***" : undefined,
-            signingSecret: inst?.signingSecret ? "***" : undefined,
-            botToken: inst?.botToken ? "***" : undefined,
-            appToken: inst?.appToken ? "***" : undefined,
-          }));
+          sanitizedConnectors.instances = v.map((inst: unknown) => {
+            const i = inst as Record<string, unknown>;
+            return {
+              ...i,
+              token: i?.token ? "***" : undefined,
+              signingSecret: i?.signingSecret ? "***" : undefined,
+              botToken: i?.botToken ? "***" : undefined,
+              appToken: i?.appToken ? "***" : undefined,
+            };
+          });
         } else if (v && typeof v === "object") {
+          const vObj = v as Record<string, unknown>;
           sanitizedConnectors[k] = {
-            ...v,
-            token: (v as any)?.token ? "***" : undefined,
-            signingSecret: (v as any)?.signingSecret ? "***" : undefined,
-            botToken: (v as any)?.botToken ? "***" : undefined,
-            appToken: (v as any)?.appToken ? "***" : undefined,
+            ...vObj,
+            token: vObj.token ? "***" : undefined,
+            signingSecret: vObj.signingSecret ? "***" : undefined,
+            botToken: vObj.botToken ? "***" : undefined,
+            appToken: vObj.appToken ? "***" : undefined,
           };
         } else {
           sanitizedConnectors[k] = v;
@@ -1346,7 +1356,7 @@ Handle this as a priority request from a colleague.`;
       const _parsed = await readJsonBody(req, res);
       if (!_parsed.ok) return;
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const body = _parsed.body as any;
+      const body = _parsed.body as Record<string, unknown>;
       // Basic validation: must be a plain object
       if (!body || typeof body !== "object" || Array.isArray(body)) {
         return badRequest(res, "Config must be a JSON object");
@@ -1375,10 +1385,11 @@ Handle this as a priority request from a colleague.`;
       }
       // Validate critical field types
       if (body.gateway !== undefined) {
-        if (typeof body.gateway !== "object" || Array.isArray(body.gateway)) {
+        if (typeof body.gateway !== "object" || Array.isArray(body.gateway) || body.gateway === null) {
           return badRequest(res, "gateway must be an object");
         }
-        if (body.gateway.port !== undefined && typeof body.gateway.port !== "number") {
+        const gateway = body.gateway as Record<string, unknown>;
+        if (gateway.port !== undefined && typeof gateway.port !== "number") {
           return badRequest(res, "gateway.port must be a number");
         }
       }
@@ -1446,13 +1457,15 @@ Handle this as a priority request from a colleague.`;
 
       const _parsed = await readJsonBody(req, res);
       if (!_parsed.ok) return;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const body = _parsed.body as any;
+      const body = _parsed.body as Record<string, unknown>;
 
       // Download attachments from Discord CDN URLs to local temp
       const { downloadAttachment } = await import("../connectors/discord/format.js");
+      const rawAttachments = Array.isArray(body.attachments)
+        ? (body.attachments as { name: string; url: string; mimeType: string }[])
+        : [];
       const attachments = await Promise.all(
-        (body.attachments || []).map(async (att: { name: string; url: string; mimeType: string }) => {
+        rawAttachments.map(async (att) => {
           if (att.url) {
             try {
               const localPath = await downloadAttachment(att.url, TMP_DIR, att.name);
@@ -1468,21 +1481,20 @@ Handle this as a priority request from a colleague.`;
       const incomingMsg: IncomingMessage = {
         connector: params.id,
         source: "discord",
-        sessionKey: body.sessionKey,
-        channel: body.channel,
-        thread: body.thread,
-        user: body.user,
-        userId: body.userId,
-        text: body.text,
-        messageId: body.messageId,
+        sessionKey: body.sessionKey as string,
+        channel: body.channel as string,
+        thread: body.thread as string | undefined,
+        user: body.user as string,
+        userId: body.userId as string,
+        text: body.text as string,
+        messageId: body.messageId as string | undefined,
         attachments,
-        replyContext: body.replyContext || {},
-        transportMeta: body.transportMeta,
+        replyContext: (body.replyContext as JsonObject | undefined) || {},
+        transportMeta: body.transportMeta as JsonObject | undefined,
         raw: body,
       };
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (connector as any).deliverMessage(incomingMsg);
+      (connector as { deliverMessage: (msg: IncomingMessage) => void }).deliverMessage(incomingMsg);
       return json(res, { status: "delivered" });
     }
 
@@ -1497,36 +1509,41 @@ Handle this as a priority request from a colleague.`;
       const _parsed = await readJsonBody(req, res);
       if (!_parsed.ok) return;
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const body = _parsed.body as any;
+      const body = _parsed.body as Record<string, unknown>;
 
       const action = body.action as string;
       const target = body.target as Target | undefined;
       let messageId: string | undefined;
 
+      const bodyText = body.text as string | undefined;
+      const bodyEmoji = body.emoji as string | undefined;
+      const bodyChannelId = (body.channelId as string | undefined) ?? "";
+      const bodyThreadTs = body.threadTs as string | undefined;
+      const bodyStatus = (body.status as string | undefined) ?? "";
       switch (action) {
         case "sendMessage":
-          if (!target || !body.text) return badRequest(res, "target and text are required");
-          messageId = (await connector.sendMessage(target, body.text)) as string | undefined;
+          if (!target || !bodyText) return badRequest(res, "target and text are required");
+          messageId = (await connector.sendMessage(target, bodyText)) as string | undefined;
           break;
         case "replyMessage":
-          if (!target || !body.text) return badRequest(res, "target and text are required");
-          messageId = (await connector.replyMessage(target, body.text)) as string | undefined;
+          if (!target || !bodyText) return badRequest(res, "target and text are required");
+          messageId = (await connector.replyMessage(target, bodyText)) as string | undefined;
           break;
         case "editMessage":
-          if (!target || !body.text) return badRequest(res, "target and text are required");
-          await connector.editMessage(target, body.text);
+          if (!target || !bodyText) return badRequest(res, "target and text are required");
+          await connector.editMessage(target, bodyText);
           break;
         case "addReaction":
-          if (!target || !body.emoji) return badRequest(res, "target and emoji are required");
-          await connector.addReaction(target, body.emoji);
+          if (!target || !bodyEmoji) return badRequest(res, "target and emoji are required");
+          await connector.addReaction(target, bodyEmoji);
           break;
         case "removeReaction":
-          if (!target || !body.emoji) return badRequest(res, "target and emoji are required");
-          await connector.removeReaction(target, body.emoji);
+          if (!target || !bodyEmoji) return badRequest(res, "target and emoji are required");
+          await connector.removeReaction(target, bodyEmoji);
           break;
         case "setTypingStatus":
           if (connector.setTypingStatus) {
-            await connector.setTypingStatus(body.channelId ?? "", body.threadTs, body.status ?? "");
+            await connector.setTypingStatus(bodyChannelId, bodyThreadTs, bodyStatus);
           }
           break;
         default:
@@ -1544,9 +1561,12 @@ Handle this as a priority request from a colleague.`;
       const _parsed = await readJsonBody(req, res);
       if (!_parsed.ok) return;
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const body = _parsed.body as any;
+      const body = _parsed.body as Record<string, unknown>;
       if (!body.channel || !body.text) return badRequest(res, "channel and text are required");
-      await connector.sendMessage({ channel: body.channel, thread: body.thread }, body.text);
+      await connector.sendMessage(
+        { channel: body.channel as string, thread: body.thread as string | undefined },
+        body.text as string,
+      );
       return json(res, { status: "sent" });
     }
 
@@ -1635,7 +1655,7 @@ Handle this as a priority request from a colleague.`;
       const _parsed = await readJsonBody(req, res);
       if (!_parsed.ok) return;
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const body = _parsed.body as any;
+      const body = _parsed.body as Record<string, unknown>;
       const { portalName, operatorName, language } = body;
 
       // Read current config and merge portal settings
@@ -1677,7 +1697,7 @@ Handle this as a priority request from a colleague.`;
           "",
         );
         if (languageSection) {
-          claudeMd = claudeMd.trimEnd() + languageSection + "\n";
+          claudeMd = `${claudeMd.trimEnd() + languageSection}\n`;
         }
         fs.writeFileSync(claudeMdPath, claudeMd);
       }
@@ -1694,7 +1714,7 @@ Handle this as a priority request from a colleague.`;
           "",
         );
         if (languageSection) {
-          agentsMd = agentsMd.trimEnd() + languageSection + "\n";
+          agentsMd = `${agentsMd.trimEnd() + languageSection}\n`;
         }
         fs.writeFileSync(agentsMdPath, agentsMd);
       }
@@ -1786,7 +1806,7 @@ Handle this as a priority request from a colleague.`;
       const _parsed = await readJsonBody(req, res);
       if (!_parsed.ok) return;
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const body = _parsed.body as any;
+      const body = _parsed.body as Record<string, unknown>;
       const langs = body.languages;
 
       if (!Array.isArray(langs) || langs.length === 0) {
@@ -1898,7 +1918,9 @@ Handle this as a priority request from a colleague.`;
     if (method === "GET" && pathname === "/api/budgets") {
       const { getBudgetStatus } = await import("./budgets.js");
       const config = context.getConfig();
-      const budgetConfig = ((config as any).budgets?.employees as Record<string, number> | undefined) ?? {};
+      const configRecord = config as unknown as Record<string, unknown>;
+      const budgets = configRecord.budgets as Record<string, unknown> | undefined;
+      const budgetConfig = (budgets?.employees as Record<string, number> | undefined) ?? {};
       const employees = Object.keys(budgetConfig);
       const statuses = employees.map((emp) => ({
         employee: emp,
@@ -1929,7 +1951,9 @@ Handle this as a priority request from a colleague.`;
     if (method === "POST" && params) {
       const { overrideBudget } = await import("./budgets.js");
       const config = context.getConfig();
-      const budgetConfig = ((config as any).budgets?.employees as Record<string, number> | undefined) ?? {};
+      const configRecord2 = config as unknown as Record<string, unknown>;
+      const budgets2 = configRecord2.budgets as Record<string, unknown> | undefined;
+      const budgetConfig = (budgets2?.employees as Record<string, number> | undefined) ?? {};
       return json(res, overrideBudget(params.employee, budgetConfig));
     }
 
@@ -1957,7 +1981,12 @@ Handle this as a priority request from a colleague.`;
  * ```
  */
 function stripAnsi(str: string): string {
-  return str.replace(/\x1b\[[0-9;]*m/g, "");
+  // ESC char (0x1b) via split/join avoids control character in regex literal
+  return str.split("\u001b[").reduce((acc, part, i) => {
+    if (i === 0) return part;
+    const end = part.search(/[a-zA-Z]/);
+    return end === -1 ? acc + part : acc + part.slice(end + 1);
+  }, "");
 }
 
 function parseSkillsSearchOutput(
@@ -2185,7 +2214,7 @@ async function runWebSession(
       });
     }, 5000);
 
-    const syncSinceIso = (currentSession.transportMeta as any)?.claudeSyncSince;
+    const syncSinceIso = (currentSession.transportMeta as Record<string, unknown> | null)?.claudeSyncSince;
     const syncSinceMs = typeof syncSinceIso === "string" ? new Date(syncSinceIso).getTime() : NaN;
     const syncRequested =
       currentSession.engine === "claude" && typeof syncSinceIso === "string" && Number.isFinite(syncSinceMs);
@@ -2292,7 +2321,7 @@ async function runWebSession(
 
           updateSession(currentSession.id, {
             engine: fallbackName,
-            transportMeta: nextMeta as any,
+            transportMeta: nextMeta as JsonObject,
             status: "running",
             lastActivity: new Date().toISOString(),
             lastError: resumeAt
@@ -2348,7 +2377,7 @@ async function runWebSession(
             unknown
           >;
           metaAfter.engineSessions = nextEngineSessions;
-          updateSession(currentSession.id, { transportMeta: metaAfter as any });
+          updateSession(currentSession.id, { transportMeta: metaAfter as JsonObject });
 
           const completedFallback = updateSession(currentSession.id, {
             engineSessionId: fallbackResult.sessionId,
@@ -2588,8 +2617,8 @@ async function runWebSession(
       >;
       if (meta && typeof meta === "object" && !Array.isArray(meta)) {
         const nextMeta = { ...meta } as Record<string, unknown>;
-        delete nextMeta["claudeSyncSince"];
-        updateSession(currentSession.id, { transportMeta: nextMeta as any });
+        delete nextMeta.claudeSyncSince;
+        updateSession(currentSession.id, { transportMeta: nextMeta as JsonObject });
       }
     }
     if (completedSession) {

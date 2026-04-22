@@ -231,9 +231,10 @@ async function handleJsonUpload(req: HttpRequest, res: ServerResponse, context: 
       return badRequest(res, "Invalid base64 content");
     }
   } else {
-    // URL fetch
+    // URL fetch (url is guaranteed non-null here due to the guard above)
+    const fetchUrl = url as string;
     try {
-      const response = await fetch(url!);
+      const response = await fetch(fetchUrl);
       if (!response.ok) {
         return serverError(res, `Failed to fetch URL: ${response.status} ${response.statusText}`);
       }

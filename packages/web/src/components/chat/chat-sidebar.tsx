@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronDown, Clock3, Copy, EllipsisVertical, Pencil, Pin, Plus, Search, Trash2, X } from "lucide-react";
+import { ChevronDown, Clock3, EllipsisVertical, Pin, Plus, Search, X } from "lucide-react";
 import { startTransition, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSettings } from "@/app/settings-provider";
 import { Button } from "@/components/ui/button";
@@ -212,7 +212,7 @@ function StatusDot({ color, pulse = false, className }: { color: string; pulse?:
   );
 }
 
-function SectionLabel({ icon, label, count }: { icon: React.ReactNode; label: string; count?: number }) {
+function _SectionLabel({ icon, label, count }: { icon: React.ReactNode; label: string; count?: number }) {
   return (
     <div className="flex items-center gap-2 px-4 py-2">
       <span className="text-xs">{icon}</span>
@@ -332,7 +332,7 @@ export function ChatSidebar({
       });
   }, []);
 
-  const toggleCronCollapsed = useCallback(() => {
+  const _toggleCronCollapsed = useCallback(() => {
     setCollapsed((prev) => {
       const next = new Set(prev);
       if (next.has("cron")) next.delete("cron");
@@ -401,7 +401,7 @@ export function ChatSidebar({
       const allVisible: string[] = [];
       const addGroup = (items: FlatItem[]) => {
         for (const item of items) {
-          const empName = item.employeeName!;
+          const empName = item.employeeName ?? "";
           const empSessions = item.sessions || [];
           // Always add the latest session (employee row click selects it)
           if (empSessions.length === 1) {
@@ -458,8 +458,9 @@ export function ChatSidebar({
         setRenamingSessionId(result.id);
         renameCancelledRef.current = false;
       }
-    } catch (err: any) {
-      window.alert(`Duplicate failed: ${err.message || "Unknown error"}`);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Unknown error";
+      window.alert(`Duplicate failed: ${message}`);
     }
   }
 
@@ -469,9 +470,9 @@ export function ChatSidebar({
         const empData = s.employee ? employeeData.get(s.employee) : undefined;
         return (
           s.id.toLowerCase().includes(q) ||
-          (s.employee && s.employee.toLowerCase().includes(q)) ||
-          (empData?.displayName && empData.displayName.toLowerCase().includes(q)) ||
-          (s.title && s.title.toLowerCase().includes(q))
+          s.employee?.toLowerCase().includes(q) ||
+          empData?.displayName?.toLowerCase().includes(q) ||
+          s.title?.toLowerCase().includes(q)
         );
       })
     : sessions;
@@ -484,9 +485,9 @@ export function ChatSidebar({
     if (isCronSession(s)) cronSessions.push(s);
     else if (isDirectSession(s, portalSlug)) directSessions.push(s);
     else {
-      const emp = s.employee!;
+      const emp = s.employee ?? "";
       if (!employeeSessionMap.has(emp)) employeeSessionMap.set(emp, []);
-      employeeSessionMap.get(emp)!.push(s);
+      employeeSessionMap.get(emp)?.push(s);
     }
   }
 
@@ -543,9 +544,9 @@ export function ChatSidebar({
     const empNames: string[] = [];
     const empMap: Record<string, string[]> = {};
     for (const item of [...pinnedFlat, ...unpinnedFlat]) {
-      const name = item.employeeName!;
+      const name = item.employeeName ?? "";
       empNames.push(name);
-      const sessionIds = item.sessions!.map((s) => s.id);
+      const sessionIds = item.sessions?.map((s) => s.id) ?? [];
       empMap[name] = sessionIds;
       ids.push(...sessionIds);
     }
@@ -565,9 +566,9 @@ export function ChatSidebar({
     return empSessions.some((s) => s.id === selectedId);
   }
 
-  function handleEmployeeClick(item: FlatItem) {
-    const empName = item.employeeName!;
-    const empSessions = item.sessions!;
+  function _handleEmployeeClick(item: FlatItem) {
+    const empName = item.employeeName ?? "";
+    const empSessions = item.sessions ?? [];
     if (empSessions.length > 1) {
       // Toggle expand/collapse — selecting latest session when expanding
       const wasExpanded = expanded[empName] || false;
@@ -614,7 +615,6 @@ export function ChatSidebar({
             <StatusDot color={sessionDotColor} pulse={sessionIsRunning} className="size-1.5" />
             {isRenaming ? (
               <input
-                autoFocus
                 maxLength={200}
                 defaultValue={displayTitle}
                 className={cn(
@@ -663,7 +663,7 @@ export function ChatSidebar({
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button
-                  onClick={(e) => e.stopPropagation()}
+                  type="button"
                   className="hidden shrink-0 text-muted-foreground transition-colors hover:text-foreground group-hover/session:lg:block group-has-[[data-state=open]]/session:lg:block"
                 >
                   <EllipsisVertical className="size-3.5" />
@@ -724,8 +724,8 @@ export function ChatSidebar({
   }
 
   function renderEmployeeItem(item: FlatItem) {
-    const empName = item.employeeName!;
-    const empSessions = item.sessions!;
+    const empName = item.employeeName ?? "";
+    const empSessions = item.sessions ?? [];
     const latestSession = empSessions[0];
     const empInfo = item.employeeData;
     const displayName = empInfo?.displayName || titleCase(empName);
@@ -746,7 +746,7 @@ export function ChatSidebar({
         <ContextMenu>
           <ContextMenuTrigger asChild>
             <button
-              onClick={() => handleEmployeeClick(item)}
+              type="button"
               className={cn(
                 "group/emp relative flex w-full items-center gap-3 border-l-2 px-4 py-3 text-left transition-colors",
                 isActive
@@ -780,7 +780,7 @@ export function ChatSidebar({
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <button
-                        onClick={(e) => e.stopPropagation()}
+                        type="button"
                         className="hidden shrink-0 text-muted-foreground transition-colors hover:text-foreground group-hover/emp:lg:block group-has-[[data-state=open]]/emp:lg:block"
                       >
                         <EllipsisVertical className="size-3.5" />
@@ -839,7 +839,7 @@ export function ChatSidebar({
           : null}
         {isExpanded && sessionCount > 5 && !fullyExpanded[empName] ? (
           <button
-            onClick={() => setFullyExpanded((prev) => ({ ...prev, [empName]: true }))}
+            type="button"
             className="w-full cursor-pointer px-4 pb-2 pl-11 text-left text-[10px] text-[var(--text-quaternary)] transition-colors hover:text-[var(--text-secondary)]"
           >
             +{sessionCount - 5} more
@@ -878,7 +878,7 @@ export function ChatSidebar({
           />
           {search.trim() ? (
             <button
-              onClick={() => setSearch("")}
+              type="button"
               aria-label="Clear search"
               className="rounded-full p-0.5 text-[var(--text-tertiary)] transition-colors hover:bg-[var(--fill-secondary)] hover:text-foreground"
             >
@@ -903,7 +903,7 @@ export function ChatSidebar({
             {cronSessions.length > 0 ? (
               <div className={cn("mt-2", pinnedFlat.length === 0 && unpinnedFlat.length === 0 && "mt-0")}>
                 <button
-                  onClick={toggleCronCollapsed}
+                  type="button"
                   className="flex w-full items-center gap-2 px-4 py-2 text-left transition-colors hover:bg-accent"
                 >
                   <Clock3 className="size-3.5 text-muted-foreground" />

@@ -115,24 +115,29 @@ export function parseMedia(content: string): MediaAttachment[] {
 
   // Markdown images: ![alt](url)
   const imgRegex = /!\[([^\]]*)\]\((https?:\/\/[^)]+\.(jpg|jpeg|png|gif|webp|svg)(\?[^)]*)?)\)/gi;
-  let m: RegExpExecArray | null;
-  while ((m = imgRegex.exec(content)) !== null) {
+  let m = imgRegex.exec(content);
+  while (m !== null) {
     media.push({ type: "image", url: m[2], name: m[1] || "Image" });
+    m = imgRegex.exec(content);
   }
 
   // Bare image URLs not already captured
   const bareImgRegex = /(?<!\]\()https?:\/\/\S+\.(jpg|jpeg|png|gif|webp)(\?\S*)?\b/gi;
-  while ((m = bareImgRegex.exec(content)) !== null) {
-    const url = m[0];
+  let mBare = bareImgRegex.exec(content);
+  while (mBare !== null) {
+    const url = mBare[0];
     if (!media.find((x) => x.url === url)) {
       media.push({ type: "image", url });
     }
+    mBare = bareImgRegex.exec(content);
   }
 
   // Audio URLs
   const audioRegex = /https?:\/\/\S+\.(mp3|wav|ogg|m4a|aac)(\?\S*)?\b/gi;
-  while ((m = audioRegex.exec(content)) !== null) {
-    media.push({ type: "audio", url: m[0], name: m[0].split("/").pop() });
+  let mAudio = audioRegex.exec(content);
+  while (mAudio !== null) {
+    media.push({ type: "audio", url: mAudio[0], name: mAudio[0].split("/").pop() });
+    mAudio = audioRegex.exec(content);
   }
 
   return media;

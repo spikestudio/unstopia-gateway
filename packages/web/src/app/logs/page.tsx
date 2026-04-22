@@ -127,7 +127,7 @@ export default function LogsPage() {
               <div className="flex items-center gap-[var(--space-3)]">
                 {/* Open Live Stream */}
                 <button
-                  onClick={() => window.dispatchEvent(new CustomEvent("open-live-stream"))}
+                  type="button"
                   className="focus-ring flex items-center py-[6px] px-[14px] rounded-[var(--radius-sm)] border-none cursor-pointer text-[length:var(--text-footnote)] font-[var(--weight-semibold)] gap-1.5 bg-[var(--accent-fill)] text-[var(--accent)] transition-all duration-200 ease-[var(--ease-smooth)]"
                 >
                   <Radio size={14} />
@@ -138,7 +138,7 @@ export default function LogsPage() {
                   Updated {updatedAgo}
                 </span>
                 <button
-                  onClick={refresh}
+                  type="button"
                   className="focus-ring w-8 h-8 flex items-center justify-center rounded-[var(--radius-sm)] border-none bg-transparent text-[var(--text-tertiary)] cursor-pointer transition-colors duration-150 ease-[var(--ease-smooth)]"
                   aria-label="Refresh logs"
                 >

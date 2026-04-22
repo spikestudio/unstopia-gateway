@@ -1,14 +1,14 @@
 "use client";
 
 import { Check, Loader2, RotateCcw, Save, Trash2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import Image from "next/image";
+import { useCallback, useEffect, useState } from "react";
 import { useTheme } from "@/app/providers";
 import { useSettings } from "@/app/settings-provider";
 import { PageLayout } from "@/components/page-layout";
 import { EmojiPicker } from "@/components/ui/emoji-picker";
 import { useBreadcrumbs } from "@/context/breadcrumb-context";
 import { api } from "@/lib/api";
-import type { ThemeId } from "@/lib/themes";
 import { THEMES } from "@/lib/themes";
 
 // ---------------------------------------------------------------------------
@@ -118,10 +118,19 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
-function FieldRow({ label, children }: { label: string; children: React.ReactNode }) {
+function FieldRow({ label, children, htmlFor }: { label: string; children: React.ReactNode; htmlFor?: string }) {
   return (
     <div className="flex items-center justify-between py-[var(--space-2)] gap-[var(--space-4)]">
-      <label className="text-[length:var(--text-subheadline)] text-[var(--text-secondary)] shrink-0">{label}</label>
+      {htmlFor ? (
+        <label
+          htmlFor={htmlFor}
+          className="text-[length:var(--text-subheadline)] text-[var(--text-secondary)] shrink-0"
+        >
+          {label}
+        </label>
+      ) : (
+        <span className="text-[length:var(--text-subheadline)] text-[var(--text-secondary)] shrink-0">{label}</span>
+      )}
       <div className="w-[240px] shrink-0">{children}</div>
     </div>
   );
@@ -176,6 +185,7 @@ function SettingsSelect({
 function ToggleSwitch({ checked, onChange }: { checked: boolean; onChange: (v: boolean) => void }) {
   return (
     <button
+      type="button"
       role="switch"
       aria-checked={checked}
       onClick={() => onChange(!checked)}
@@ -335,6 +345,7 @@ function SttSettingsSection() {
       {/* Download section */}
       {!status.available && !status.downloading && (
         <button
+          type="button"
           onClick={handleDownload}
           className="w-full p-[var(--space-3)] rounded-[var(--radius-md)] bg-[var(--accent)] text-[var(--accent-contrast)] border-none cursor-pointer text-[length:var(--text-footnote)] font-[var(--weight-semibold)] mb-[var(--space-4)]"
         >
@@ -362,72 +373,72 @@ function SttSettingsSection() {
 
       {/* Languages section — only when model is available */}
       {status.available && (
-        <>
-          <div className="border-t border-[var(--separator)] mt-[var(--space-2)] pt-[var(--space-3)]">
-            <div className="text-[length:var(--text-caption1)] font-[var(--weight-semibold)] text-[var(--text-tertiary)] mb-[var(--space-2)]">
-              Transcription Languages
-            </div>
-            <div className="text-[length:var(--text-caption2)] text-[var(--text-tertiary)] mb-[var(--space-3)]">
-              First language is the default. Add multiple to show a language picker in chat.
-            </div>
-
-            {/* Language chips */}
-            <div className="flex flex-wrap gap-[var(--space-2)] mb-[var(--space-3)]">
-              {status.languages.map((code) => (
-                <div
-                  key={code}
-                  className="inline-flex items-center gap-[var(--space-1)] px-[8px] py-[3px] rounded-[var(--radius-sm)] bg-[var(--fill-secondary)] text-[length:var(--text-caption1)] font-[var(--weight-medium)] text-[var(--text-primary)]"
-                >
-                  <span className="font-[family-name:var(--font-mono)] uppercase text-[length:var(--text-caption2)] font-[var(--weight-semibold)] text-[var(--accent)] mr-[2px]">
-                    {code}
-                  </span>
-                  {WHISPER_LANGUAGES[code] || code}
-                  {status.languages.length > 1 && (
-                    <button
-                      onClick={() => handleRemoveLanguage(code)}
-                      disabled={saving}
-                      aria-label={`Remove ${WHISPER_LANGUAGES[code] || code}`}
-                      className="bg-none border-none cursor-pointer p-0 ml-[2px] text-[var(--text-quaternary)] text-[14px] leading-none flex items-center"
-                    >
-                      ×
-                    </button>
-                  )}
-                </div>
-              ))}
-            </div>
-
-            {/* Add language */}
-            <div className="flex gap-[var(--space-2)]">
-              <select
-                value={addLang}
-                onChange={(e) => setAddLang(e.target.value)}
-                className="flex-1 bg-[var(--bg-secondary)] border border-[var(--separator)] rounded-[var(--radius-sm)] px-[10px] py-[6px] text-[length:var(--text-footnote)] cursor-pointer"
-                style={{
-                  color: addLang ? "var(--text-primary)" : "var(--text-tertiary)",
-                }}
-              >
-                <option value="">Add a language…</option>
-                {availableLangs.map(([code, name]) => (
-                  <option key={code} value={code}>
-                    {code.toUpperCase()} — {name}
-                  </option>
-                ))}
-              </select>
-              <button
-                onClick={handleAddLanguage}
-                disabled={!addLang || saving}
-                className="px-[14px] py-[6px] rounded-[var(--radius-sm)] border-none text-[length:var(--text-footnote)] font-[var(--weight-semibold)] shrink-0"
-                style={{
-                  background: addLang ? "var(--accent)" : "var(--fill-tertiary)",
-                  color: addLang ? "var(--accent-contrast)" : "var(--text-quaternary)",
-                  cursor: addLang ? "pointer" : "default",
-                }}
-              >
-                Add
-              </button>
-            </div>
+        <div className="border-t border-[var(--separator)] mt-[var(--space-2)] pt-[var(--space-3)]">
+          <div className="text-[length:var(--text-caption1)] font-[var(--weight-semibold)] text-[var(--text-tertiary)] mb-[var(--space-2)]">
+            Transcription Languages
           </div>
-        </>
+          <div className="text-[length:var(--text-caption2)] text-[var(--text-tertiary)] mb-[var(--space-3)]">
+            First language is the default. Add multiple to show a language picker in chat.
+          </div>
+
+          {/* Language chips */}
+          <div className="flex flex-wrap gap-[var(--space-2)] mb-[var(--space-3)]">
+            {status.languages.map((code) => (
+              <div
+                key={code}
+                className="inline-flex items-center gap-[var(--space-1)] px-[8px] py-[3px] rounded-[var(--radius-sm)] bg-[var(--fill-secondary)] text-[length:var(--text-caption1)] font-[var(--weight-medium)] text-[var(--text-primary)]"
+              >
+                <span className="font-[family-name:var(--font-mono)] uppercase text-[length:var(--text-caption2)] font-[var(--weight-semibold)] text-[var(--accent)] mr-[2px]">
+                  {code}
+                </span>
+                {WHISPER_LANGUAGES[code] || code}
+                {status.languages.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveLanguage(code)}
+                    disabled={saving}
+                    aria-label={`Remove ${WHISPER_LANGUAGES[code] || code}`}
+                    className="bg-none border-none cursor-pointer p-0 ml-[2px] text-[var(--text-quaternary)] text-[14px] leading-none flex items-center"
+                  >
+                    ×
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+
+          {/* Add language */}
+          <div className="flex gap-[var(--space-2)]">
+            <select
+              value={addLang}
+              onChange={(e) => setAddLang(e.target.value)}
+              className="flex-1 bg-[var(--bg-secondary)] border border-[var(--separator)] rounded-[var(--radius-sm)] px-[10px] py-[6px] text-[length:var(--text-footnote)] cursor-pointer"
+              style={{
+                color: addLang ? "var(--text-primary)" : "var(--text-tertiary)",
+              }}
+            >
+              <option value="">Add a language…</option>
+              {availableLangs.map(([code, name]) => (
+                <option key={code} value={code}>
+                  {code.toUpperCase()} — {name}
+                </option>
+              ))}
+            </select>
+            <button
+              type="button"
+              onClick={handleAddLanguage}
+              disabled={!addLang || saving}
+              className="px-[14px] py-[6px] rounded-[var(--radius-sm)] border-none text-[length:var(--text-footnote)] font-[var(--weight-semibold)] shrink-0"
+              style={{
+                background: addLang ? "var(--accent)" : "var(--fill-tertiary)",
+                color: addLang ? "var(--accent-contrast)" : "var(--text-quaternary)",
+                cursor: addLang ? "pointer" : "default",
+              }}
+            >
+              Add
+            </button>
+          </div>
+        </div>
       )}
     </Section>
   );
@@ -480,10 +491,10 @@ export default function SettingsPage() {
   useEffect(() => {
     api
       .getOrg()
-      .then((org: any) => {
+      .then((org) => {
         if (org?.employees) {
           setEmployees(
-            org.employees.map((e: any) =>
+            org.employees.map((e) =>
               typeof e === "string"
                 ? { name: e, displayName: e }
                 : { name: e.name, displayName: e.displayName || e.name },
@@ -512,7 +523,7 @@ export default function SettingsPage() {
   ]);
 
   // Load gateway config
-  function loadConfig() {
+  const loadConfig = useCallback(() => {
     setConfigLoading(true);
     api
       .getConfig()
@@ -522,11 +533,11 @@ export default function SettingsPage() {
       })
       .catch((err) => setConfigError(err.message))
       .finally(() => setConfigLoading(false));
-  }
+  }, []);
 
   useEffect(() => {
     loadConfig();
-  }, []);
+  }, [loadConfig]);
 
   // Poll for WhatsApp QR code when WhatsApp connector is configured
   useEffect(() => {
@@ -613,6 +624,7 @@ export default function SettingsPage() {
                 const isActive = theme === t.id;
                 return (
                   <button
+                    type="button"
                     key={t.id}
                     onClick={() => setTheme(t.id)}
                     className="flex flex-col items-center gap-[var(--space-1)] px-[var(--space-2)] py-[var(--space-3)] rounded-[var(--radius-md)] bg-[var(--fill-quaternary)] cursor-pointer transition-all duration-150 ease-[var(--ease-smooth)]"
@@ -644,6 +656,7 @@ export default function SettingsPage() {
                 const isActive = settings.accentColor === preset.value;
                 return (
                   <button
+                    type="button"
                     key={preset.value}
                     onClick={() => setAccentColor(preset.value)}
                     aria-label={preset.label}
@@ -687,6 +700,7 @@ export default function SettingsPage() {
               />
               {settings.accentColor && (
                 <button
+                  type="button"
                   onClick={() => setAccentColor(null)}
                   className="text-[length:var(--text-footnote)] text-[var(--system-blue)] bg-none border-none cursor-pointer p-0 inline-flex items-center gap-[4px]"
                 >
@@ -705,6 +719,7 @@ export default function SettingsPage() {
               </div>
               <div className="relative flex items-center gap-[var(--space-4)]">
                 <button
+                  type="button"
                   onClick={() => setShowCooEmojiPicker(!showCooEmojiPicker)}
                   className="text-4xl cursor-pointer bg-transparent border-none p-0"
                 >
@@ -736,10 +751,14 @@ export default function SettingsPage() {
           <Section title="Branding">
             <div className="flex flex-col gap-[var(--space-3)]">
               <div>
-                <label className="block text-[length:var(--text-caption1)] text-[var(--text-tertiary)] mb-[var(--space-1)]">
+                <label
+                  htmlFor="settings-portal-name"
+                  className="block text-[length:var(--text-caption1)] text-[var(--text-tertiary)] mb-[var(--space-1)]"
+                >
                   Portal Name
                 </label>
                 <input
+                  id="settings-portal-name"
                   type="text"
                   className="apple-input w-full bg-[var(--bg-secondary)] border border-[var(--separator)] rounded-[var(--radius-sm)] px-[10px] py-[6px] text-[length:var(--text-footnote)] text-[var(--text-primary)]"
                   placeholder="Jinn"
@@ -753,10 +772,14 @@ export default function SettingsPage() {
               </div>
 
               <div>
-                <label className="block text-[length:var(--text-caption1)] text-[var(--text-tertiary)] mb-[var(--space-1)]">
+                <label
+                  htmlFor="settings-portal-subtitle"
+                  className="block text-[length:var(--text-caption1)] text-[var(--text-tertiary)] mb-[var(--space-1)]"
+                >
                   Portal Subtitle
                 </label>
                 <input
+                  id="settings-portal-subtitle"
                   type="text"
                   className="apple-input w-full bg-[var(--bg-secondary)] border border-[var(--separator)] rounded-[var(--radius-sm)] px-[10px] py-[6px] text-[length:var(--text-footnote)] text-[var(--text-primary)]"
                   placeholder="Command Centre"
@@ -767,10 +790,14 @@ export default function SettingsPage() {
               </div>
 
               <div>
-                <label className="block text-[length:var(--text-caption1)] text-[var(--text-tertiary)] mb-[var(--space-1)]">
+                <label
+                  htmlFor="settings-operator-name"
+                  className="block text-[length:var(--text-caption1)] text-[var(--text-tertiary)] mb-[var(--space-1)]"
+                >
                   Operator Name
                 </label>
                 <input
+                  id="settings-operator-name"
                   type="text"
                   className="apple-input w-full bg-[var(--bg-secondary)] border border-[var(--separator)] rounded-[var(--radius-sm)] px-[10px] py-[6px] text-[length:var(--text-footnote)] text-[var(--text-primary)]"
                   placeholder="Your Name"
@@ -784,10 +811,14 @@ export default function SettingsPage() {
               </div>
 
               <div>
-                <label className="block text-[length:var(--text-caption1)] text-[var(--text-tertiary)] mb-[var(--space-1)]">
+                <label
+                  htmlFor="settings-portal-emoji"
+                  className="block text-[length:var(--text-caption1)] text-[var(--text-tertiary)] mb-[var(--space-1)]"
+                >
                   Portal Emoji
                 </label>
                 <input
+                  id="settings-portal-emoji"
                   type="text"
                   className="apple-input w-[80px] text-center text-[length:var(--text-title2)] px-[8px] py-[6px] bg-[var(--bg-secondary)] border border-[var(--separator)] rounded-[var(--radius-sm)]"
                   placeholder="\ud83e\uddde"
@@ -798,10 +829,14 @@ export default function SettingsPage() {
               </div>
 
               <div>
-                <label className="block text-[length:var(--text-caption1)] text-[var(--text-tertiary)] mb-[var(--space-1)]">
+                <label
+                  htmlFor="settings-language"
+                  className="block text-[length:var(--text-caption1)] text-[var(--text-tertiary)] mb-[var(--space-1)]"
+                >
                   Language
                 </label>
                 <select
+                  id="settings-language"
                   value={languageValue}
                   onChange={(e) => setLanguageValue(e.target.value)}
                   onBlur={() => {
@@ -1128,7 +1163,7 @@ export default function SettingsPage() {
                           ? v
                               .split(",")
                               .map((entry) => Number(entry.trim()))
-                              .filter((n) => !isNaN(n))
+                              .filter((n) => !Number.isNaN(n))
                           : undefined,
                       )
                     }
@@ -1184,10 +1219,13 @@ export default function SettingsPage() {
                     <div className="text-[length:var(--text-caption1)] font-semibold text-[var(--text-secondary)]">
                       Scan with WhatsApp to connect
                     </div>
-                    <img
+                    <Image
                       src={waQr}
                       alt="WhatsApp QR Code"
-                      className="w-[200px] h-[200px] rounded-[var(--radius-md)] border border-[var(--separator)] bg-white p-[8px]"
+                      width={200}
+                      height={200}
+                      unoptimized
+                      className="rounded-[var(--radius-md)] border border-[var(--separator)] bg-white p-[8px]"
                     />
                     <div className="text-[length:var(--text-caption2)] text-[var(--text-tertiary)]">
                       Open WhatsApp → Linked Devices → Link a Device
@@ -1208,6 +1246,7 @@ export default function SettingsPage() {
                   </div>
                   <div className="flex items-center gap-[var(--space-2)]">
                     <button
+                      type="button"
                       className="text-[length:var(--text-caption1)] font-[var(--weight-semibold)] text-[var(--text-secondary)] hover:text-[var(--accent)] transition-colors flex items-center gap-1"
                       onClick={async () => {
                         try {
@@ -1226,6 +1265,7 @@ export default function SettingsPage() {
                       Reload
                     </button>
                     <button
+                      type="button"
                       className="text-[length:var(--text-caption1)] font-[var(--weight-semibold)] text-[var(--accent)] hover:opacity-80 transition-opacity"
                       onClick={() => {
                         const instances = [...(config.connectors?.instances || [])];
@@ -1241,7 +1281,7 @@ export default function SettingsPage() {
                 <div className="text-[length:var(--text-caption2)] text-[var(--text-tertiary)] mb-[var(--space-3)]">
                   Add multiple connector instances of the same type, each bound to a specific employee.
                 </div>
-                {(config.connectors?.instances || []).map((instance: any, idx: number) => (
+                {(config.connectors?.instances || []).map((instance, idx) => (
                   <div
                     key={instance.id || idx}
                     className="mb-[var(--space-4)] p-[var(--space-3)] rounded-[var(--radius-md)] border border-[var(--separator)] bg-[var(--bg-secondary)]"
@@ -1251,6 +1291,7 @@ export default function SettingsPage() {
                         {instance.id || `Instance ${idx + 1}`}
                       </div>
                       <button
+                        type="button"
                         className="text-[var(--system-red)] hover:opacity-80 transition-opacity p-[var(--space-1)]"
                         onClick={() => {
                           const instances = [...(config.connectors?.instances || [])];
@@ -1502,6 +1543,7 @@ export default function SettingsPage() {
               {/* Save button for gateway config */}
               <div className="flex justify-end gap-[var(--space-3)] mb-[var(--space-6)]">
                 <button
+                  type="button"
                   onClick={() => loadConfig()}
                   className="px-[var(--space-4)] py-[var(--space-2)] rounded-[var(--radius-md)] bg-[var(--fill-tertiary)] text-[var(--text-secondary)] border-none cursor-pointer text-[length:var(--text-footnote)] font-[var(--weight-medium)] inline-flex items-center gap-[6px]"
                 >
@@ -1509,6 +1551,7 @@ export default function SettingsPage() {
                   Reload
                 </button>
                 <button
+                  type="button"
                   onClick={handleSave}
                   disabled={saving}
                   className="px-[var(--space-5)] py-[var(--space-2)] rounded-[var(--radius-md)] bg-[var(--accent)] text-[var(--accent-contrast)] border-none text-[length:var(--text-footnote)] font-[var(--weight-semibold)] inline-flex items-center gap-[6px] transition-all duration-150 ease-[var(--ease-smooth)]"
@@ -1528,6 +1571,7 @@ export default function SettingsPage() {
           <Section title="Reset">
             <div className="flex items-center justify-center gap-[var(--space-3)] flex-wrap">
               <button
+                type="button"
                 onClick={() => {
                   localStorage.removeItem("jinn-onboarded");
                   window.location.reload();
@@ -1538,6 +1582,7 @@ export default function SettingsPage() {
                 Re-run Onboarding Wizard
               </button>
               <button
+                type="button"
                 onClick={() => {
                   if (window.confirm("Reset all settings to defaults?")) {
                     localStorage.removeItem("jinn-settings");

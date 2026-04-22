@@ -6,7 +6,6 @@ import { loadConfig } from "../shared/config.js";
 import { startForeground } from "./lifecycle.js";
 
 const config = loadConfig();
-startForeground(config).catch((err) => {
-  console.error("Daemon failed to start:", err);
+startForeground(config).catch((_err) => {
   process.exit(1);
 });

@@ -18,7 +18,7 @@ export function BreadcrumbBar() {
       {items.map((item, i) => {
         const isLast = i === items.length - 1;
         return (
-          <span key={i} className="flex items-center gap-1.5">
+          <span key={item.label} className="flex items-center gap-1.5">
             {i > 0 && <ChevronRight size={14} className="text-[var(--text-quaternary)]" />}
             {isLast || !item.href ? (
               <span className={isLast ? "text-[var(--text-primary)] font-medium" : "text-[var(--text-tertiary)]"}>

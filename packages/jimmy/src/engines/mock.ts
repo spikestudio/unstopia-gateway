@@ -33,7 +33,7 @@ export class MockEngine implements Engine {
       // Simulate word-by-word streaming with small delays
       const words = response.split(" ");
       for (let i = 0; i < words.length; i++) {
-        const chunk = i === 0 ? words[i] : " " + words[i];
+        const chunk = i === 0 ? words[i] : ` ${words[i]}`;
         opts.onStream({ type: "text", content: chunk });
         // Simulate network/processing delay between words
         await new Promise((resolve) => setTimeout(resolve, 10));

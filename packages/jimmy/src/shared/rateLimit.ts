@@ -24,7 +24,8 @@ const DEAD_SESSION_PATTERNS = [
  * signal — meaning the --resume ID is stale and should not be retried.
  */
 export function isDeadSessionError(result: EngineResult): boolean {
-  if (!result.error) return false;
+  const errorText = result.error;
+  if (!errorText) return false;
 
   // If rate limit info is present, this is a rate limit, not a dead session
   if (result.rateLimit?.status) return false;
@@ -38,7 +39,7 @@ export function isDeadSessionError(result: EngineResult): boolean {
   // Secondary: known dead-session patterns in error text, but only when no real
   // work was done (zeroCost) — avoids wiping IDs after a real session that
   // happened to include a matching substring in its error message.
-  if (zeroCost && DEAD_SESSION_PATTERNS.some((p) => p.test(result.error!))) return true;
+  if (zeroCost && DEAD_SESSION_PATTERNS.some((p) => p.test(errorText))) return true;
 
   return false;
 }

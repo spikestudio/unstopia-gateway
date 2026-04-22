@@ -34,7 +34,7 @@ export function TicketCard({ ticket, assigneeName, onClick, onDelete }: TicketCa
   const [isDragging, setIsDragging] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
 
-  function handleDragStart(e: React.DragEvent<HTMLDivElement>) {
+  function handleDragStart(e: React.DragEvent<HTMLButtonElement>) {
     e.dataTransfer.setData("text/plain", ticket.id);
     e.dataTransfer.effectAllowed = "move";
     setIsDragging(true);
@@ -45,22 +45,15 @@ export function TicketCard({ ticket, assigneeName, onClick, onDelete }: TicketCa
   }
 
   return (
-    <div
+    <button
+      type="button"
       draggable
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
       onClick={onClick}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      role="button"
-      tabIndex={0}
-      onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
-          onClick();
-        }
-      }}
-      className="relative bg-[var(--material-regular)] rounded-[var(--radius-md)] p-[var(--space-3)] border border-[var(--separator)] flex flex-col gap-[var(--space-2)] select-none transition-opacity duration-150 ease-[var(--ease-smooth)]"
+      className="relative w-full bg-[var(--material-regular)] rounded-[var(--radius-md)] p-[var(--space-3)] border border-[var(--separator)] flex flex-col gap-[var(--space-2)] select-none transition-opacity duration-150 ease-[var(--ease-smooth)] text-left"
       style={{
         cursor: isDragging ? "grabbing" : "grab",
         opacity: isDragging ? 0.6 : 1,
@@ -70,6 +63,7 @@ export function TicketCard({ ticket, assigneeName, onClick, onDelete }: TicketCa
       {/* Delete button (visible on hover) */}
       {isHovered && onDelete && (
         <button
+          type="button"
           onClick={(e) => {
             e.stopPropagation();
             onDelete();
@@ -121,6 +115,6 @@ export function TicketCard({ ticket, assigneeName, onClick, onDelete }: TicketCa
           {relativeTime(ticket.createdAt)}
         </span>
       </div>
-    </div>
+    </button>
   );
 }

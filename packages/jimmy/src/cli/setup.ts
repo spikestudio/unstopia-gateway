@@ -377,8 +377,13 @@ export async function runSetup(opts?: { force?: boolean }): Promise<void> {
   // Read portal name from config for template replacements
   const portalName = (() => {
     try {
-      const cfg = yaml.load(fs.readFileSync(CONFIG_PATH, "utf-8")) as any;
-      return cfg?.portal?.portalName || "Jinn";
+      const cfg = yaml.load(fs.readFileSync(CONFIG_PATH, "utf-8")) as Record<string, unknown>;
+      const portal = cfg?.portal;
+      if (portal && typeof portal === "object") {
+        const portalName = (portal as Record<string, unknown>).portalName;
+        if (typeof portalName === "string") return portalName;
+      }
+      return "Jinn";
     } catch {
       return "Jinn";
     }
@@ -481,7 +486,7 @@ export async function runSetup(opts?: { force?: boolean }): Promise<void> {
   if (
     ensureFile(
       settingsPath,
-      JSON.stringify(
+      `${JSON.stringify(
         {
           permissions: {
             allow: [
@@ -507,7 +512,7 @@ export async function runSetup(opts?: { force?: boolean }): Promise<void> {
         },
         null,
         2,
-      ) + "\n",
+      )}\n`,
     )
   ) {
     created.push(settingsPath);

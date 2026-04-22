@@ -32,7 +32,7 @@ export function ChatTabBar({
   activeIndex,
   onSwitch,
   onClose,
-  onNew,
+  onNew: _onNew,
   onPin,
   onMove,
   toolbarActions,
@@ -95,7 +95,7 @@ export function ChatTabBar({
     <div className="relative z-[100] flex h-10 shrink-0 items-center border-b border-border bg-[var(--bg-secondary)]">
       {onToggleSidebar && (
         <button
-          onClick={onToggleSidebar}
+          type="button"
           aria-label={sidebarCollapsed ? "Show sidebar" : "Hide sidebar"}
           className="flex size-10 shrink-0 items-center justify-center border-r border-border text-muted-foreground transition-colors hover:bg-[var(--fill-quaternary)] hover:text-foreground"
         >
@@ -109,6 +109,7 @@ export function ChatTabBar({
         >
           {tabs.map((tab, i) => (
             <button
+              type="button"
               key={tab.sessionId}
               onClick={() => onSwitch(i)}
               onDoubleClick={() => handleDoubleClick(i)}
@@ -135,22 +136,24 @@ export function ChatTabBar({
               <span className={cn("truncate", tab.pinned ? "font-medium" : "font-normal italic")}>
                 {cleanPreview(tab.label)}
               </span>
-              <span
+              <button
+                type="button"
+                aria-label="Close tab"
                 onClick={(e) => {
                   e.stopPropagation();
                   onClose(i);
                 }}
-                className="ml-auto rounded-sm p-0.5 opacity-0 transition-all hover:bg-accent hover:text-foreground group-hover:opacity-100"
+                className="ml-auto rounded-sm p-0.5 opacity-0 transition-all hover:bg-accent hover:text-foreground group-hover:opacity-100 border-none bg-transparent cursor-pointer"
               >
                 <X size={12} />
-              </span>
+              </button>
             </button>
           ))}
         </div>
       )}
       {tabs.length === 0 && <div className="flex-1" />}
       <button
-        onClick={onNew}
+        type="button"
         className="flex size-10 shrink-0 items-center justify-center text-[var(--text-tertiary)] transition-colors hover:bg-[var(--fill-quaternary)] hover:text-foreground"
         title="New Chat (N)"
       >

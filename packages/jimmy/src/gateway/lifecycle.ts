@@ -123,7 +123,7 @@ function findPidOnPort(port: number): number | null {
       // netstat output: proto  local_addr  foreign_addr  state  PID
       const parts = output.split("\n")[0].trim().split(/\s+/);
       const pid = parseInt(parts[parts.length - 1], 10);
-      return isNaN(pid) ? null : pid;
+      return Number.isNaN(pid) ? null : pid;
     } else {
       const output = execSync(
         process.platform === "darwin" ? `/usr/sbin/lsof -ti tcp:${port}` : `lsof -ti tcp:${port}`,
@@ -131,7 +131,7 @@ function findPidOnPort(port: number): number | null {
       ).trim();
       if (!output) return null;
       const pid = parseInt(output.split("\n")[0], 10);
-      return isNaN(pid) ? null : pid;
+      return Number.isNaN(pid) ? null : pid;
     }
   } catch {
     return null;

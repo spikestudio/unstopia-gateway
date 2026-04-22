@@ -315,7 +315,7 @@ function buildChainOfCommand(
   const unique = [...new Set(escalation)];
   lines.push(`- **Escalation path**: ${unique.join(" → ")}`);
 
-  return "\n" + lines.join("\n") + "\n";
+  return `\n${lines.join("\n")}\n`;
 }
 
 function buildServicesContext(employee: Employee, gatewayUrl: string): string | null {
@@ -508,7 +508,7 @@ function buildCronContext(): string | null {
     const jobs = JSON.parse(raw);
     if (!Array.isArray(jobs) || jobs.length === 0) return null;
 
-    const enabled = jobs.filter((j: any) => j.enabled !== false);
+    const enabled = jobs.filter((j: unknown) => (j as Record<string, unknown>).enabled !== false);
     const disabledCount = jobs.length - enabled.length;
 
     const lines: string[] = [`## Scheduled cron jobs (${enabled.length} active, ${disabledCount} disabled)`];

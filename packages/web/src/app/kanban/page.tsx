@@ -20,7 +20,6 @@ import {
   createTicket,
   deleteTicket,
   type KanbanStore,
-  loadTickets,
   moveTicket,
   saveTickets,
   updateTicket,
@@ -58,14 +57,15 @@ function DeleteConfirmDialog({
         </DialogHeader>
         <DialogFooter>
           <button
+            type="button"
             onClick={onCancel}
             className="px-[var(--space-4)] py-[var(--space-2)] rounded-[var(--radius-md)] border border-[var(--separator)] bg-transparent text-[var(--text-secondary)] text-[length:var(--text-footnote)] font-semibold cursor-pointer"
           >
             Cancel
           </button>
           <button
+            type="button"
             onClick={onConfirm}
-            autoFocus
             className="px-[var(--space-4)] py-[var(--space-2)] rounded-[var(--radius-md)] border-none bg-[var(--system-red)] text-white text-[length:var(--text-footnote)] font-semibold cursor-pointer"
           >
             Delete
@@ -88,7 +88,7 @@ export default function KanbanPage() {
   const [deleteConfirm, setDeleteConfirm] = useState<KanbanTicket | null>(null);
 
   /** Sync tickets to the gateway API, grouped by department */
-  const syncToApi = useCallback(
+  const _syncToApi = useCallback(
     async (store: KanbanStore) => {
       // Group tickets by department
       const byDept: Record<
@@ -338,7 +338,7 @@ export default function KanbanPage() {
             Failed to load employees: {error}
           </div>
           <button
-            onClick={loadData}
+            type="button"
             className="px-[var(--space-4)] py-[var(--space-2)] rounded-[var(--radius-md)] bg-[var(--accent)] text-[var(--accent-contrast)] border-none cursor-pointer text-[length:var(--text-body)] font-[var(--weight-semibold)]"
           >
             Retry
@@ -376,7 +376,7 @@ export default function KanbanPage() {
 
             <ToolbarActions>
               <button
-                onClick={() => setCreateOpen(true)}
+                type="button"
                 className="rounded-[var(--radius-md)] px-4 py-2 text-[length:var(--text-footnote)] font-[var(--weight-semibold)] border-none flex items-center gap-[var(--space-2)] bg-[var(--accent)] text-white cursor-pointer"
               >
                 <Plus size={16} />
@@ -389,7 +389,7 @@ export default function KanbanPage() {
           {assignedEmployees.length > 0 && (
             <div className="flex items-center gap-[var(--space-2)] px-[var(--space-5)] py-[var(--space-2)] overflow-x-auto shrink-0">
               <button
-                onClick={() => setFilterEmployeeId(null)}
+                type="button"
                 className={`flex items-center gap-[var(--space-1)] px-3 py-1 rounded-full border-none text-[length:var(--text-caption1)] font-semibold cursor-pointer shrink-0 ${
                   filterEmployeeId === null
                     ? "bg-[var(--accent)] text-white"
@@ -400,6 +400,7 @@ export default function KanbanPage() {
               </button>
               {assignedEmployees.map((emp) => (
                 <button
+                  type="button"
                   key={emp.name}
                   onClick={() => setFilterEmployeeId(filterEmployeeId === emp.name ? null : emp.name)}
                   className={`flex items-center gap-[var(--space-1)] px-3 py-1 rounded-full border-none text-[length:var(--text-caption1)] font-semibold cursor-pointer shrink-0 ${
@@ -436,7 +437,12 @@ export default function KanbanPage() {
 
         {/* Mobile backdrop */}
         {selectedTicket && (
-          <div className="fixed inset-0 z-30 lg:hidden bg-black/50" onClick={() => setSelectedTicket(null)} />
+          <button
+            type="button"
+            aria-label="Close ticket detail"
+            className="fixed inset-0 z-30 lg:hidden bg-black/50 w-full h-full border-none cursor-default"
+            onClick={() => setSelectedTicket(null)}
+          />
         )}
 
         {/* Detail panel */}

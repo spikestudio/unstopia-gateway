@@ -27,7 +27,7 @@ function MobileHeader({ actions }: { actions?: React.ReactNode }) {
     <>
       <div className="relative z-60 flex h-12 shrink-0 items-center border-b border-border bg-[var(--material-thick)] px-3 lg:hidden">
         <button
-          onClick={() => setOpen(true)}
+          type="button"
           aria-label="Open menu"
           className="inline-flex size-9 items-center justify-center rounded-md text-foreground transition-colors hover:bg-accent"
         >
@@ -45,7 +45,12 @@ function MobileHeader({ actions }: { actions?: React.ReactNode }) {
 
       {open && (
         <div className="fixed inset-0 z-[120] lg:hidden">
-          <div className="absolute inset-0 bg-black/50 backdrop-blur-[1px]" onClick={() => setOpen(false)} />
+          <button
+            type="button"
+            aria-label="Close navigation menu"
+            className="absolute inset-0 w-full h-full bg-black/50 backdrop-blur-[1px] border-none cursor-default"
+            onClick={() => setOpen(false)}
+          />
           <nav className="absolute inset-y-0 left-0 flex w-[260px] animate-slide-in flex-col border-r border-border bg-[var(--bg-secondary)]">
             <div className="flex items-center justify-between border-b border-border px-3.5 py-3">
               <div className="flex items-center gap-2">
@@ -53,7 +58,7 @@ function MobileHeader({ actions }: { actions?: React.ReactNode }) {
                 <span className="text-base font-semibold text-foreground">{portalName}</span>
               </div>
               <button
-                onClick={() => setOpen(false)}
+                type="button"
                 aria-label="Close menu"
                 className="inline-flex size-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
               >

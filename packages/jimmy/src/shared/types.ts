@@ -95,8 +95,8 @@ export interface Connector {
   getCapabilities(): ConnectorCapabilities;
   getHealth(): ConnectorHealth;
   reconstructTarget(replyContext: ReplyContext): Target;
-  sendMessage(target: Target, text: string): Promise<string | void>;
-  replyMessage(target: Target, text: string): Promise<string | void>;
+  sendMessage(target: Target, text: string): Promise<string | undefined>;
+  replyMessage(target: Target, text: string): Promise<string | undefined>;
   addReaction(target: Target, emoji: string): Promise<void>;
   removeReaction(target: Target, emoji: string): Promise<void>;
   editMessage(target: Target, text: string): Promise<void>;
@@ -309,7 +309,7 @@ export interface McpGlobalConfig {
   custom?: Record<string, (McpServerStdioConfig | McpServerUrlConfig) & { enabled?: boolean }>;
 }
 
-export type WebConnectorConfig = {};
+export type WebConnectorConfig = Record<string, never>;
 
 export interface SlackConnectorConfig {
   /** Unique instance identifier (e.g. "slack-support") */
@@ -388,7 +388,7 @@ export interface JinnConfig {
     codex: { bin: string; model: string; effortLevel?: string; childEffortOverride?: string };
     gemini?: { bin: string; model: string; effortLevel?: string; childEffortOverride?: string };
   };
-  connectors: Record<string, any> & {
+  connectors: Record<string, unknown> & {
     web?: WebConnectorConfig;
     slack?: SlackConnectorConfig;
     telegram?: TelegramConnectorConfig;

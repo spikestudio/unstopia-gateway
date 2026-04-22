@@ -21,6 +21,7 @@ function EmployeeCard({
 }) {
   return (
     <button
+      type="button"
       onClick={onSelect}
       className={`flex items-center gap-[var(--space-3)] px-[var(--space-4)] py-[var(--space-3)] rounded-[var(--radius-md,12px)] bg-[var(--material-regular)] cursor-pointer w-full text-left transition-all duration-150 ease-in-out ${selected ? "border-[1.5px] border-[var(--accent)]" : "border border-[var(--separator)]"}`}
       style={{
@@ -90,7 +91,7 @@ export function GridView({ employees, selectedName, onSelect }: GridViewProps) {
       {/* Executive banner */}
       {executive && (
         <button
-          onClick={() => onSelect(executive)}
+          type="button"
           className={`flex items-center gap-[var(--space-5)] w-full px-[var(--space-6)] py-[var(--space-5)] rounded-[var(--radius-xl,20px)] bg-[var(--material-regular)] cursor-pointer text-left mb-[var(--space-6)] transition-all duration-150 ease-in-out ${selectedName === executive.name ? "border-[1.5px] border-[var(--accent)]" : "border border-[var(--separator)]"}`}
           style={{
             boxShadow:

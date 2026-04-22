@@ -90,6 +90,7 @@ export function LogBrowser({ lines }: LogBrowserProps) {
           const isActive = filter === pill.key;
           return (
             <button
+              type="button"
               key={pill.key}
               onClick={() => setFilter(pill.key)}
               className="focus-ring flex items-center flex-shrink-0 rounded-[20px] py-[6px] px-[14px] text-[length:var(--text-footnote)] font-[var(--weight-medium)] border-none cursor-pointer gap-[var(--space-2)] transition-all duration-200 ease-[var(--ease-smooth)]"
@@ -158,18 +159,11 @@ export function LogBrowser({ lines }: LogBrowserProps) {
                 {idx > 0 && <div className="h-px bg-[var(--separator)] mx-[var(--space-4)]" />}
 
                 {/* Row */}
-                <div
-                  role="button"
-                  tabIndex={0}
+                <button
+                  type="button"
                   aria-expanded={isLong ? isExpanded : undefined}
                   onClick={() => isLong && setExpandedId(isExpanded ? null : entry.id)}
-                  onKeyDown={(e) => {
-                    if (isLong && (e.key === "Enter" || e.key === " ")) {
-                      e.preventDefault();
-                      setExpandedId(isExpanded ? null : entry.id);
-                    }
-                  }}
-                  className="flex items-center hover-bg focus-ring min-h-11 px-[var(--space-4)]"
+                  className="flex w-full items-center hover-bg focus-ring min-h-11 px-[var(--space-4)] border-none bg-transparent text-left"
                   style={{
                     cursor: isLong ? "pointer" : "default",
                     background: entry.level === "error" ? "rgba(255,69,58,0.06)" : undefined,
@@ -198,7 +192,7 @@ export function LogBrowser({ lines }: LogBrowserProps) {
 
                   {/* Message */}
                   <span className="truncate text-[length:var(--text-footnote)] text-[var(--text-primary)] ml-[var(--space-3)] flex-1 min-w-0">
-                    {isLong && !isExpanded ? entry.message.slice(0, 117) + "..." : entry.message}
+                    {isLong && !isExpanded ? `${entry.message.slice(0, 117)}...` : entry.message}
                   </span>
 
                   {/* Chevron for long messages */}
@@ -213,7 +207,7 @@ export function LogBrowser({ lines }: LogBrowserProps) {
                       &#8250;
                     </span>
                   )}
-                </div>
+                </button>
 
                 {/* Expanded detail */}
                 {isExpanded && isLong && (

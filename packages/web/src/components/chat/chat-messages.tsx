@@ -1,4 +1,5 @@
 "use client";
+import Image from "next/image";
 import type React from "react";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { MediaAttachment, Message } from "@/lib/conversations";
@@ -33,7 +34,7 @@ function groupMessages(messages: Message[]): MessageItem[] {
 }
 
 function ToolGroup({ msgs, isActive }: { msgs: Message[]; isActive: boolean }) {
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, _setExpanded] = useState(false);
   const allDone = msgs.every((m) => m.content.startsWith("Used "));
   const label =
     isActive && !allDone
@@ -43,7 +44,7 @@ function ToolGroup({ msgs, isActive }: { msgs: Message[]; isActive: boolean }) {
   return (
     <div className="px-[var(--space-4)] mb-[var(--space-1)]">
       <button
-        onClick={() => setExpanded((v) => !v)}
+        type="button"
         className="flex items-center gap-[var(--space-2)] py-[5px] px-[var(--space-3)] rounded-full bg-[var(--fill-secondary)] border border-[var(--separator)] text-[length:var(--text-caption1)] text-[var(--text-secondary)] cursor-pointer transition-[background] duration-150 ease-in-out hover:bg-[var(--fill-tertiary)]"
       >
         <svg
@@ -56,6 +57,8 @@ function ToolGroup({ msgs, isActive }: { msgs: Message[]; isActive: boolean }) {
           strokeLinecap="round"
           strokeLinejoin="round"
           className="opacity-60"
+          aria-hidden="true"
+          focusable="false"
         >
           <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
         </svg>
@@ -73,6 +76,8 @@ function ToolGroup({ msgs, isActive }: { msgs: Message[]; isActive: boolean }) {
           strokeLinecap="round"
           strokeLinejoin="round"
           className={`transition-transform duration-150 ease-in-out opacity-50 ${expanded ? "rotate-180" : "rotate-0"}`}
+          aria-hidden="true"
+          focusable="false"
         >
           <polyline points="6 9 12 15 18 9" />
         </svg>
@@ -101,9 +106,9 @@ function inlineFormat(text: string): React.ReactNode {
   const regex =
     /\[([^\]]+)\]\(([^)]+)\)|(https?:\/\/[^\s<]+[^\s<.,;:!?)}\]'"])|(\*\*(.+?)\*\*)|(`([^`]+)`)|\*([^*]+)\*/g;
   let last = 0;
-  let match;
+  let match = regex.exec(text);
 
-  while ((match = regex.exec(text)) !== null) {
+  while (match !== null) {
     if (match.index > last) parts.push(text.slice(last, match.index));
     if (match[1] && match[2]) {
       // Markdown link: [text](url)
@@ -154,15 +159,16 @@ function inlineFormat(text: string): React.ReactNode {
       );
     }
     last = match.index + match[0].length;
+    match = regex.exec(text);
   }
   if (last < text.length) parts.push(text.slice(last));
-  return parts.length === 1 ? parts[0] : <>{parts}</>;
+  return parts.length === 1 ? parts[0] : parts;
 }
 
 function CodeBlock({ code, keyProp }: { code: string; keyProp: number }) {
   const [copied, setCopied] = useState(false);
 
-  function handleCopy() {
+  function _handleCopy() {
     navigator.clipboard.writeText(code).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
@@ -172,7 +178,7 @@ function CodeBlock({ code, keyProp }: { code: string; keyProp: number }) {
   return (
     <div key={keyProp} className="relative my-2">
       <button
-        onClick={handleCopy}
+        type="button"
         aria-label="Copy code"
         className="absolute top-2 right-2 py-0.5 px-2 text-[11px] rounded-[var(--radius-sm)] bg-[var(--fill-secondary)] text-[var(--text-secondary)] border border-[var(--separator)] cursor-pointer"
       >
@@ -208,9 +214,9 @@ function TableBlock({ headerLine, rows, keyProp }: { headerLine: string; rows: s
         <table className="border-collapse text-[length:var(--text-footnote)] leading-[1.6] w-full min-w-max">
           <thead>
             <tr className="bg-[var(--fill-tertiary)]">
-              {headers.map((h, hi) => (
+              {headers.map((h) => (
                 <th
-                  key={hi}
+                  key={h}
                   className="text-left py-2.5 px-4 font-semibold text-[var(--text-primary)] border-b border-[var(--separator)] max-w-[280px] break-words"
                 >
                   {inlineFormat(h)}
@@ -220,10 +226,13 @@ function TableBlock({ headerLine, rows, keyProp }: { headerLine: string; rows: s
           </thead>
           <tbody>
             {bodyRows.map((row, ri) => (
-              <tr key={ri} className={ri % 2 === 1 ? "bg-[var(--fill-quaternary,transparent)]" : "bg-transparent"}>
-                {row.map((cell, ci) => (
+              <tr
+                key={row.join("|")}
+                className={ri % 2 === 1 ? "bg-[var(--fill-quaternary,transparent)]" : "bg-transparent"}
+              >
+                {row.map((cell) => (
                   <td
-                    key={ci}
+                    key={cell}
                     className={`py-2.5 px-4 text-[var(--text-primary)] max-w-[280px] break-words ${ri < bodyRows.length - 1 ? "border-b border-[var(--separator)]" : ""}`}
                   >
                     {inlineFormat(cell)}
@@ -404,7 +413,7 @@ function formatTimestamp(ts: number): string {
 
   if (isToday) return `Today ${time}`;
   if (isYesterday) return `Yesterday ${time}`;
-  return date.toLocaleDateString("en-US", { month: "short", day: "numeric" }) + ` ${time}`;
+  return `${date.toLocaleDateString("en-US", { month: "short", day: "numeric" })} ${time}`;
 }
 
 function shouldShowTimestamp(messages: Message[], index: number): boolean {
@@ -422,23 +431,27 @@ function renderMedia(media: MediaAttachment[], isUser: boolean) {
 
   return (
     <>
-      {images.map((m, mi) => (
-        <div key={`img-${mi}`} className="mt-[var(--space-2)] rounded-[var(--radius-lg)] overflow-hidden max-w-[280px]">
-          <img
-            src={m.url}
-            alt={m.name || "Image"}
-            className="w-full block rounded-[var(--radius-lg)] cursor-pointer"
-            onClick={() => window.open(m.url, "_blank")}
-          />
+      {images.map((m) => (
+        <div key={m.url} className="mt-[var(--space-2)] rounded-[var(--radius-lg)] overflow-hidden max-w-[280px]">
+          <a href={m.url} target="_blank" rel="noreferrer" aria-label={m.name || "Open image"}>
+            <Image
+              src={m.url}
+              alt={m.name || "Image"}
+              width={280}
+              height={280}
+              unoptimized
+              className="w-full block rounded-[var(--radius-lg)] cursor-pointer"
+            />
+          </a>
         </div>
       ))}
-      {audio.map((m, mi) => (
-        <div key={`audio-${mi}`} className="mt-[var(--space-2)]">
+      {audio.map((m) => (
+        <div key={m.url} className="mt-[var(--space-2)]">
           <VoiceMessage src={m.url} duration={m.duration || 0} waveform={m.waveform || []} isUser={isUser} />
         </div>
       ))}
-      {files.map((m, mi) => (
-        <div key={`file-${mi}`} className="mt-[var(--space-2)]">
+      {files.map((m) => (
+        <div key={m.url} className="mt-[var(--space-2)]">
           <FileAttachment name={m.name || "File"} size={m.size} mimeType={m.mimeType} url={m.url} isUser={isUser} />
         </div>
       ))}
@@ -532,7 +545,7 @@ export function ChatMessages({ messages, loading, streamingText }: ChatMessagesP
     prevMsgIdRef.current = currentFirstId;
   }, [messages]);
 
-  const scrollToBottom = useCallback(() => {
+  const _scrollToBottom = useCallback(() => {
     if (scrollContainerRef.current) {
       scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight;
     }
@@ -631,6 +644,8 @@ export function ChatMessages({ messages, loading, streamingText }: ChatMessagesP
                       strokeLinecap="round"
                       strokeLinejoin="round"
                       className="shrink-0 mt-0.5 opacity-60"
+                      aria-hidden="true"
+                      focusable="false"
                     >
                       <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
                       <path d="M13.73 21a2 2 0 0 1-3.46 0" />
@@ -699,7 +714,7 @@ export function ChatMessages({ messages, loading, streamingText }: ChatMessagesP
       {/* Scroll-to-bottom button */}
       {showScrollButton && (
         <button
-          onClick={scrollToBottom}
+          type="button"
           aria-label="Scroll to bottom"
           className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 flex items-center gap-1.5 py-1.5 px-3 rounded-full bg-[var(--material-thick)] border border-[var(--separator)] text-[var(--text-secondary)] text-[length:var(--text-caption1)] shadow-[var(--shadow-elevated)] cursor-pointer transition-opacity duration-150 hover:bg-[var(--fill-secondary)]"
         >
@@ -712,6 +727,8 @@ export function ChatMessages({ messages, loading, streamingText }: ChatMessagesP
             strokeWidth="2.5"
             strokeLinecap="round"
             strokeLinejoin="round"
+            aria-hidden="true"
+            focusable="false"
           >
             <polyline points="6 9 12 15 18 9" />
           </svg>

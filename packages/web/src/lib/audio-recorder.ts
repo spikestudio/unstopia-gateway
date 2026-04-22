@@ -130,10 +130,12 @@ export function createAudioRecorder(): AudioRecorderHandle {
 
         mediaRecorder.onstop = async () => {
           // Cleanup
-          stream?.getTracks().forEach((t) => t.stop());
+          stream?.getTracks().forEach((t) => {
+            t.stop();
+          });
           audioContext?.close().catch(() => {});
 
-          const blob = new Blob(chunks, { type: mediaRecorder!.mimeType || "audio/webm" });
+          const blob = new Blob(chunks, { type: mediaRecorder?.mimeType || "audio/webm" });
           const dataUrl = await blobToDataUrl(blob);
           const waveform = downsample(rawAmplitudes, WAVEFORM_SAMPLES);
 
@@ -151,7 +153,9 @@ export function createAudioRecorder(): AudioRecorderHandle {
       if (mediaRecorder && mediaRecorder.state !== "inactive") {
         mediaRecorder.stop();
       }
-      stream?.getTracks().forEach((t) => t.stop());
+      stream?.getTracks().forEach((t) => {
+        t.stop();
+      });
       audioContext?.close().catch(() => {});
       chunks = [];
       rawAmplitudes.length = 0;

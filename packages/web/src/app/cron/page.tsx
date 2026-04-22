@@ -56,7 +56,7 @@ function titleCase(slug: string): string {
 function timeAgo(dateStr: string | null | undefined): string {
   if (!dateStr) return "never";
   const d = new Date(dateStr);
-  if (isNaN(d.getTime())) return "\u2014";
+  if (Number.isNaN(d.getTime())) return "\u2014";
   const diff = Date.now() - d.getTime();
   const mins = Math.floor(diff / 60000);
   const hrs = Math.floor(diff / 3600000);
@@ -118,7 +118,7 @@ function RecentRuns({ jobId }: { jobId: string }) {
         Recent Runs
       </div>
       <div className="flex flex-col gap-1">
-        {runs.map((run, i) => {
+        {runs.map((run) => {
           const ts = run.ts || run.startedAt || "";
           const status = run.status || "unknown";
           const statusDot =
@@ -132,7 +132,7 @@ function RecentRuns({ jobId }: { jobId: string }) {
 
           return (
             <div
-              key={`${ts}-${i}`}
+              key={`${ts}-${status}-${run.durationMs ?? "?"}`}
               className="flex items-center gap-[var(--space-2)] text-[length:var(--text-caption2)] min-h-[22px] py-0.5"
             >
               <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: statusDot }} />
@@ -259,6 +259,7 @@ export default function CronPage() {
                   Updated {updatedAgo}
                 </span>
                 <button
+                  type="button"
                   onClick={refresh}
                   aria-label="Refresh cron data"
                   className="w-8 h-8 flex items-center justify-center rounded-[var(--radius-sm)] border-none bg-transparent text-[var(--text-tertiary)] cursor-pointer"
@@ -272,6 +273,8 @@ export default function CronPage() {
                     strokeWidth="2"
                     strokeLinecap="round"
                     strokeLinejoin="round"
+                    aria-hidden="true"
+                    focusable="false"
                   >
                     <path d="M21 2v6h-6" />
                     <path d="M3 12a9 9 0 0 1 15-6.7L21 8" />
@@ -290,6 +293,7 @@ export default function CronPage() {
             <div className="bg-[rgba(255,69,58,0.06)] border border-[var(--system-red)] rounded-[var(--radius-md)] p-[var(--space-4)] text-[var(--system-red)] text-[length:var(--text-footnote)] mb-[var(--space-4)]">
               Failed to load cron jobs: {error}
               <button
+                type="button"
                 onClick={refresh}
                 className="ml-[var(--space-3)] underline bg-none border-none text-inherit cursor-pointer text-[length:inherit]"
               >
@@ -337,6 +341,7 @@ export default function CronPage() {
                     const count = f === "all" ? jobs.length : f === "enabled" ? enabledCount : disabledCount;
                     return (
                       <button
+                        type="button"
                         key={f}
                         onClick={() => setFilter(f)}
                         className="rounded-[20px] px-3.5 py-1.5 text-[length:var(--text-footnote)] font-medium border-none cursor-pointer transition-all duration-200 ease-in-out"
@@ -364,6 +369,8 @@ export default function CronPage() {
                       strokeLinecap="round"
                       strokeLinejoin="round"
                       className="text-[var(--text-tertiary)] mb-[var(--space-2)]"
+                      aria-hidden="true"
+                      focusable="false"
                     >
                       <circle cx="12" cy="12" r="10" />
                       <polyline points="12 6 12 12 16 14" />
@@ -402,18 +409,11 @@ export default function CronPage() {
                                   {idx > 0 && <div className="h-px bg-[var(--separator)] mx-[var(--space-4)]" />}
 
                                   {/* Row */}
-                                  <div
-                                    role="button"
-                                    tabIndex={0}
+                                  <button
+                                    type="button"
                                     aria-expanded={isExpanded}
                                     onClick={() => setExpandedId(isExpanded ? null : job.id)}
-                                    onKeyDown={(e) => {
-                                      if (e.key === "Enter" || e.key === " ") {
-                                        e.preventDefault();
-                                        setExpandedId(isExpanded ? null : job.id);
-                                      }
-                                    }}
-                                    className="flex items-center cursor-pointer min-h-[48px] px-[var(--space-4)] transition-[background] duration-150 ease-in-out"
+                                    className="flex w-full items-center cursor-pointer min-h-[48px] px-[var(--space-4)] transition-[background] duration-150 ease-in-out border-none bg-transparent text-left"
                                     style={{
                                       borderLeft: `3px solid ${job.enabled ? "var(--system-green)" : "transparent"}`,
                                     }}
@@ -452,6 +452,7 @@ export default function CronPage() {
 
                                       {/* Enable/disable toggle */}
                                       <button
+                                        type="button"
                                         onClick={(e) => {
                                           e.stopPropagation();
                                           toggleEnabled(job);
@@ -480,7 +481,7 @@ export default function CronPage() {
                                         &#8250;
                                       </span>
                                     </div>
-                                  </div>
+                                  </button>
 
                                   {/* Expanded detail */}
                                   {isExpanded && (
@@ -537,6 +538,7 @@ export default function CronPage() {
                                       {/* Trigger button */}
                                       <div className="mb-[var(--space-3)]">
                                         <button
+                                          type="button"
                                           onClick={(e) => {
                                             e.stopPropagation();
                                             setTriggeringId(job.id);
@@ -575,6 +577,8 @@ export default function CronPage() {
                                                 viewBox="0 0 24 24"
                                                 fill="currentColor"
                                                 stroke="none"
+                                                aria-hidden="true"
+                                                focusable="false"
                                               >
                                                 <polygon points="5,3 19,12 5,21" />
                                               </svg>

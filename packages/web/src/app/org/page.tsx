@@ -94,7 +94,7 @@ export default function OrgPage() {
             Failed to load organization: {error}
           </div>
           <button
-            onClick={loadData}
+            type="button"
             className="px-[var(--space-4)] py-[var(--space-2)] rounded-[var(--radius-md,12px)] bg-[var(--accent)] text-[var(--accent-contrast)] border-none cursor-pointer text-[length:var(--text-body)] font-[var(--weight-semibold)]"
           >
             Retry
@@ -181,7 +181,14 @@ export default function OrgPage() {
         </div>
 
         {/* Mobile backdrop */}
-        {selected && <div className="fixed inset-0 z-30 lg:hidden bg-black/50" onClick={() => setSelected(null)} />}
+        {selected && (
+          <button
+            type="button"
+            aria-label="Close employee detail"
+            className="fixed inset-0 z-30 lg:hidden bg-black/50 w-full h-full border-none cursor-default"
+            onClick={() => setSelected(null)}
+          />
+        )}
 
         {/* Detail panel */}
         {selected && (
@@ -190,7 +197,7 @@ export default function OrgPage() {
               {/* Close button */}
               <div className="sticky top-0 z-10 flex items-center justify-end px-[var(--space-4)] py-[var(--space-3)] bg-[var(--bg)]">
                 <button
-                  ref={closeRef}
+                  type="button"
                   onClick={() => setSelected(null)}
                   aria-label="Close detail panel"
                   className="w-[30px] h-[30px] rounded-full flex items-center justify-center bg-[var(--fill-tertiary)] text-[var(--text-secondary)] border-none cursor-pointer text-sm"

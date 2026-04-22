@@ -1,5 +1,5 @@
 "use client";
-import React from "react";
+import Image from "next/image";
 import type { MediaAttachment } from "@/lib/conversations";
 
 interface MediaPreviewProps {
@@ -20,9 +20,9 @@ export function MediaPreview({ attachments, onRemove }: MediaPreviewProps) {
         overflowY: "hidden",
       }}
     >
-      {attachments.map((att, i) => (
+      {attachments.map((att) => (
         <div
-          key={i}
+          key={att.fileId ?? att.url}
           style={{
             position: "relative",
             width: 56,
@@ -35,9 +35,12 @@ export function MediaPreview({ attachments, onRemove }: MediaPreviewProps) {
           }}
         >
           {att.type === "image" ? (
-            <img
+            <Image
               src={att.url}
               alt={att.name || "Preview"}
+              width={56}
+              height={56}
+              unoptimized
               style={{
                 width: "100%",
                 height: "100%",
@@ -67,6 +70,8 @@ export function MediaPreview({ attachments, onRemove }: MediaPreviewProps) {
                   strokeWidth="2"
                   strokeLinecap="round"
                   strokeLinejoin="round"
+                  aria-hidden="true"
+                  focusable="false"
                 >
                   <path d="M9 18V5l12-2v13" />
                   <circle cx="6" cy="18" r="3" />
@@ -82,6 +87,8 @@ export function MediaPreview({ attachments, onRemove }: MediaPreviewProps) {
                   strokeWidth="2"
                   strokeLinecap="round"
                   strokeLinejoin="round"
+                  aria-hidden="true"
+                  focusable="false"
                 >
                   <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z" />
                   <polyline points="13 2 13 9 20 9" />
@@ -105,8 +112,9 @@ export function MediaPreview({ attachments, onRemove }: MediaPreviewProps) {
 
           {/* Remove button */}
           <button
-            onClick={() => onRemove(i)}
+            type="button"
             aria-label="Remove attachment"
+            onClick={() => onRemove(attachments.indexOf(att))}
             style={{
               position: "absolute",
               top: 2,
@@ -134,6 +142,8 @@ export function MediaPreview({ attachments, onRemove }: MediaPreviewProps) {
               stroke="currentColor"
               strokeWidth="3"
               strokeLinecap="round"
+              aria-hidden="true"
+              focusable="false"
             >
               <line x1="18" y1="6" x2="6" y2="18" />
               <line x1="6" y1="6" x2="18" y2="18" />

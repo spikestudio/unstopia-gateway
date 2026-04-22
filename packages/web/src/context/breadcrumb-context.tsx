@@ -34,11 +34,11 @@ export function useBreadcrumbs(items?: BreadcrumbItem[]) {
   const ctx = useContext(BreadcrumbContext);
 
   // Serialize items for stable dependency comparison
-  const itemsKey = items ? JSON.stringify(items) : "";
+  const _itemsKey = items ? JSON.stringify(items) : "";
 
   useEffect(() => {
     if (items) ctx.setItems(items);
-  }, [itemsKey]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [items, ctx.setItems]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return ctx;
 }

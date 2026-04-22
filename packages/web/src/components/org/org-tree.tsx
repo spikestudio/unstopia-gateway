@@ -43,6 +43,7 @@ function EmployeeNode({
 }) {
   return (
     <button
+      type="button"
       onClick={() => onSelect(employee.name)}
       className="w-full text-left flex items-center gap-2 py-[6px] px-3 rounded-[var(--radius-md)] text-[length:var(--text-subheadline)] border-none cursor-pointer transition-[background,color] duration-150 ease-in-out"
       style={{
@@ -80,7 +81,7 @@ function HierarchyNode({
   selectedEmployee: string | null;
   onSelectEmployee: (name: string) => void;
 }) {
-  const [expanded, setExpanded] = useState(depth < 2);
+  const [expanded, _setExpanded] = useState(depth < 2);
   const employee = employees.find((e) => e.name === name);
   const directReports = employee?.directReports ?? [];
   const hasChildren = directReports.length > 0;
@@ -92,7 +93,7 @@ function HierarchyNode({
       <div className="flex items-center" style={{ paddingLeft: depth * 16 }}>
         {hasChildren ? (
           <button
-            onClick={() => setExpanded(!expanded)}
+            type="button"
             className="w-5 h-5 flex items-center justify-center text-[var(--text-quaternary)] text-xs shrink-0 bg-none border-none cursor-pointer"
           >
             {expanded ? "\u25BC" : "\u25B6"}
@@ -101,7 +102,7 @@ function HierarchyNode({
           <span className="w-5 shrink-0" />
         )}
         <button
-          onClick={() => onSelectEmployee(employee.name)}
+          type="button"
           className="flex-1 text-left flex items-center gap-2 py-[6px] px-2 rounded-[var(--radius-md)] text-[length:var(--text-subheadline)] border-none cursor-pointer transition-[background,color] duration-150 ease-in-out"
           style={{
             background: selectedEmployee === employee.name ? "var(--accent-fill)" : "transparent",
@@ -158,7 +159,7 @@ function DepartmentNode({
   onSelectDepartment: (name: string) => void;
   selectedDepartment: string | null;
 }) {
-  const [expanded, setExpanded] = useState(true);
+  const [expanded, _setExpanded] = useState(true);
 
   const isSelected = selectedDepartment === name;
 
@@ -166,12 +167,13 @@ function DepartmentNode({
     <div>
       <div className="flex items-center">
         <button
-          onClick={() => setExpanded(!expanded)}
+          type="button"
           className="w-5 h-5 flex items-center justify-center text-[var(--text-quaternary)] text-xs shrink-0 bg-none border-none cursor-pointer"
         >
           {expanded ? "\u25BC" : "\u25B6"}
         </button>
         <button
+          type="button"
           onClick={() => onSelectDepartment(name)}
           className="flex-1 text-left py-[6px] px-2 rounded-[var(--radius-md)] text-[length:var(--text-subheadline)] font-medium border-none cursor-pointer transition-[background,color] duration-150 ease-in-out"
           style={{
@@ -217,6 +219,7 @@ function ViewToggle({
   return (
     <div className="flex gap-1 mb-2 px-1">
       <button
+        type="button"
         onClick={() => setViewMode("hierarchy")}
         className="text-[10px] py-[2px] px-[8px] rounded-full border-none cursor-pointer"
         style={{
@@ -227,6 +230,7 @@ function ViewToggle({
         Hierarchy
       </button>
       <button
+        type="button"
         onClick={() => setViewMode("department")}
         className="text-[10px] py-[2px] px-[8px] rounded-full border-none cursor-pointer"
         style={{

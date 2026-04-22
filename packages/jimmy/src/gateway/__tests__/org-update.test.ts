@@ -29,8 +29,8 @@ function writeYaml(subdir: string, filename: string, content: string) {
   fs.writeFileSync(path.join(dir, filename), content, "utf-8");
 }
 
-function readYaml(subdir: string, filename: string): any {
-  return yaml.load(fs.readFileSync(path.join(tmpDir, subdir, filename), "utf-8"));
+function readYaml(subdir: string, filename: string): Record<string, unknown> {
+  return yaml.load(fs.readFileSync(path.join(tmpDir, subdir, filename), "utf-8")) as Record<string, unknown>;
 }
 
 describe("updateEmployeeYaml", () => {
@@ -122,7 +122,7 @@ rank: employee
 `,
     );
     // Try to sneak in a rank change — should be ignored
-    updateEmployeeYaml("safe", { alwaysNotify: false } as any);
+    updateEmployeeYaml("safe", { alwaysNotify: false });
 
     const data = readYaml("platform", "safe.yaml");
     expect(data.rank).toBe("employee");

@@ -37,7 +37,7 @@ export function readManifest(): SkillManifestEntry[] {
 }
 
 export function writeManifest(entries: SkillManifestEntry[]): void {
-  fs.writeFileSync(SKILLS_JSON, JSON.stringify(entries, null, 2) + "\n");
+  fs.writeFileSync(SKILLS_JSON, `${JSON.stringify(entries, null, 2)}\n`);
 }
 
 export function upsertManifest(name: string, source: string): void {

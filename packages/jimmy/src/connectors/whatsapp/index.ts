@@ -10,7 +10,8 @@ import makeWASocketImport, {
 
 // Handle ESM/CJS interop — Baileys may export as .default in some environments
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-const makeWASocket = ((makeWASocketImport as any).default ?? makeWASocketImport) as typeof makeWASocketImport;
+const makeWASocket = ((makeWASocketImport as unknown as { default?: typeof makeWASocketImport }).default ??
+  makeWASocketImport) as typeof makeWASocketImport;
 
 import fs from "node:fs";
 import path from "node:path";
@@ -227,11 +228,11 @@ export class WhatsAppConnector implements Connector {
   private async handleMessage(message: WAMessage): Promise<void> {
     const jid = message.key.remoteJid;
     const ownJid = this.sock?.user?.id ?? "";
-    const ownJidBare = ownJid.split(":")[0] + "@s.whatsapp.net";
+    const ownJidBare = `${ownJid.split(":")[0]}@s.whatsapp.net`;
     // WhatsApp now uses LID (Linked ID) format — extract from sock.user.lid
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const ownLid = (this.sock?.user as any)?.lid ?? "";
-    const ownLidBare = ownLid ? ownLid.split(":")[0] + "@lid" : "";
+    const ownLid = ((this.sock?.user as Record<string, unknown> | undefined)?.lid as string) ?? "";
+    const ownLidBare = ownLid ? `${ownLid.split(":")[0]}@lid` : "";
 
     if (!jid) return;
     if (jid.endsWith("@g.us")) return;

@@ -34,9 +34,7 @@ class ChatErrorBoundary extends React.Component<{ children: React.ReactNode }, {
   static getDerivedStateFromError(error: Error) {
     return { error };
   }
-  componentDidCatch(error: Error, info: React.ErrorInfo) {
-    console.error("[ChatErrorBoundary]", error.message, "\nComponent stack:", info.componentStack);
-  }
+  componentDidCatch(_error: Error, _info: React.ErrorInfo) {}
   render() {
     if (this.state.error) {
       return (
@@ -49,6 +47,7 @@ class ChatErrorBoundary extends React.Component<{ children: React.ReactNode }, {
               {this.state.error.stack?.split("\n").slice(0, 5).join("\n")}
             </pre>
             <button
+              type="button"
               onClick={() => {
                 this.setState({ error: null });
                 window.location.reload();
@@ -94,7 +93,7 @@ function ChatPage() {
     employee?: string;
   } | null>(null);
   // Sibling sessions for the currently selected employee (empty if direct/single session)
-  const [employeeSessions, setEmployeeSessions] = useState<
+  const [_employeeSessions, setEmployeeSessions] = useState<
     Array<{ id: string; title?: string; lastActivity?: string; createdAt?: string }>
   >([]);
   // When true, user explicitly started a new chat — don't auto-select first session
@@ -162,6 +161,23 @@ function ChatPage() {
     setTimeout(() => setCopiedField(null), 1500);
   }, []);
 
+  const triggerOnboarding = useCallback(() => {
+    api
+      .createStubSession({
+        greeting: `Hey! \u{1F44B} Say hi when you're ready to get started.`,
+        title: "Welcome",
+      })
+      .then((session) => {
+        const id = String((session as Record<string, unknown>).id);
+        stubSessionRef.current = true;
+        setSelectedId(id);
+        qc.invalidateQueries({ queryKey: queryKeys.sessions.all });
+      })
+      .catch(() => {
+        // Silently fail — user can still start a normal chat
+      });
+  }, [qc]);
+
   // Auto-trigger onboarding on first visit
   useEffect(() => {
     if (onboardingTriggered.current) return;
@@ -182,24 +198,7 @@ function ChatPage() {
         })
         .catch(() => {});
     }
-  }, [searchParams]);
-
-  function triggerOnboarding() {
-    api
-      .createStubSession({
-        greeting: `Hey! \u{1F44B} Say hi when you're ready to get started.`,
-        title: "Welcome",
-      })
-      .then((session) => {
-        const id = String((session as Record<string, unknown>).id);
-        stubSessionRef.current = true;
-        setSelectedId(id);
-        qc.invalidateQueries({ queryKey: queryKeys.sessions.all });
-      })
-      .catch(() => {
-        // Silently fail — user can still start a normal chat
-      });
-  }
+  }, [searchParams, triggerOnboarding]);
 
   // Update tab label/status when session meta changes
   const { updateTabStatus } = chatTabs;
@@ -290,8 +289,9 @@ function ChatPage() {
           setShowMoreMenu(false);
           qc.invalidateQueries({ queryKey: queryKeys.sessions.all });
         }
-      } catch (err: any) {
-        window.alert(`Duplicate failed: ${err.message || "Unknown error"}`);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "Unknown error";
+        window.alert(`Duplicate failed: ${message}`);
       }
     },
     [chatTabs, duplicateSessionMutation, qc],
@@ -472,7 +472,17 @@ function ChatPage() {
         action: () => chatTabs.switchTab(i),
       })),
     ],
-    [handleNewChat, navigateSession, cycleEmployee, copyChat, selectedId, showShortcutOverlay, showMoreMenu, chatTabs],
+    [
+      handleNewChat,
+      navigateSession,
+      cycleEmployee,
+      copyChat,
+      selectedId,
+      showShortcutOverlay,
+      showMoreMenu,
+      chatTabs,
+      handleDeleteSession,
+    ],
   );
 
   useKeyboardShortcuts(shortcuts);
@@ -496,6 +506,7 @@ function ChatPage() {
   const moreMenu = selectedId ? (
     <div ref={moreMenuRef} className="relative">
       <button
+        type="button"
         onClick={() => setShowMoreMenu((v) => !v)}
         aria-label="More options"
         className="flex items-center rounded-md p-1 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
@@ -506,6 +517,7 @@ function ChatPage() {
       {showMoreMenu && (
         <div className="absolute right-0 top-full z-[200] mt-1 min-w-[220px] overflow-hidden rounded-[var(--radius-md)] border border-border bg-[var(--material-thick)] shadow-[var(--shadow-overlay)] backdrop-blur-xl">
           <button
+            type="button"
             onClick={() => copyToClipboard(selectedId, "id")}
             className="block w-full px-3 py-2 text-left text-sm text-foreground transition-colors hover:bg-accent"
           >
@@ -513,6 +525,7 @@ function ChatPage() {
           </button>
           {sessionMeta?.engineSessionId && (
             <button
+              type="button"
               onClick={() => {
                 const cli = sessionMeta.engine === "codex" ? "codex" : "claude";
                 copyToClipboard(`${cli} --resume ${sessionMeta.engineSessionId}`, "cli");
@@ -523,6 +536,7 @@ function ChatPage() {
             </button>
           )}
           <button
+            type="button"
             onClick={() => {
               if (selectedId) handleDuplicate(selectedId);
             }}
@@ -534,6 +548,7 @@ function ChatPage() {
           </button>
           <div className="my-0.5 border-t border-border" />
           <button
+            type="button"
             onClick={() => {
               setShowMoreMenu(false);
               if (selectedId && window.confirm("Delete this session?")) handleDeleteSession(selectedId);
@@ -555,6 +570,7 @@ function ChatPage() {
       {selectedId && (
         <div className="flex items-center gap-0.5 rounded-full bg-[var(--fill-tertiary)] p-0.5">
           <button
+            type="button"
             onClick={() => setViewMode("chat")}
             className={cn(
               "rounded-full px-2.5 py-1 text-[11px] font-medium transition-all",
@@ -566,6 +582,7 @@ function ChatPage() {
             Chat
           </button>
           <button
+            type="button"
             onClick={() => setViewMode("cli")}
             className={cn(
               "rounded-full px-2.5 py-1 font-mono text-[11px] font-medium transition-all",

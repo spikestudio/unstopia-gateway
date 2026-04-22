@@ -26,7 +26,13 @@ import {
 } from "../sessions/registry.js";
 import { loadConfig } from "../shared/config.js";
 import { configureLogger, logger } from "../shared/logger.js";
-import type { Connector, JinnConfig } from "../shared/types.js";
+import type {
+  Connector,
+  JinnConfig,
+  SlackConnectorConfig,
+  TelegramConnectorConfig,
+  WhatsAppConnectorConfig,
+} from "../shared/types.js";
 import { initStt } from "../stt/stt.js";
 import { type ApiContext, handleApiRequest, resumePendingWebQueueItems } from "./api.js";
 import { ensureFilesDir } from "./files.js";
@@ -67,7 +73,7 @@ function serveStatic(req: http.IncomingMessage, res: http.ServerResponse, webDir
   if (!fs.existsSync(resolved) || fs.statSync(resolved).isDirectory()) {
     // Next.js static export produces /chat.html, /sessions.html, etc.
     // Try appending .html before falling back to index.html
-    const htmlPath = resolved.endsWith("/") ? path.join(resolved, "index.html") : resolved + ".html";
+    const htmlPath = resolved.endsWith("/") ? path.join(resolved, "index.html") : `${resolved}.html`;
     if (fs.existsSync(htmlPath) && !fs.statSync(htmlPath).isDirectory()) {
       res.writeHead(200, { "Content-Type": "text/html" });
       fs.createReadStream(htmlPath).pipe(res);
@@ -240,26 +246,6 @@ export async function startGateway(config: JinnConfig): Promise<GatewayCleanup> 
     } catch (err) {
       logger.error(`Failed to start Discord connector: ${err instanceof Error ? err.message : err}`);
     }
-  } else if (config.connectors?.discord?.proxyVia) {
-    try {
-      const discord = new RemoteDiscordConnector({ proxyVia: config.connectors.discord.proxyVia });
-      discord.onMessage((msg) => {
-        const routeOpts: RouteOptions = {};
-        if (config.connectors.discord?.employee) {
-          const emp = employeeRegistry.get(config.connectors.discord.employee);
-          if (emp) routeOpts.employee = emp;
-        }
-        sessionManager.route(msg, discord, routeOpts).catch((err) => {
-          logger.error(`Discord (remote) route error: ${err instanceof Error ? err.message : err}`);
-        });
-      });
-      await discord.start();
-      connectors.push(discord);
-      connectorMap.set("discord", discord);
-      logger.info(`Discord connector started in remote mode (via ${config.connectors.discord.proxyVia})`);
-    } catch (err) {
-      logger.error(`Failed to start remote Discord connector: ${err instanceof Error ? err.message : err}`);
-    }
   }
 
   if (config.connectors?.telegram?.botToken) {
@@ -343,7 +329,7 @@ export async function startGateway(config: JinnConfig): Promise<GatewayCleanup> 
             break;
           }
           case "slack": {
-            const slackConfig = { ...typeConfig, id } as any;
+            const slackConfig = { ...typeConfig, id } as SlackConnectorConfig;
             const slack = new SlackConnector(slackConfig);
             slack.onMessage((msg) => {
               const routeOpts: RouteOptions = {};
@@ -360,7 +346,7 @@ export async function startGateway(config: JinnConfig): Promise<GatewayCleanup> 
             break;
           }
           case "whatsapp": {
-            const whatsapp = new WhatsAppConnector({ ...typeConfig } as any);
+            const whatsapp = new WhatsAppConnector({ ...typeConfig } as WhatsAppConnectorConfig);
             whatsapp.onMessage((msg) => {
               const routeOpts: RouteOptions = {};
               if (employee) {
@@ -376,7 +362,7 @@ export async function startGateway(config: JinnConfig): Promise<GatewayCleanup> 
             break;
           }
           case "telegram": {
-            const telegramConfig = { ...typeConfig, id } as any;
+            const telegramConfig = { ...typeConfig, id } as TelegramConnectorConfig;
             const tg = new TelegramConnector(telegramConfig);
             tg.onMessage((msg) => {
               const routeOpts: RouteOptions = {};
@@ -468,7 +454,7 @@ export async function startGateway(config: JinnConfig): Promise<GatewayCleanup> 
               break;
             }
             case "slack": {
-              const slackConfig = { ...typeConfig, id } as any;
+              const slackConfig = { ...typeConfig, id } as SlackConnectorConfig;
               const slack = new SlackConnector(slackConfig);
               slack.onMessage((msg) => {
                 const routeOpts: RouteOptions = {};
@@ -485,7 +471,7 @@ export async function startGateway(config: JinnConfig): Promise<GatewayCleanup> 
               break;
             }
             case "whatsapp": {
-              const whatsapp = new WhatsAppConnector({ ...typeConfig } as any);
+              const whatsapp = new WhatsAppConnector({ ...typeConfig } as WhatsAppConnectorConfig);
               whatsapp.onMessage((msg) => {
                 const routeOpts: RouteOptions = {};
                 if (employee) {
@@ -501,7 +487,7 @@ export async function startGateway(config: JinnConfig): Promise<GatewayCleanup> 
               break;
             }
             case "telegram": {
-              const telegramConfig = { ...typeConfig, id } as any;
+              const telegramConfig = { ...typeConfig, id } as TelegramConnectorConfig;
               const tg = new TelegramConnector(telegramConfig);
               tg.onMessage((msg) => {
                 const routeOpts: RouteOptions = {};
@@ -691,9 +677,6 @@ export async function startGateway(config: JinnConfig): Promise<GatewayCleanup> 
       if (err.code === "EADDRINUSE") {
         const msg = `Port ${port} is already in use.`;
         logger.error(msg);
-        console.error(`\nError: ${msg}`);
-        console.error(`\nTry: jinn start -p ${port + 1}`);
-        console.error(`Or update the port in config.yaml\n`);
         process.exit(1);
       }
       reject(err);

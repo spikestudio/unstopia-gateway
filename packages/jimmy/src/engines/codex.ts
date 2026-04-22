@@ -39,10 +39,10 @@ export class CodexEngine implements InterruptibleEngine {
   async run(opts: EngineRunOpts): Promise<EngineResult> {
     let prompt = opts.prompt;
     if (opts.systemPrompt) {
-      prompt = opts.systemPrompt + "\n\n---\n\n" + prompt;
+      prompt = `${opts.systemPrompt}\n\n---\n\n${prompt}`;
     }
     if (opts.attachments?.length) {
-      prompt += "\n\nAttached files:\n" + opts.attachments.map((a) => `- ${a}`).join("\n");
+      prompt += `\n\nAttached files:\n${opts.attachments.map((a) => `- ${a}`).join("\n")}`;
     }
 
     const bin = opts.bin || "codex";
@@ -220,7 +220,8 @@ export class CodexEngine implements InterruptibleEngine {
       args.push("-c", `model_reasoning_effort="${opts.effortLevel}"`);
     args.push("--json", "--dangerously-bypass-approvals-and-sandbox", "--skip-git-repo-check");
     if (opts.cliFlags?.length) args.push(...opts.cliFlags);
-    args.push(opts.resumeSessionId!);
+    if (!opts.resumeSessionId) throw new Error("Codex: resumeSessionId is required for resume");
+    args.push(opts.resumeSessionId);
     args.push(prompt);
     return args;
   }

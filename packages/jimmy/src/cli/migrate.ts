@@ -60,10 +60,10 @@ function ensureSkillSymlinks(skillName: string): void {
  */
 function stampVersion(version: string): void {
   const raw = fs.readFileSync(CONFIG_PATH, "utf-8");
-  const config = yaml.load(raw) as any;
+  const config = yaml.load(raw) as Record<string, unknown>;
 
-  if (!config.jinn) config.jinn = {};
-  config.jinn.version = version;
+  if (!config.jinn || typeof config.jinn !== "object") config.jinn = {};
+  (config.jinn as Record<string, unknown>).version = version;
 
   fs.writeFileSync(CONFIG_PATH, yaml.dump(config, { lineWidth: -1 }), "utf-8");
 }
@@ -78,7 +78,6 @@ function buildMigrateArgs(engine: string, prompt: string): string[] {
       return ["exec", "--dangerously-bypass-approvals-and-sandbox", "--skip-git-repo-check", prompt];
     case "gemini":
       return ["--yolo", prompt];
-    case "claude":
     default:
       return ["-p", "--dangerously-skip-permissions", prompt];
   }

@@ -135,7 +135,7 @@ export class DiscordConnector implements Connector {
   async sendMessage(target: Target, text: string): Promise<string | undefined> {
     try {
       const channel = await this.client.channels.fetch(target.channel);
-      if (!channel || !channel.isTextBased()) return undefined;
+      if (!channel?.isTextBased()) return undefined;
       const chunks = formatResponse(text);
       let lastId: string | undefined;
       for (const chunk of chunks) {
@@ -152,7 +152,7 @@ export class DiscordConnector implements Connector {
   async replyMessage(target: Target, text: string): Promise<string | undefined> {
     try {
       const channel = await this.client.channels.fetch(target.thread ?? target.channel);
-      if (!channel || !channel.isTextBased()) return undefined;
+      if (!channel?.isTextBased()) return undefined;
       const chunks = formatResponse(text);
       let lastId: string | undefined;
       for (const chunk of chunks) {
@@ -170,7 +170,7 @@ export class DiscordConnector implements Connector {
     try {
       if (!target.messageTs) return;
       const channel = await this.client.channels.fetch(target.channel);
-      if (!channel || !channel.isTextBased()) return;
+      if (!channel?.isTextBased()) return;
       const msg = await (channel as TextChannel).messages.fetch(target.messageTs);
       await msg.edit(text.slice(0, 2000));
     } catch (err) {
@@ -182,7 +182,7 @@ export class DiscordConnector implements Connector {
     try {
       if (!target.messageTs) return;
       const channel = await this.client.channels.fetch(target.thread ?? target.channel);
-      if (!channel || !channel.isTextBased()) return;
+      if (!channel?.isTextBased()) return;
       const msg = await (channel as TextChannel).messages.fetch(target.messageTs);
       await msg.react(emoji);
     } catch {
@@ -194,7 +194,7 @@ export class DiscordConnector implements Connector {
     try {
       if (!target.messageTs) return;
       const channel = await this.client.channels.fetch(target.thread ?? target.channel);
-      if (!channel || !channel.isTextBased()) return;
+      if (!channel?.isTextBased()) return;
       const msg = await (channel as TextChannel).messages.fetch(target.messageTs);
       await msg.reactions.cache.get(emoji)?.users.remove(this.client.user?.id);
     } catch {
@@ -211,7 +211,7 @@ export class DiscordConnector implements Connector {
     if (!status) return;
     try {
       const channel = await this.client.channels.fetch(channelId);
-      if (channel && channel.isTextBased()) {
+      if (channel?.isTextBased()) {
         await (channel as TextChannel).sendTyping();
         // Discord typing expires after 10s — refresh every 8s
         const interval = setInterval(async () => {

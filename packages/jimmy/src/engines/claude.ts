@@ -106,7 +106,8 @@ export class ClaudeEngine implements InterruptibleEngine {
       return result;
     }
 
-    return lastResult!;
+    if (!lastResult) throw new Error("Claude engine: no result after retries");
+    return lastResult;
   }
 
   private async runOnce(opts: EngineRunOpts): Promise<EngineResult> {
@@ -127,7 +128,7 @@ export class ClaudeEngine implements InterruptibleEngine {
     if (opts.systemPrompt) args.push("--append-system-prompt", opts.systemPrompt);
     let prompt = opts.prompt;
     if (opts.attachments?.length) {
-      prompt += "\n\nAttached files:\n" + opts.attachments.map((a) => `- ${a}`).join("\n");
+      prompt += `\n\nAttached files:\n${opts.attachments.map((a) => `- ${a}`).join("\n")}`;
     }
     // Prompt MUST come before --mcp-config because --mcp-config is variadic
     // and would consume the prompt as another config path

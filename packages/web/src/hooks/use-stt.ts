@@ -83,7 +83,9 @@ export function useStt(
   }, [wsEvents]);
 
   const cleanup = useCallback(() => {
-    streamRef.current?.getTracks().forEach((t) => t.stop());
+    streamRef.current?.getTracks().forEach((t) => {
+      t.stop();
+    });
     streamRef.current = null;
     audioContextRef.current?.close().catch(() => {});
     audioContextRef.current = null;
@@ -98,7 +100,9 @@ export function useStt(
       if (mediaRecorderRef.current?.state === "recording") {
         mediaRecorderRef.current.stop();
       }
-      streamRef.current?.getTracks().forEach((t) => t.stop());
+      streamRef.current?.getTracks().forEach((t) => {
+        t.stop();
+      });
       audioContextRef.current?.close().catch(() => {});
     };
   }, []);

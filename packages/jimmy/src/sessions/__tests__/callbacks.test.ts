@@ -106,7 +106,7 @@ describe("notifyParentSession", () => {
     expect(fetchSpy).toHaveBeenCalledOnce();
     const body = JSON.parse(fetchSpy.mock.calls[0][1].body);
     // Should contain exactly 200 chars + "..."
-    expect(body.message).toContain("x".repeat(200) + "...");
+    expect(body.message).toContain(`${"x".repeat(200)}...`);
     expect(body.message).not.toContain("x".repeat(201));
   });
 
