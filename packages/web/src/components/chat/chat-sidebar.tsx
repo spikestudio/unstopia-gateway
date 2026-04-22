@@ -332,7 +332,7 @@ export function ChatSidebar({
       });
   }, []);
 
-  const toggleCronCollapsed = useCallback(() => {
+  const _toggleCronCollapsed = useCallback(() => {
     setCollapsed((prev) => {
       const next = new Set(prev);
       if (next.has("cron")) next.delete("cron");
@@ -566,7 +566,7 @@ export function ChatSidebar({
     return empSessions.some((s) => s.id === selectedId);
   }
 
-  function handleEmployeeClick(item: FlatItem) {
+  function _handleEmployeeClick(item: FlatItem) {
     const empName = item.employeeName ?? "";
     const empSessions = item.sessions ?? [];
     if (empSessions.length > 1) {
@@ -663,7 +663,7 @@ export function ChatSidebar({
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button
-                  onClick={(e) => e.stopPropagation()}
+                  type="button"
                   className="hidden shrink-0 text-muted-foreground transition-colors hover:text-foreground group-hover/session:lg:block group-has-[[data-state=open]]/session:lg:block"
                 >
                   <EllipsisVertical className="size-3.5" />
@@ -746,7 +746,7 @@ export function ChatSidebar({
         <ContextMenu>
           <ContextMenuTrigger asChild>
             <button
-              onClick={() => handleEmployeeClick(item)}
+              type="button"
               className={cn(
                 "group/emp relative flex w-full items-center gap-3 border-l-2 px-4 py-3 text-left transition-colors",
                 isActive
@@ -780,7 +780,7 @@ export function ChatSidebar({
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <button
-                        onClick={(e) => e.stopPropagation()}
+                        type="button"
                         className="hidden shrink-0 text-muted-foreground transition-colors hover:text-foreground group-hover/emp:lg:block group-has-[[data-state=open]]/emp:lg:block"
                       >
                         <EllipsisVertical className="size-3.5" />
@@ -839,7 +839,7 @@ export function ChatSidebar({
           : null}
         {isExpanded && sessionCount > 5 && !fullyExpanded[empName] ? (
           <button
-            onClick={() => setFullyExpanded((prev) => ({ ...prev, [empName]: true }))}
+            type="button"
             className="w-full cursor-pointer px-4 pb-2 pl-11 text-left text-[10px] text-[var(--text-quaternary)] transition-colors hover:text-[var(--text-secondary)]"
           >
             +{sessionCount - 5} more
@@ -878,7 +878,7 @@ export function ChatSidebar({
           />
           {search.trim() ? (
             <button
-              onClick={() => setSearch("")}
+              type="button"
               aria-label="Clear search"
               className="rounded-full p-0.5 text-[var(--text-tertiary)] transition-colors hover:bg-[var(--fill-secondary)] hover:text-foreground"
             >
@@ -903,7 +903,7 @@ export function ChatSidebar({
             {cronSessions.length > 0 ? (
               <div className={cn("mt-2", pinnedFlat.length === 0 && unpinnedFlat.length === 0 && "mt-0")}>
                 <button
-                  onClick={toggleCronCollapsed}
+                  type="button"
                   className="flex w-full items-center gap-2 px-4 py-2 text-left transition-colors hover:bg-accent"
                 >
                   <Clock3 className="size-3.5 text-muted-foreground" />

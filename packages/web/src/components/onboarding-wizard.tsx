@@ -106,7 +106,7 @@ export function OnboardingWizard({ forceOpen, onClose }: OnboardingWizardProps) 
       });
   }, [forceOpen, settings.operatorName, settings.portalName]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const handleNext = useCallback(() => {
+  const _handleNext = useCallback(() => {
     // Commit name/operator/language on step 0
     if (step === 0) {
       setPortalName(localName || null);
@@ -148,7 +148,7 @@ export function OnboardingWizard({ forceOpen, onClose }: OnboardingWizardProps) 
     localLanguage,
   ]);
 
-  const handleBack = useCallback(() => {
+  const _handleBack = useCallback(() => {
     if (step > 0) {
       setDirection("back");
       setStep(step - 1);
@@ -202,10 +202,14 @@ export function OnboardingWizard({ forceOpen, onClose }: OnboardingWizardProps) 
 
               <div className="flex flex-col gap-[var(--space-3)] text-left">
                 <div>
-                  <label className="block text-[length:var(--text-caption1)] text-[var(--text-tertiary)] mb-[var(--space-1)]">
+                  <label
+                    htmlFor="onboarding-portal-name"
+                    className="block text-[length:var(--text-caption1)] text-[var(--text-tertiary)] mb-[var(--space-1)]"
+                  >
                     Portal Name
                   </label>
                   <input
+                    id="onboarding-portal-name"
                     type="text"
                     className="apple-input w-full bg-[var(--bg-secondary)] border border-[var(--separator)] rounded-[var(--radius-sm)] px-3 py-2 text-[length:var(--text-body)] text-[var(--text-primary)]"
                     placeholder="Jinn"
@@ -215,10 +219,14 @@ export function OnboardingWizard({ forceOpen, onClose }: OnboardingWizardProps) 
                 </div>
 
                 <div>
-                  <label className="block text-[length:var(--text-caption1)] text-[var(--text-tertiary)] mb-[var(--space-1)]">
+                  <label
+                    htmlFor="onboarding-operator-name"
+                    className="block text-[length:var(--text-caption1)] text-[var(--text-tertiary)] mb-[var(--space-1)]"
+                  >
                     What should we call you?
                   </label>
                   <input
+                    id="onboarding-operator-name"
                     type="text"
                     className="apple-input w-full bg-[var(--bg-secondary)] border border-[var(--separator)] rounded-[var(--radius-sm)] px-3 py-2 text-[length:var(--text-body)] text-[var(--text-primary)]"
                     placeholder="Your Name"
@@ -228,10 +236,14 @@ export function OnboardingWizard({ forceOpen, onClose }: OnboardingWizardProps) 
                 </div>
 
                 <div>
-                  <label className="block text-[length:var(--text-caption1)] text-[var(--text-tertiary)] mb-[var(--space-1)]">
+                  <label
+                    htmlFor="onboarding-language"
+                    className="block text-[length:var(--text-caption1)] text-[var(--text-tertiary)] mb-[var(--space-1)]"
+                  >
                     Preferred Language
                   </label>
                   <select
+                    id="onboarding-language"
                     value={localLanguage}
                     onChange={(e) => setLocalLanguage(e.target.value)}
                     className="w-full bg-[var(--bg-secondary)] border border-[var(--separator)] rounded-[var(--radius-sm)] px-3 py-2 text-[length:var(--text-body)] text-[var(--text-primary)] cursor-pointer"
@@ -271,6 +283,7 @@ export function OnboardingWizard({ forceOpen, onClose }: OnboardingWizardProps) 
                   const isActive = theme === t.id;
                   return (
                     <button
+                      type="button"
                       key={t.id}
                       onClick={() => setTheme(t.id)}
                       className="flex flex-col items-center gap-[var(--space-2)] px-[var(--space-3)] py-[var(--space-4)] rounded-[var(--radius-md)] bg-[var(--fill-quaternary)] cursor-pointer transition-all duration-150"
@@ -310,6 +323,7 @@ export function OnboardingWizard({ forceOpen, onClose }: OnboardingWizardProps) 
                   const isActive = settings.accentColor === preset.value;
                   return (
                     <button
+                      type="button"
                       key={preset.value}
                       onClick={() => setAccentColor(preset.value)}
                       aria-label={preset.label}
@@ -368,7 +382,7 @@ export function OnboardingWizard({ forceOpen, onClose }: OnboardingWizardProps) 
         <div className="flex justify-between items-center px-[var(--space-5)] pb-[var(--space-5)] pt-[var(--space-3)] gap-[var(--space-3)]">
           {step > 0 ? (
             <button
-              onClick={handleBack}
+              type="button"
               className="px-[var(--space-4)] py-[var(--space-2)] rounded-[var(--radius-md)] bg-[var(--fill-tertiary)] text-[var(--text-secondary)] border-none cursor-pointer text-[length:var(--text-subheadline)] font-[var(--weight-medium)] transition-all duration-150 inline-flex items-center gap-1.5"
             >
               <ArrowLeft size={16} />
@@ -378,7 +392,7 @@ export function OnboardingWizard({ forceOpen, onClose }: OnboardingWizardProps) 
             <div />
           )}
           <button
-            onClick={handleNext}
+            type="button"
             className="px-[var(--space-6)] py-[var(--space-2)] rounded-[var(--radius-md)] bg-[var(--accent)] text-[var(--accent-contrast)] border-none cursor-pointer text-[length:var(--text-subheadline)] font-[var(--weight-semibold)] transition-all duration-150 inline-flex items-center gap-1.5"
           >
             {step === 0 ? "Next" : step === TOTAL_STEPS - 1 ? "Get Started" : "Next"}

@@ -541,7 +541,8 @@ export function ChatPane({
   }, []);
 
   return (
-    <div
+    <section
+      aria-label="Chat pane"
       style={{
         display: "flex",
         flexDirection: "column",
@@ -551,6 +552,9 @@ export function ChatPane({
         position: "relative",
       }}
       onClick={onFocus}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") onFocus();
+      }}
       onDragEnter={handleDragEnter}
       onDragLeave={handleDragLeave}
       onDragOver={handleDragOver}
@@ -591,6 +595,8 @@ export function ChatPane({
               strokeWidth="1.5"
               strokeLinecap="round"
               strokeLinejoin="round"
+              aria-hidden="true"
+              focusable="false"
             >
               <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
               <polyline points="17 8 12 3 7 8" />
@@ -641,6 +647,6 @@ export function ChatPane({
           onShortcutsClick={onShortcutsClick}
         />
       )}
-    </div>
+    </section>
   );
 }

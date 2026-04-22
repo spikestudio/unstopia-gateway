@@ -117,10 +117,19 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
-function FieldRow({ label, children }: { label: string; children: React.ReactNode }) {
+function FieldRow({ label, children, htmlFor }: { label: string; children: React.ReactNode; htmlFor?: string }) {
   return (
     <div className="flex items-center justify-between py-[var(--space-2)] gap-[var(--space-4)]">
-      <label className="text-[length:var(--text-subheadline)] text-[var(--text-secondary)] shrink-0">{label}</label>
+      {htmlFor ? (
+        <label
+          htmlFor={htmlFor}
+          className="text-[length:var(--text-subheadline)] text-[var(--text-secondary)] shrink-0"
+        >
+          {label}
+        </label>
+      ) : (
+        <span className="text-[length:var(--text-subheadline)] text-[var(--text-secondary)] shrink-0">{label}</span>
+      )}
       <div className="w-[240px] shrink-0">{children}</div>
     </div>
   );
@@ -175,6 +184,7 @@ function SettingsSelect({
 function ToggleSwitch({ checked, onChange }: { checked: boolean; onChange: (v: boolean) => void }) {
   return (
     <button
+      type="button"
       role="switch"
       aria-checked={checked}
       onClick={() => onChange(!checked)}
@@ -334,6 +344,7 @@ function SttSettingsSection() {
       {/* Download section */}
       {!status.available && !status.downloading && (
         <button
+          type="button"
           onClick={handleDownload}
           className="w-full p-[var(--space-3)] rounded-[var(--radius-md)] bg-[var(--accent)] text-[var(--accent-contrast)] border-none cursor-pointer text-[length:var(--text-footnote)] font-[var(--weight-semibold)] mb-[var(--space-4)]"
         >
@@ -382,6 +393,7 @@ function SttSettingsSection() {
                 {WHISPER_LANGUAGES[code] || code}
                 {status.languages.length > 1 && (
                   <button
+                    type="button"
                     onClick={() => handleRemoveLanguage(code)}
                     disabled={saving}
                     aria-label={`Remove ${WHISPER_LANGUAGES[code] || code}`}
@@ -412,6 +424,7 @@ function SttSettingsSection() {
               ))}
             </select>
             <button
+              type="button"
               onClick={handleAddLanguage}
               disabled={!addLang || saving}
               className="px-[14px] py-[6px] rounded-[var(--radius-sm)] border-none text-[length:var(--text-footnote)] font-[var(--weight-semibold)] shrink-0"
@@ -610,6 +623,7 @@ export default function SettingsPage() {
                 const isActive = theme === t.id;
                 return (
                   <button
+                    type="button"
                     key={t.id}
                     onClick={() => setTheme(t.id)}
                     className="flex flex-col items-center gap-[var(--space-1)] px-[var(--space-2)] py-[var(--space-3)] rounded-[var(--radius-md)] bg-[var(--fill-quaternary)] cursor-pointer transition-all duration-150 ease-[var(--ease-smooth)]"
@@ -641,6 +655,7 @@ export default function SettingsPage() {
                 const isActive = settings.accentColor === preset.value;
                 return (
                   <button
+                    type="button"
                     key={preset.value}
                     onClick={() => setAccentColor(preset.value)}
                     aria-label={preset.label}
@@ -684,6 +699,7 @@ export default function SettingsPage() {
               />
               {settings.accentColor && (
                 <button
+                  type="button"
                   onClick={() => setAccentColor(null)}
                   className="text-[length:var(--text-footnote)] text-[var(--system-blue)] bg-none border-none cursor-pointer p-0 inline-flex items-center gap-[4px]"
                 >
@@ -702,6 +718,7 @@ export default function SettingsPage() {
               </div>
               <div className="relative flex items-center gap-[var(--space-4)]">
                 <button
+                  type="button"
                   onClick={() => setShowCooEmojiPicker(!showCooEmojiPicker)}
                   className="text-4xl cursor-pointer bg-transparent border-none p-0"
                 >
@@ -733,10 +750,14 @@ export default function SettingsPage() {
           <Section title="Branding">
             <div className="flex flex-col gap-[var(--space-3)]">
               <div>
-                <label className="block text-[length:var(--text-caption1)] text-[var(--text-tertiary)] mb-[var(--space-1)]">
+                <label
+                  htmlFor="settings-portal-name"
+                  className="block text-[length:var(--text-caption1)] text-[var(--text-tertiary)] mb-[var(--space-1)]"
+                >
                   Portal Name
                 </label>
                 <input
+                  id="settings-portal-name"
                   type="text"
                   className="apple-input w-full bg-[var(--bg-secondary)] border border-[var(--separator)] rounded-[var(--radius-sm)] px-[10px] py-[6px] text-[length:var(--text-footnote)] text-[var(--text-primary)]"
                   placeholder="Jinn"
@@ -750,10 +771,14 @@ export default function SettingsPage() {
               </div>
 
               <div>
-                <label className="block text-[length:var(--text-caption1)] text-[var(--text-tertiary)] mb-[var(--space-1)]">
+                <label
+                  htmlFor="settings-portal-subtitle"
+                  className="block text-[length:var(--text-caption1)] text-[var(--text-tertiary)] mb-[var(--space-1)]"
+                >
                   Portal Subtitle
                 </label>
                 <input
+                  id="settings-portal-subtitle"
                   type="text"
                   className="apple-input w-full bg-[var(--bg-secondary)] border border-[var(--separator)] rounded-[var(--radius-sm)] px-[10px] py-[6px] text-[length:var(--text-footnote)] text-[var(--text-primary)]"
                   placeholder="Command Centre"
@@ -764,10 +789,14 @@ export default function SettingsPage() {
               </div>
 
               <div>
-                <label className="block text-[length:var(--text-caption1)] text-[var(--text-tertiary)] mb-[var(--space-1)]">
+                <label
+                  htmlFor="settings-operator-name"
+                  className="block text-[length:var(--text-caption1)] text-[var(--text-tertiary)] mb-[var(--space-1)]"
+                >
                   Operator Name
                 </label>
                 <input
+                  id="settings-operator-name"
                   type="text"
                   className="apple-input w-full bg-[var(--bg-secondary)] border border-[var(--separator)] rounded-[var(--radius-sm)] px-[10px] py-[6px] text-[length:var(--text-footnote)] text-[var(--text-primary)]"
                   placeholder="Your Name"
@@ -781,10 +810,14 @@ export default function SettingsPage() {
               </div>
 
               <div>
-                <label className="block text-[length:var(--text-caption1)] text-[var(--text-tertiary)] mb-[var(--space-1)]">
+                <label
+                  htmlFor="settings-portal-emoji"
+                  className="block text-[length:var(--text-caption1)] text-[var(--text-tertiary)] mb-[var(--space-1)]"
+                >
                   Portal Emoji
                 </label>
                 <input
+                  id="settings-portal-emoji"
                   type="text"
                   className="apple-input w-[80px] text-center text-[length:var(--text-title2)] px-[8px] py-[6px] bg-[var(--bg-secondary)] border border-[var(--separator)] rounded-[var(--radius-sm)]"
                   placeholder="\ud83e\uddde"
@@ -795,10 +828,14 @@ export default function SettingsPage() {
               </div>
 
               <div>
-                <label className="block text-[length:var(--text-caption1)] text-[var(--text-tertiary)] mb-[var(--space-1)]">
+                <label
+                  htmlFor="settings-language"
+                  className="block text-[length:var(--text-caption1)] text-[var(--text-tertiary)] mb-[var(--space-1)]"
+                >
                   Language
                 </label>
                 <select
+                  id="settings-language"
                   value={languageValue}
                   onChange={(e) => setLanguageValue(e.target.value)}
                   onBlur={() => {
@@ -1205,6 +1242,7 @@ export default function SettingsPage() {
                   </div>
                   <div className="flex items-center gap-[var(--space-2)]">
                     <button
+                      type="button"
                       className="text-[length:var(--text-caption1)] font-[var(--weight-semibold)] text-[var(--text-secondary)] hover:text-[var(--accent)] transition-colors flex items-center gap-1"
                       onClick={async () => {
                         try {
@@ -1223,6 +1261,7 @@ export default function SettingsPage() {
                       Reload
                     </button>
                     <button
+                      type="button"
                       className="text-[length:var(--text-caption1)] font-[var(--weight-semibold)] text-[var(--accent)] hover:opacity-80 transition-opacity"
                       onClick={() => {
                         const instances = [...(config.connectors?.instances || [])];
@@ -1248,6 +1287,7 @@ export default function SettingsPage() {
                         {instance.id || `Instance ${idx + 1}`}
                       </div>
                       <button
+                        type="button"
                         className="text-[var(--system-red)] hover:opacity-80 transition-opacity p-[var(--space-1)]"
                         onClick={() => {
                           const instances = [...(config.connectors?.instances || [])];
@@ -1499,6 +1539,7 @@ export default function SettingsPage() {
               {/* Save button for gateway config */}
               <div className="flex justify-end gap-[var(--space-3)] mb-[var(--space-6)]">
                 <button
+                  type="button"
                   onClick={() => loadConfig()}
                   className="px-[var(--space-4)] py-[var(--space-2)] rounded-[var(--radius-md)] bg-[var(--fill-tertiary)] text-[var(--text-secondary)] border-none cursor-pointer text-[length:var(--text-footnote)] font-[var(--weight-medium)] inline-flex items-center gap-[6px]"
                 >
@@ -1506,6 +1547,7 @@ export default function SettingsPage() {
                   Reload
                 </button>
                 <button
+                  type="button"
                   onClick={handleSave}
                   disabled={saving}
                   className="px-[var(--space-5)] py-[var(--space-2)] rounded-[var(--radius-md)] bg-[var(--accent)] text-[var(--accent-contrast)] border-none text-[length:var(--text-footnote)] font-[var(--weight-semibold)] inline-flex items-center gap-[6px] transition-all duration-150 ease-[var(--ease-smooth)]"
@@ -1525,6 +1567,7 @@ export default function SettingsPage() {
           <Section title="Reset">
             <div className="flex items-center justify-center gap-[var(--space-3)] flex-wrap">
               <button
+                type="button"
                 onClick={() => {
                   localStorage.removeItem("jinn-onboarded");
                   window.location.reload();
@@ -1535,6 +1578,7 @@ export default function SettingsPage() {
                 Re-run Onboarding Wizard
               </button>
               <button
+                type="button"
                 onClick={() => {
                   if (window.confirm("Reset all settings to defaults?")) {
                     localStorage.removeItem("jinn-settings");

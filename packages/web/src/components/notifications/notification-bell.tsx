@@ -70,6 +70,7 @@ export function NotificationBell() {
             <div className="flex items-center gap-1">
               {unreadCount > 0 && (
                 <button
+                  type="button"
                   onClick={markAllRead}
                   title="Mark all as read"
                   className="flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-[var(--system-blue)] transition-colors hover:bg-accent"
@@ -80,6 +81,7 @@ export function NotificationBell() {
               )}
               {notifications.length > 0 && (
                 <button
+                  type="button"
                   onClick={() => {
                     clearAll();
                     setOpen(false);
@@ -100,12 +102,13 @@ export function NotificationBell() {
               notifications.map((notif) => {
                 const Icon = ICON_MAP[notif.type];
                 return (
-                  <div
+                  <button
                     key={notif.id}
+                    type="button"
                     onClick={() => markRead(notif.id)}
                     className={cn(
-                      "flex cursor-pointer items-start gap-2.5 border-b border-border px-4 py-2.5 transition-colors hover:bg-accent",
-                      notif.read ? "bg-transparent" : "bg-[var(--material-ultra-thin)]",
+                      "flex w-full cursor-pointer items-start gap-2.5 border-b border-border px-4 py-2.5 transition-colors hover:bg-accent bg-transparent border-x-0 border-t-0 text-left",
+                      notif.read ? "" : "bg-[var(--material-ultra-thin)]",
                     )}
                   >
                     <Icon size={16} className={cn("mt-0.5 shrink-0", COLOR_MAP[notif.type])} />
@@ -126,7 +129,7 @@ export function NotificationBell() {
                       {formatTimeAgo(notif.timestamp)}
                     </span>
                     {!notif.read && <span className="mt-[5px] size-2 shrink-0 rounded-full bg-[var(--system-blue)]" />}
-                  </div>
+                  </button>
                 );
               })
             )}

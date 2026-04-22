@@ -14,13 +14,24 @@ export function SttDownloadModal({ open, progress, onDownload, onCancel }: SttDo
 
   return (
     <div
+      role="dialog"
+      aria-modal="true"
+      aria-label="Enable voice input"
       className="fixed inset-0 bg-black/50 z-[60] flex items-center justify-center"
-      onClick={isDownloading ? undefined : onCancel}
     >
-      <div
-        className="bg-[var(--bg)] rounded-[var(--radius-lg)] p-[var(--space-6)] max-w-[400px] w-[90%] shadow-[var(--shadow-overlay)]"
-        onClick={(e) => e.stopPropagation()}
-      >
+      {/* Backdrop click target */}
+      {!isDownloading && (
+        <button
+          type="button"
+          aria-label="Close dialog"
+          className="fixed inset-0 w-full h-full cursor-default bg-transparent border-none"
+          onClick={onCancel}
+          onKeyDown={(e) => {
+            if (e.key === "Escape") onCancel();
+          }}
+        />
+      )}
+      <div className="relative bg-[var(--bg)] rounded-[var(--radius-lg)] p-[var(--space-6)] max-w-[400px] w-[90%] shadow-[var(--shadow-overlay)]">
         <div className="w-12 h-12 rounded-[var(--radius-md)] bg-[var(--fill-secondary)] flex items-center justify-center mb-[var(--space-4)]">
           <svg
             width="24"
@@ -31,6 +42,8 @@ export function SttDownloadModal({ open, progress, onDownload, onCancel }: SttDo
             strokeWidth="2"
             strokeLinecap="round"
             strokeLinejoin="round"
+            aria-hidden="true"
+            focusable="false"
           >
             <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
             <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
@@ -66,6 +79,7 @@ export function SttDownloadModal({ open, progress, onDownload, onCancel }: SttDo
         <div className="flex gap-[var(--space-3)] justify-end">
           {!isDownloading && (
             <button
+              type="button"
               onClick={onCancel}
               className="px-[var(--space-4)] py-[var(--space-2)] rounded-[var(--radius-md)] bg-[var(--fill-tertiary)] text-[var(--text-primary)] border-none cursor-pointer text-[length:var(--text-body)]"
             >
@@ -73,6 +87,7 @@ export function SttDownloadModal({ open, progress, onDownload, onCancel }: SttDo
             </button>
           )}
           <button
+            type="button"
             onClick={onDownload}
             disabled={isDownloading}
             className={`px-[var(--space-4)] py-[var(--space-2)] rounded-[var(--radius-md)] border-none text-[length:var(--text-body)] font-[var(--weight-semibold)] ${

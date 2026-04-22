@@ -219,7 +219,7 @@ export function EmployeeDetail({ name, prefetched }: { name: string; prefetched?
             </p>
             {persona.length > 200 && (
               <button
-                onClick={() => setPersonaExpanded(!personaExpanded)}
+                type="button"
                 className="text-[length:var(--text-caption1)] text-[var(--accent)] bg-none border-none cursor-pointer p-0 mt-[var(--space-1)]"
               >
                 {personaExpanded ? "Show less" : "Show more"}

@@ -97,7 +97,13 @@ export function SessionList({
 
   return (
     <>
-      <div className="flex flex-col gap-[var(--space-3)]" onClick={() => setContextMenu(null)}>
+      <ul
+        className="flex flex-col gap-[var(--space-3)] list-none p-0 m-0"
+        onClick={() => setContextMenu(null)}
+        onKeyDown={(e) => {
+          if (e.key === "Escape") setContextMenu(null);
+        }}
+      >
         {sessions.map((s) => (
           <Card
             key={s.id}
@@ -142,20 +148,31 @@ export function SessionList({
             </CardContent>
           </Card>
         ))}
-      </div>
+      </ul>
 
       {/* Context menu */}
       {contextMenu && (
-        <div className="fixed inset-0 z-50" onClick={() => setContextMenu(null)}>
+        <div role="presentation" className="fixed inset-0 z-50">
+          <button
+            type="button"
+            aria-label="Close context menu"
+            className="fixed inset-0 w-full h-full cursor-default bg-transparent border-none"
+            onClick={() => setContextMenu(null)}
+            onKeyDown={(e) => {
+              if (e.key === "Escape") setContextMenu(null);
+            }}
+          />
           <div
+            role="menu"
             className="fixed bg-[var(--bg)] border border-[var(--separator)] rounded-[var(--radius-md)] shadow-[var(--shadow-lg)] p-[var(--space-1)] z-[51] min-w-[160px]"
             style={{
               top: contextMenu.y,
               left: contextMenu.x,
             }}
-            onClick={(e) => e.stopPropagation()}
           >
             <button
+              type="button"
+              role="menuitem"
               onClick={() => handleDelete(contextMenu.sessionId)}
               className="w-full text-left px-[var(--space-3)] py-[var(--space-2)] text-[length:var(--text-footnote)] text-[var(--system-red)] bg-transparent border-none cursor-pointer rounded-[var(--radius-sm)] flex items-center gap-[var(--space-2)]"
             >
@@ -168,6 +185,8 @@ export function SessionList({
                 strokeWidth="2"
                 strokeLinecap="round"
                 strokeLinejoin="round"
+                aria-hidden="true"
+                focusable="false"
               >
                 <polyline points="3 6 5 6 21 6" />
                 <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
@@ -181,13 +200,21 @@ export function SessionList({
       {/* Confirm delete dialog */}
       {confirmDelete && (
         <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="Delete session confirmation"
           className="fixed inset-0 bg-black/50 z-[60] flex items-center justify-center"
-          onClick={() => setConfirmDelete(null)}
         >
-          <div
-            className="bg-[var(--bg)] rounded-[var(--radius-lg)] p-[var(--space-6)] max-w-[400px] w-[90%] shadow-[var(--shadow-overlay)]"
-            onClick={(e) => e.stopPropagation()}
-          >
+          <button
+            type="button"
+            aria-label="Close dialog"
+            className="fixed inset-0 w-full h-full cursor-default bg-transparent border-none"
+            onClick={() => setConfirmDelete(null)}
+            onKeyDown={(e) => {
+              if (e.key === "Escape") setConfirmDelete(null);
+            }}
+          />
+          <div className="relative bg-[var(--bg)] rounded-[var(--radius-lg)] p-[var(--space-6)] max-w-[400px] w-[90%] shadow-[var(--shadow-overlay)]">
             <h3 className="text-[length:var(--text-headline)] font-[var(--weight-bold)] text-[var(--text-primary)] mb-[var(--space-2)]">
               Delete Session?
             </h3>
@@ -196,12 +223,14 @@ export function SessionList({
             </p>
             <div className="flex gap-[var(--space-3)] justify-end">
               <button
+                type="button"
                 onClick={() => setConfirmDelete(null)}
                 className="px-[var(--space-4)] py-[var(--space-2)] rounded-[var(--radius-md)] bg-[var(--fill-tertiary)] text-[var(--text-primary)] border-none cursor-pointer text-[length:var(--text-body)] font-[var(--weight-medium)]"
               >
                 Cancel
               </button>
               <button
+                type="button"
                 onClick={confirmDeleteSession}
                 className="px-[var(--space-4)] py-[var(--space-2)] rounded-[var(--radius-md)] bg-[var(--system-red)] text-white border-none cursor-pointer text-[length:var(--text-body)] font-[var(--weight-semibold)]"
               >

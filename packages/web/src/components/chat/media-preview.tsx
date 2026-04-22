@@ -66,6 +66,8 @@ export function MediaPreview({ attachments, onRemove }: MediaPreviewProps) {
                   strokeWidth="2"
                   strokeLinecap="round"
                   strokeLinejoin="round"
+                  aria-hidden="true"
+                  focusable="false"
                 >
                   <path d="M9 18V5l12-2v13" />
                   <circle cx="6" cy="18" r="3" />
@@ -81,6 +83,8 @@ export function MediaPreview({ attachments, onRemove }: MediaPreviewProps) {
                   strokeWidth="2"
                   strokeLinecap="round"
                   strokeLinejoin="round"
+                  aria-hidden="true"
+                  focusable="false"
                 >
                   <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z" />
                   <polyline points="13 2 13 9 20 9" />
@@ -104,7 +108,7 @@ export function MediaPreview({ attachments, onRemove }: MediaPreviewProps) {
 
           {/* Remove button */}
           <button
-            onClick={() => onRemove(attachments.indexOf(att))}
+            type="button"
             aria-label="Remove attachment"
             style={{
               position: "absolute",
@@ -133,6 +137,8 @@ export function MediaPreview({ attachments, onRemove }: MediaPreviewProps) {
               stroke="currentColor"
               strokeWidth="3"
               strokeLinecap="round"
+              aria-hidden="true"
+              focusable="false"
             >
               <line x1="18" y1="6" x2="6" y2="18" />
               <line x1="6" y1="6" x2="18" y2="18" />

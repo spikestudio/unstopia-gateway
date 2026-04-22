@@ -20,7 +20,7 @@ export function EmployeePicker({ employees, value, onChange }: EmployeePickerPro
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [highlightIdx, setHighlightIdx] = useState(0);
-  const containerRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLFieldSetElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
 
@@ -121,7 +121,7 @@ export function EmployeePicker({ employees, value, onChange }: EmployeePickerPro
   }
 
   return (
-    <div ref={containerRef} className="relative" onKeyDown={handleKeyDown}>
+    <fieldset ref={containerRef} className="relative border-none p-0 m-0" onKeyDown={handleKeyDown}>
       {/* Trigger button */}
       <button
         type="button"
@@ -167,7 +167,14 @@ export function EmployeePicker({ employees, value, onChange }: EmployeePickerPro
                 data-employee-option
                 role="option"
                 aria-selected={value === ""}
+                tabIndex={0}
                 onClick={() => selectEmployee("")}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    selectEmployee("");
+                  }
+                }}
                 className={`flex items-center gap-[var(--space-2)] py-2 px-2.5 rounded-[var(--radius-sm)] cursor-pointer transition-[background] duration-100 ${highlightIdx === 0 ? "bg-[var(--fill-secondary)]" : "bg-transparent"}`}
                 onMouseEnter={() => setHighlightIdx(0)}
               >
@@ -198,7 +205,14 @@ export function EmployeePicker({ employees, value, onChange }: EmployeePickerPro
                   data-employee-option
                   role="option"
                   aria-selected={isSelected}
+                  tabIndex={0}
                   onClick={() => selectEmployee(emp.name)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      selectEmployee(emp.name);
+                    }
+                  }}
                   onMouseEnter={() => setHighlightIdx(optionIdx)}
                   className={`flex items-center gap-[var(--space-2)] py-2 px-2.5 rounded-[var(--radius-sm)] cursor-pointer transition-[background] duration-100 ${isHighlighted ? "bg-[var(--fill-secondary)]" : "bg-transparent"}`}
                 >
@@ -234,6 +248,6 @@ export function EmployeePicker({ employees, value, onChange }: EmployeePickerPro
           </div>
         </div>
       )}
-    </div>
+    </fieldset>
   );
 }

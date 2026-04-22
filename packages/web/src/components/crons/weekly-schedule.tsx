@@ -110,7 +110,7 @@ function PillTooltip({ slot, rect, containerRect }: { slot: SlotInfo; rect: DOMR
 
 export function WeeklySchedule({ crons }: WeeklyScheduleProps) {
   const [tooltip, setTooltip] = useState<TooltipData | null>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLElement>(null);
   const [containerRect, setContainerRect] = useState<DOMRect | null>(null);
 
   const updateContainerRect = useCallback(() => {
@@ -212,6 +212,8 @@ export function WeeklySchedule({ crons }: WeeklyScheduleProps) {
           strokeLinecap="round"
           strokeLinejoin="round"
           className="text-[var(--text-tertiary)] mb-[var(--space-2)]"
+          aria-hidden="true"
+          focusable="false"
         >
           <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
           <line x1="16" y1="2" x2="16" y2="6" />
@@ -227,7 +229,15 @@ export function WeeklySchedule({ crons }: WeeklyScheduleProps) {
   }
 
   return (
-    <div ref={containerRef} className="relative" onClick={() => setTooltip(null)}>
+    <section
+      ref={containerRef}
+      className="relative"
+      onClick={() => setTooltip(null)}
+      onKeyDown={(e) => {
+        if (e.key === "Escape") setTooltip(null);
+      }}
+      aria-label="Weekly schedule"
+    >
       <div className="grid grid-cols-[56px_repeat(7,1fr)] bg-[var(--material-regular)] rounded-[var(--radius-md)] border border-[var(--separator)] overflow-hidden">
         {/* Header row */}
         <div className="p-[var(--space-3)_var(--space-2)] border-b border-[var(--separator)] bg-[var(--material-thick)]" />
@@ -394,6 +404,6 @@ export function WeeklySchedule({ crons }: WeeklyScheduleProps) {
       {tooltip && containerRect && (
         <PillTooltip slot={tooltip.slot} rect={tooltip.rect} containerRect={containerRect} />
       )}
-    </div>
+    </section>
   );
 }

@@ -71,7 +71,7 @@ export default function SkillsPage() {
             </p>
           </div>
           <button
-            onClick={() => alert(`To create a new skill, chat with ${portalName} and ask to learn something new.`)}
+            type="button"
             className="py-[var(--space-2)] px-[var(--space-4)] rounded-[var(--radius-md,12px)] text-[var(--accent)] border-none cursor-pointer text-[length:var(--text-body)] font-[var(--weight-medium)]"
             style={{
               background: "color-mix(in srgb, var(--accent) 12%, transparent)",

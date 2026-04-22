@@ -16,25 +16,35 @@ export function EmployeeAvatar({ name, size = 32, className, onClick }: Employee
   const emoji = override?.emoji || emojiForName(name || "");
   const fontSize = Math.round(size * 0.6);
 
+  const style: React.CSSProperties = {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    width: size,
+    height: size,
+    fontSize,
+    lineHeight: 1,
+    borderRadius: "50%",
+    flexShrink: 0,
+    cursor: onClick ? "pointer" : undefined,
+    userSelect: "none",
+  };
+
+  if (onClick) {
+    return (
+      <button
+        type="button"
+        className={className}
+        onClick={onClick}
+        style={{ ...style, border: "none", background: "transparent", padding: 0 }}
+      >
+        {emoji}
+      </button>
+    );
+  }
+
   return (
-    <span
-      className={className}
-      onClick={onClick}
-      role={onClick ? "button" : undefined}
-      style={{
-        display: "inline-flex",
-        alignItems: "center",
-        justifyContent: "center",
-        width: size,
-        height: size,
-        fontSize,
-        lineHeight: 1,
-        borderRadius: "50%",
-        flexShrink: 0,
-        cursor: onClick ? "pointer" : undefined,
-        userSelect: "none",
-      }}
-    >
+    <span className={className} style={style}>
       {emoji}
     </span>
   );
@@ -51,25 +61,35 @@ export function AvatarPreview({
   const emoji = overrideEmoji || emojiForName(name);
   const fontSize = Math.round(size * 0.6);
 
+  const style: React.CSSProperties = {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    width: size,
+    height: size,
+    fontSize,
+    lineHeight: 1,
+    borderRadius: "50%",
+    flexShrink: 0,
+    cursor: onClick ? "pointer" : undefined,
+    userSelect: "none",
+  };
+
+  if (onClick) {
+    return (
+      <button
+        type="button"
+        className={className}
+        onClick={onClick}
+        style={{ ...style, border: "none", background: "transparent", padding: 0 }}
+      >
+        {emoji}
+      </button>
+    );
+  }
+
   return (
-    <span
-      className={className}
-      onClick={onClick}
-      role={onClick ? "button" : undefined}
-      style={{
-        display: "inline-flex",
-        alignItems: "center",
-        justifyContent: "center",
-        width: size,
-        height: size,
-        fontSize,
-        lineHeight: 1,
-        borderRadius: "50%",
-        flexShrink: 0,
-        cursor: onClick ? "pointer" : undefined,
-        userSelect: "none",
-      }}
-    >
+    <span className={className} style={style}>
       {emoji}
     </span>
   );

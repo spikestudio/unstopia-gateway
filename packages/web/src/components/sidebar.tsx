@@ -50,7 +50,7 @@ export function Sidebar() {
       .catch(() => {});
   }, []);
 
-  function cycleTheme() {
+  function _cycleTheme() {
     const ids = THEMES.map((t) => t.id);
     const idx = ids.indexOf(theme);
     const next = ids[(idx + 1) % ids.length];
@@ -108,7 +108,7 @@ export function Sidebar() {
       {instances.length > 1 && (
         <div className="relative shrink-0 px-2 pt-1">
           <button
-            onClick={() => setShowSwitcher((v) => !v)}
+            type="button"
             aria-label="Switch instance"
             className="flex h-10 w-full items-center gap-2.5 rounded-md px-3 text-[13px] text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
           >
@@ -119,7 +119,8 @@ export function Sidebar() {
             <div className="absolute bottom-full left-2 z-100 mb-1 min-w-[180px] rounded-xl border border-border bg-[var(--material-thick)] p-1 shadow-[var(--shadow-overlay)] backdrop-blur-xl">
               {instances.map((inst) => (
                 <button
-                  key={inst.port}
+                  type="button"
+                  key={String(inst.port)}
                   onClick={() => {
                     if (!inst.current && inst.running) {
                       window.location.href = `http://localhost:${inst.port}/chat`;
@@ -149,7 +150,7 @@ export function Sidebar() {
 
       <div className="shrink-0 px-2 pb-3 pt-2">
         <button
-          onClick={cycleTheme}
+          type="button"
           aria-label={`Theme: ${theme}. Click to cycle.`}
           className="flex h-10 w-full items-center gap-2.5 rounded-md px-3 text-[13px] text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
         >
