@@ -1,6 +1,8 @@
-# 🧞 Jinn
+# unstopia-gateway
 
-Lightweight AI gateway daemon orchestrating Claude Code, Codex, and Gemini CLI.
+jinn v0.9.3 をベースにした独自フォーク。AI gateway daemon として Antigravity エンジン対応・クロスセッション記憶システム・多層スキル/ツール管理を追加していく。
+
+> **Base:** [jinn](https://github.com/hristo2612/jinn) — Lightweight AI gateway daemon orchestrating Claude Code, Codex, and Gemini CLI.
 
 <p align="center">
   <img src="assets/jinn-showcase.gif" alt="Jinn Web Dashboard" width="800" />
