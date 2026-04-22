@@ -1,0 +1,103 @@
+# Taskfile.yml — unstopia-gateway タスク定義
+# https://taskfile.dev
+version: '3'
+
+tasks:
+  # ===== 開発 =====
+  dev:
+    desc: 開発サーバー起動（gateway + web UI）
+    cmds:
+      - pnpm dev
+
+  # ===== ビルド =====
+  build:
+    desc: 全パッケージをビルド
+    cmds:
+      - pnpm build
+
+  # ===== テスト =====
+  test:
+    desc: ユニットテスト実行
+    cmds:
+      - pnpm test
+
+  test:e2e:
+    desc: E2E テスト実行
+    cmds:
+      - pnpm test:e2e
+
+  # ===== リント =====
+  lint:
+    desc: リント実行
+    cmds:
+      - pnpm lint
+
+  typecheck:
+    desc: 型チェック実行
+    cmds:
+      - pnpm typecheck
+
+  lint:fix:
+    desc: 自動修正可能なリントエラーを修正
+    cmds:
+      - pnpm lint --fix
+
+  # ===== CI ローカル =====
+  ci:local:
+    desc: ローカル CI チェックを手動実行（lefthook 経由）
+    cmds:
+      - lefthook run pre-commit
+      - lefthook run pre-push
+
+  hooks:install:
+    desc: Git フックをインストール
+    cmds:
+      - lefthook install
+
+  # ===== Gateway =====
+  start:
+    desc: Gateway デーモン起動
+    cmds:
+      - pnpm start
+
+  stop:
+    desc: Gateway デーモン停止
+    cmds:
+      - pnpm stop
+
+  status:
+    desc: Gateway ステータス確認
+    cmds:
+      - pnpm status
+
+  setup:
+    desc: 初回セットアップ（ビルド + jinn setup）
+    cmds:
+      - pnpm setup
+
+  # ===== Worktree =====
+  wt:create:
+    desc: "Worktree を作成し環境を初期化（例: task wt:create BRANCH=feat/antigravity-engine）"
+    vars:
+      BRANCH: '{{.BRANCH}}'
+      WT_ROOT:
+        sh: echo "/tmp/$(basename $(pwd))"
+    cmds:
+      - git fetch origin main
+      - git worktree add {{.WT_ROOT}}-{{.BRANCH}} -b {{.BRANCH}} origin/main
+      - direnv allow {{.WT_ROOT}}-{{.BRANCH}}
+      - mise trust {{.WT_ROOT}}-{{.BRANCH}}/.mise.toml
+      - cmd: cd {{.WT_ROOT}}-{{.BRANCH}} && mise install
+        ignore_error: true
+      - echo "✅ worktree ready{{':'}} {{.WT_ROOT}}-{{.BRANCH}}"
+
+  wt:remove:
+    desc: "Worktree とブランチを削除（例: task wt:remove BRANCH=feat/antigravity-engine）"
+    vars:
+      BRANCH: '{{.BRANCH}}'
+      WT_ROOT:
+        sh: echo "/tmp/$(basename $(pwd))"
+    cmds:
+      - git worktree remove --force {{.WT_ROOT}}-{{.BRANCH}}
+      - git branch -D {{.BRANCH}}
+      - echo "✅ worktree removed{{':'}} {{.BRANCH}}"

@@ -11,21 +11,15 @@ unstopia-gateway は jinn v0.9.3 をベースにした独自フォーク。Antig
 
 ## 規約
 
-### 命名規則
+詳細は `docs/conventions/` を参照すること:
 
-<!-- TODO: 変数、関数、ファイル、ディレクトリの命名規則を記述してください -->
-
-### エラーハンドリング
-
-<!-- TODO: エラーの伝播方法、ログ出力、リカバリ方針を記述してください -->
-
-### テスト
-
-<!-- TODO: テストの命名、構造、カバレッジ基準を記述してください -->
-
-### レイヤー間のルール
-
-<!-- TODO: 依存方向、データの受け渡し方を記述してください -->
+- 命名規則: `docs/conventions/naming.md`
+- ディレクトリ構造: `docs/conventions/directory-structure.md`
+- レイヤー間のルール: `docs/conventions/layer-rules.md`
+- エラーハンドリング: `docs/conventions/error-handling.md`
+- テスト規約: `docs/conventions/testing.md`
+- 禁止事項: `docs/conventions/prohibitions.md`
+- Git 運用ルール: `docs/conventions/git-workflow.md`
 
 ## プロジェクト固有の発見事項
 
