@@ -56,7 +56,7 @@ interface ChatPaneProps {
 
 export function ChatPane({
   sessionId,
-  isActive,
+  isActive: _isActive,
   onFocus,
   onSessionCreated,
   onSessionMetaChange,

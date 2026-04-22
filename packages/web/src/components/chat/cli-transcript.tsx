@@ -145,9 +145,10 @@ function TranscriptEntryRow({ entry }: { entry: TranscriptEntry }) {
 
       {/* Content blocks */}
       <div className="flex-1 min-w-0">
-        {entry.content.map((block, i) => (
-          <ContentBlock key={i} block={block} />
-        ))}
+        {entry.content.map((block, i) => {
+          const blockKey = `${block.type}-${block.name ?? block.text?.slice(0, 16) ?? i}`;
+          return <ContentBlock key={blockKey} block={block} />;
+        })}
       </div>
     </div>
   );
@@ -212,9 +213,10 @@ export function CliTranscript({ sessionId }: CliTranscriptProps) {
 
   return (
     <div className="flex-1 overflow-y-auto overflow-x-hidden bg-[var(--bg-primary,var(--bg))] p-[var(--space-4)] font-[SF_Mono,Menlo,Cascadia_Code,monospace] text-[13px] leading-normal min-h-0">
-      {entries.map((entry, i) => (
-        <TranscriptEntryRow key={i} entry={entry} />
-      ))}
+      {entries.map((entry, i) => {
+        const entryKey = `${entry.role}-${i}-${entry.content[0]?.type ?? "empty"}`;
+        return <TranscriptEntryRow key={entryKey} entry={entry} />;
+      })}
       <div ref={bottomRef} />
     </div>
   );

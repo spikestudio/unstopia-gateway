@@ -323,7 +323,7 @@ export function WeeklySchedule({ crons }: WeeklyScheduleProps) {
                     )}
 
                     {/* Pills */}
-                    {slots.map((slot, slotIdx) => {
+                    {slots.map((slot) => {
                       const pillColor = slot.cron.enabled ? "var(--system-green)" : "var(--text-tertiary)";
                       const isActive =
                         tooltip?.slot.cron.id === slot.cron.id &&
@@ -332,7 +332,7 @@ export function WeeklySchedule({ crons }: WeeklyScheduleProps) {
 
                       return (
                         <button
-                          key={`${key}-${slotIdx}`}
+                          key={`${key}-${slot.cron.id}`}
                           type="button"
                           title={`${slot.cron.name} - ${describeCron(slot.cron.schedule)}`}
                           onClick={(e) => {

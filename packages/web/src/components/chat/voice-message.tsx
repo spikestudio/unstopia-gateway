@@ -106,12 +106,13 @@ export function VoiceMessage({ src, duration, waveform, isUser }: VoiceMessagePr
           height: 28,
         }}
       >
-        {bars.map((amp, i) => {
-          const barProgress = i / bars.length;
+        {bars.map((amp, barIdx) => {
+          const barProgress = barIdx / bars.length;
           const isPlayed = barProgress <= progress;
+          const barKey = `${barIdx}-${amp.toFixed(3)}`;
           return (
             <div
-              key={i}
+              key={barKey}
               style={{
                 width: 3,
                 borderRadius: 1.5,

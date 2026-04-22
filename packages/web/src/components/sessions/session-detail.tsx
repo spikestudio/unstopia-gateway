@@ -55,7 +55,7 @@ function formatDate(iso: string): string {
 
 export function SessionDetail({
   session,
-  onClose,
+  onClose: _onClose,
   onNavigate,
 }: {
   session: Session;

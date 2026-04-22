@@ -1,7 +1,7 @@
 "use client";
 
 import { Check, Loader2, RotateCcw, Save, Trash2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useTheme } from "@/app/providers";
 import { useSettings } from "@/app/settings-provider";
 import { PageLayout } from "@/components/page-layout";
@@ -509,7 +509,7 @@ export default function SettingsPage() {
   ]);
 
   // Load gateway config
-  function loadConfig() {
+  const loadConfig = useCallback(() => {
     setConfigLoading(true);
     api
       .getConfig()
@@ -519,7 +519,7 @@ export default function SettingsPage() {
       })
       .catch((err) => setConfigError(err.message))
       .finally(() => setConfigLoading(false));
-  }
+  }, []);
 
   useEffect(() => {
     loadConfig();
