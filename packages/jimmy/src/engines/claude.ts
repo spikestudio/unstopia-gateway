@@ -1,7 +1,13 @@
-import { spawn, type ChildProcess } from "node:child_process";
-import type { EngineRateLimitInfo, InterruptibleEngine, EngineRunOpts, EngineResult, StreamDelta } from "../shared/types.js";
+import { type ChildProcess, spawn } from "node:child_process";
 import { logger } from "../shared/logger.js";
 import { isDeadSessionError } from "../shared/rateLimit.js";
+import type {
+  EngineRateLimitInfo,
+  EngineResult,
+  EngineRunOpts,
+  InterruptibleEngine,
+  StreamDelta,
+} from "../shared/types.js";
 
 interface LiveProcess {
   proc: ChildProcess;
@@ -63,7 +69,7 @@ export class ClaudeEngine implements InterruptibleEngine {
 
     for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
       if (attempt > 0) {
-        const delayMs = RETRY_BASE_MS * Math.pow(2, attempt - 1);
+        const delayMs = RETRY_BASE_MS * 2 ** (attempt - 1);
         logger.warn(
           `Claude engine retry ${attempt}/${MAX_RETRIES} for session ${opts.sessionId || "unknown"} after ${delayMs}ms`,
         );
@@ -105,7 +111,14 @@ export class ClaudeEngine implements InterruptibleEngine {
 
   private async runOnce(opts: EngineRunOpts): Promise<EngineResult> {
     const streaming = !!opts.onStream;
-    const args = ["-p", "--output-format", streaming ? "stream-json" : "json", "--verbose", "--dangerously-skip-permissions", "--chrome"];
+    const args = [
+      "-p",
+      "--output-format",
+      streaming ? "stream-json" : "json",
+      "--verbose",
+      "--dangerously-skip-permissions",
+      "--chrome",
+    ];
 
     if (streaming) args.push("--include-partial-messages");
     if (opts.resumeSessionId) args.push("--resume", opts.resumeSessionId);
@@ -218,7 +231,7 @@ export class ClaudeEngine implements InterruptibleEngine {
         settled = true;
 
         const terminationReason = opts.sessionId
-          ? this.liveProcesses.get(opts.sessionId)?.terminationReason ?? null
+          ? (this.liveProcesses.get(opts.sessionId)?.terminationReason ?? null)
           : null;
         if (opts.sessionId) {
           this.liveProcesses.delete(opts.sessionId);
@@ -250,7 +263,9 @@ export class ClaudeEngine implements InterruptibleEngine {
 
           try {
             const parsedResult = this.parseClaudeJsonOutput(stdout, opts.resumeSessionId);
-            logger.info(`Claude result: session_id=${parsedResult.sessionId || "none"}, result_length=${parsedResult.result.length}, cost=$${parsedResult.cost || 0}`);
+            logger.info(
+              `Claude result: session_id=${parsedResult.sessionId || "none"}, result_length=${parsedResult.result.length}, cost=$${parsedResult.cost || 0}`,
+            );
             resolve(parsedResult);
           } catch (err) {
             logger.error(`Failed to parse Claude output: ${err}\nstdout: ${stdout.slice(0, 500)}`);
@@ -273,8 +288,14 @@ export class ClaudeEngine implements InterruptibleEngine {
           try {
             const parsed = JSON.parse(stdout);
             if (Array.isArray(parsed)) {
-              const resultEvent = [...parsed].reverse().find((e: Record<string, unknown>) => e.type === "result") as Record<string, unknown> | undefined;
-              const rlEvent = [...parsed].reverse().find((e: Record<string, unknown>) => e.type === "rate_limit_event") as Record<string, unknown> | undefined;
+              const resultEvent = [...parsed].reverse().find((e: Record<string, unknown>) => e.type === "result") as
+                | Record<string, unknown>
+                | undefined;
+              const rlEvent = [...parsed]
+                .reverse()
+                .find((e: Record<string, unknown>) => e.type === "rate_limit_event") as
+                | Record<string, unknown>
+                | undefined;
               const rl = rlEvent ? this.normalizeRateLimitInfo(rlEvent.rate_limit_info) : rateLimitInfo;
               if (resultEvent) {
                 resolve(this.extractResult(resultEvent, opts.resumeSessionId, rl));
@@ -487,14 +508,20 @@ export class ClaudeEngine implements InterruptibleEngine {
     let resultEvent: Record<string, unknown> = {};
 
     if (Array.isArray(parsed)) {
-      const foundResult = [...parsed].reverse().find(
-        (e): e is Record<string, unknown> => !!e && typeof e === "object" && (e as Record<string, unknown>).type === "result",
-      );
+      const foundResult = [...parsed]
+        .reverse()
+        .find(
+          (e): e is Record<string, unknown> =>
+            !!e && typeof e === "object" && (e as Record<string, unknown>).type === "result",
+        );
       resultEvent = foundResult || (parsed[parsed.length - 1] as Record<string, unknown>) || {};
 
-      const foundRate = [...parsed].reverse().find(
-        (e): e is Record<string, unknown> => !!e && typeof e === "object" && (e as Record<string, unknown>).type === "rate_limit_event",
-      );
+      const foundRate = [...parsed]
+        .reverse()
+        .find(
+          (e): e is Record<string, unknown> =>
+            !!e && typeof e === "object" && (e as Record<string, unknown>).type === "rate_limit_event",
+        );
       if (foundRate) {
         rateLimitInfo = this.parseRateLimitInfo((foundRate as Record<string, unknown>).rate_limit_info);
       }
@@ -533,11 +560,17 @@ export class ClaudeEngine implements InterruptibleEngine {
     return this.buildEngineResultFromResultEvent(resultEvent, finalText, fallbackSessionId, rateLimitInfo);
   }
 
-  private extractResult(result: Record<string, unknown>, fallbackSessionId?: string, rateLimitInfo?: EngineRateLimitInfo): EngineResult {
+  private extractResult(
+    result: Record<string, unknown>,
+    fallbackSessionId?: string,
+    rateLimitInfo?: EngineRateLimitInfo,
+  ): EngineResult {
     const isError = result.is_error === true;
     const msg = String(result.result || "");
     const error = isError
-      ? (rateLimitInfo?.status === "rejected" ? `Claude usage limit reached: ${msg || "Rate limited"}` : (msg || "Claude error"))
+      ? rateLimitInfo?.status === "rejected"
+        ? `Claude usage limit reached: ${msg || "Rate limited"}`
+        : msg || "Claude error"
       : undefined;
     return {
       sessionId: String(result.session_id || fallbackSessionId || ""),

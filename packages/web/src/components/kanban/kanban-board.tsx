@@ -1,21 +1,21 @@
-"use client"
+"use client";
 
-import { COLUMNS } from '@/lib/kanban/types'
-import type { KanbanTicket, TicketStatus } from '@/lib/kanban/types'
-import type { KanbanStore } from '@/lib/kanban/store'
-import { getTicketsByStatus } from '@/lib/kanban/store'
-import type { Employee } from '@/lib/api'
-import { KanbanColumn } from './kanban-column'
-import { TicketCard } from './ticket-card'
+import type { Employee } from "@/lib/api";
+import type { KanbanStore } from "@/lib/kanban/store";
+import { getTicketsByStatus } from "@/lib/kanban/store";
+import type { KanbanTicket, TicketStatus } from "@/lib/kanban/types";
+import { COLUMNS } from "@/lib/kanban/types";
+import { KanbanColumn } from "./kanban-column";
+import { TicketCard } from "./ticket-card";
 
 interface KanbanBoardProps {
-  tickets: KanbanStore
-  employees: Employee[]
-  onTicketClick: (ticket: KanbanTicket) => void
-  onMoveTicket: (ticketId: string, status: TicketStatus) => void
-  onCreateTicket: () => void
-  onDeleteTicket?: (ticket: KanbanTicket) => void
-  filterEmployeeId?: string | null
+  tickets: KanbanStore;
+  employees: Employee[];
+  onTicketClick: (ticket: KanbanTicket) => void;
+  onMoveTicket: (ticketId: string, status: TicketStatus) => void;
+  onCreateTicket: () => void;
+  onDeleteTicket?: (ticket: KanbanTicket) => void;
+  filterEmployeeId?: string | null;
 }
 
 export function KanbanBoard({
@@ -30,20 +30,20 @@ export function KanbanBoard({
   return (
     <div
       style={{
-        display: 'flex',
-        gap: 'var(--space-3)',
-        height: '100%',
-        overflowX: 'auto',
-        overflowY: 'hidden',
-        padding: 'var(--space-2) 0',
-        WebkitOverflowScrolling: 'touch',
+        display: "flex",
+        gap: "var(--space-3)",
+        height: "100%",
+        overflowX: "auto",
+        overflowY: "hidden",
+        padding: "var(--space-2) 0",
+        WebkitOverflowScrolling: "touch",
       }}
     >
       {COLUMNS.map((column) => {
-        const allColumnTickets = getTicketsByStatus(tickets, column.id)
+        const allColumnTickets = getTicketsByStatus(tickets, column.id);
         const columnTickets = filterEmployeeId
           ? allColumnTickets.filter((t) => t.assigneeId === filterEmployeeId)
-          : allColumnTickets
+          : allColumnTickets;
 
         return (
           <KanbanColumn
@@ -51,9 +51,9 @@ export function KanbanBoard({
             column={column}
             tickets={columnTickets}
             onDrop={onMoveTicket}
-            onCreateTicket={column.id === 'backlog' ? onCreateTicket : undefined}
+            onCreateTicket={column.id === "backlog" ? onCreateTicket : undefined}
             renderTicket={(ticket) => {
-              const emp = employees.find((e) => e.name === ticket.assigneeId)
+              const emp = employees.find((e) => e.name === ticket.assigneeId);
               return (
                 <TicketCard
                   ticket={ticket}
@@ -61,11 +61,11 @@ export function KanbanBoard({
                   onClick={() => onTicketClick(ticket)}
                   onDelete={onDeleteTicket ? () => onDeleteTicket(ticket) : undefined}
                 />
-              )
+              );
             }}
           />
-        )
+        );
       })}
     </div>
-  )
+  );
 }

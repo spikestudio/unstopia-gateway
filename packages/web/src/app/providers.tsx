@@ -1,57 +1,53 @@
-"use client"
+"use client";
 
-import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react'
-import type { ThemeId } from '@/lib/themes'
+import { createContext, type ReactNode, useCallback, useContext, useEffect, useState } from "react";
+import type { ThemeId } from "@/lib/themes";
 
 interface ThemeContextValue {
-  theme: ThemeId
-  setTheme: (t: ThemeId) => void
+  theme: ThemeId;
+  setTheme: (t: ThemeId) => void;
 }
 
-const ThemeContext = createContext<ThemeContextValue>({ theme: 'dark', setTheme: () => {} })
+const ThemeContext = createContext<ThemeContextValue>({ theme: "dark", setTheme: () => {} });
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [theme, setThemeState] = useState<ThemeId>('dark')
+  const [theme, setThemeState] = useState<ThemeId>("dark");
 
   const apply = useCallback((t: ThemeId) => {
-    setThemeState(t)
-    localStorage.setItem('jinn-theme', t)
-    const el = document.documentElement
-    el.removeAttribute('data-theme')
-    if (t === 'system') {
-      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
-      el.setAttribute('data-theme', prefersDark ? 'dark' : 'light')
+    setThemeState(t);
+    localStorage.setItem("jinn-theme", t);
+    const el = document.documentElement;
+    el.removeAttribute("data-theme");
+    if (t === "system") {
+      const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+      el.setAttribute("data-theme", prefersDark ? "dark" : "light");
     } else {
-      el.setAttribute('data-theme', t)
+      el.setAttribute("data-theme", t);
     }
-  }, [])
+  }, []);
 
   useEffect(() => {
-    const saved = localStorage.getItem('jinn-theme') as ThemeId | null
-    if (saved) apply(saved)
-  }, [apply])
+    const saved = localStorage.getItem("jinn-theme") as ThemeId | null;
+    if (saved) apply(saved);
+  }, [apply]);
 
   // React to OS color scheme changes when theme is "system"
   useEffect(() => {
-    const mq = window.matchMedia('(prefers-color-scheme: dark)')
+    const mq = window.matchMedia("(prefers-color-scheme: dark)");
     function handleChange() {
-      const current = localStorage.getItem('jinn-theme') as ThemeId | null
-      if (current === 'system') {
-        const el = document.documentElement
-        el.setAttribute('data-theme', mq.matches ? 'dark' : 'light')
+      const current = localStorage.getItem("jinn-theme") as ThemeId | null;
+      if (current === "system") {
+        const el = document.documentElement;
+        el.setAttribute("data-theme", mq.matches ? "dark" : "light");
       }
     }
-    mq.addEventListener('change', handleChange)
-    return () => mq.removeEventListener('change', handleChange)
-  }, [])
+    mq.addEventListener("change", handleChange);
+    return () => mq.removeEventListener("change", handleChange);
+  }, []);
 
-  return (
-    <ThemeContext.Provider value={{ theme, setTheme: apply }}>
-      {children}
-    </ThemeContext.Provider>
-  )
+  return <ThemeContext.Provider value={{ theme, setTheme: apply }}>{children}</ThemeContext.Provider>;
 }
 
 export function useTheme() {
-  return useContext(ThemeContext)
+  return useContext(ThemeContext);
 }

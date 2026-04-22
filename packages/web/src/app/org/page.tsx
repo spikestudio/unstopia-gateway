@@ -1,32 +1,28 @@
 "use client";
-import { useEffect, useState, useRef, useCallback } from "react";
 import dynamic from "next/dynamic";
-import { api } from "@/lib/api";
-import type { Employee, OrgData, OrgHierarchy } from "@/lib/api";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useSettings } from "@/app/settings-provider";
 import { EmployeeDetail } from "@/components/org/employee-detail";
-import { GridView } from "@/components/org/grid-view";
 import { FeedView } from "@/components/org/feed-view";
+import { GridView } from "@/components/org/grid-view";
 import { OrgTree } from "@/components/org/org-tree";
 import { PageLayout } from "@/components/page-layout";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { useSettings } from "@/app/settings-provider";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useBreadcrumbs } from "@/context/breadcrumb-context";
+import type { Employee, OrgData, OrgHierarchy } from "@/lib/api";
+import { api } from "@/lib/api";
 
-const OrgMap = dynamic(
-  () =>
-    import("@/components/org/org-map").then((m) => ({ default: m.OrgMap })),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="flex flex-col items-center justify-center h-full gap-[var(--space-3)] text-[var(--text-tertiary)] text-[length:var(--text-caption1)]">
-        Loading map...
-      </div>
-    ),
-  },
-);
+const OrgMap = dynamic(() => import("@/components/org/org-map").then((m) => ({ default: m.OrgMap })), {
+  ssr: false,
+  loading: () => (
+    <div className="flex flex-col items-center justify-center h-full gap-[var(--space-3)] text-[var(--text-tertiary)] text-[length:var(--text-caption1)]">
+      Loading map...
+    </div>
+  ),
+});
 
 export default function OrgPage() {
-  useBreadcrumbs([{ label: 'Organization' }])
+  useBreadcrumbs([{ label: "Organization" }]);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [hierarchy, setHierarchy] = useState<OrgHierarchy | undefined>();
   const [loading, setLoading] = useState(true);
@@ -88,7 +84,13 @@ export default function OrgPage() {
     return (
       <PageLayout>
         <div className="flex flex-col items-center justify-center h-full gap-[var(--space-4)] text-[var(--text-tertiary)]">
-          <div className="rounded-[var(--radius-md,12px)] px-[var(--space-4)] py-[var(--space-3)] text-[length:var(--text-body)] text-[var(--system-red)]" style={{ background: "color-mix(in srgb, var(--system-red) 10%, transparent)", border: "1px solid color-mix(in srgb, var(--system-red) 30%, transparent)" }}>
+          <div
+            className="rounded-[var(--radius-md,12px)] px-[var(--space-4)] py-[var(--space-3)] text-[length:var(--text-body)] text-[var(--system-red)]"
+            style={{
+              background: "color-mix(in srgb, var(--system-red) 10%, transparent)",
+              border: "1px solid color-mix(in srgb, var(--system-red) 30%, transparent)",
+            }}
+          >
             Failed to load organization: {error}
           </div>
           <button
@@ -107,11 +109,7 @@ export default function OrgPage() {
       <div className="flex h-full relative bg-[var(--bg)]">
         {/* Main content area */}
         <div className="flex-1 h-full relative">
-          <Tabs
-            value={view}
-            onValueChange={setView}
-            className="h-full flex flex-col"
-          >
+          <Tabs value={view} onValueChange={setView} className="h-full flex flex-col">
             {/* Tab bar at top */}
             <div className="absolute top-[var(--space-4)] left-[var(--space-4)] z-10">
               <TabsList>
@@ -143,11 +141,7 @@ export default function OrgPage() {
                   Loading...
                 </div>
               ) : (
-                <GridView
-                  employees={employees}
-                  selectedName={selected?.name ?? null}
-                  onSelect={handleSelectEmployee}
-                />
+                <GridView employees={employees} selectedName={selected?.name ?? null} onSelect={handleSelectEmployee} />
               )}
             </TabsContent>
 
@@ -157,11 +151,7 @@ export default function OrgPage() {
                   Loading...
                 </div>
               ) : (
-                <FeedView
-                  employees={employees}
-                  selectedName={selected?.name ?? null}
-                  onSelect={handleSelectEmployee}
-                />
+                <FeedView employees={employees} selectedName={selected?.name ?? null} onSelect={handleSelectEmployee} />
               )}
             </TabsContent>
 
@@ -191,12 +181,7 @@ export default function OrgPage() {
         </div>
 
         {/* Mobile backdrop */}
-        {selected && (
-          <div
-            className="fixed inset-0 z-30 lg:hidden bg-black/50"
-            onClick={() => setSelected(null)}
-          />
-        )}
+        {selected && <div className="fixed inset-0 z-30 lg:hidden bg-black/50" onClick={() => setSelected(null)} />}
 
         {/* Detail panel */}
         {selected && (

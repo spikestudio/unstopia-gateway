@@ -1,4 +1,6 @@
 import { App } from "@slack/bolt";
+import { logger } from "../../shared/logger.js";
+import { TMP_DIR } from "../../shared/paths.js";
 import type {
   Connector,
   ConnectorCapabilities,
@@ -8,10 +10,8 @@ import type {
   SlackConnectorConfig,
   Target,
 } from "../../shared/types.js";
+import { downloadAttachment, formatResponse } from "./format.js";
 import { buildReplyContext, deriveSessionKey, isOldSlackMessage } from "./threads.js";
-import { formatResponse, downloadAttachment } from "./format.js";
-import { TMP_DIR } from "../../shared/paths.js";
-import { logger } from "../../shared/logger.js";
 
 export class SlackConnector implements Connector {
   name = "slack";
@@ -66,7 +66,10 @@ export class SlackConnector implements Connector {
     const allowFrom = Array.isArray(config.allowFrom)
       ? config.allowFrom
       : typeof config.allowFrom === "string"
-        ? config.allowFrom.split(",").map((value) => value.trim()).filter(Boolean)
+        ? config.allowFrom
+            .split(",")
+            .map((value) => value.trim())
+            .filter(Boolean)
         : [];
     this.allowedUsers = allowFrom.length > 0 ? new Set(allowFrom) : null;
   }
@@ -91,7 +94,9 @@ export class SlackConnector implements Connector {
 
   async start() {
     this.app.message(async ({ event }) => {
-      logger.info(`[slack] Received message event: user=${(event as any).user} channel=${(event as any).channel} text="${((event as any).text || "").slice(0, 50)}"`);
+      logger.info(
+        `[slack] Received message event: user=${(event as any).user} channel=${(event as any).channel} text="${((event as any).text || "").slice(0, 50)}"`,
+      );
       // Skip bot's own messages
       if ((event as any).bot_id) {
         logger.info(`[slack] Skipping bot message`);
@@ -143,11 +148,7 @@ export class SlackConnector implements Connector {
       if ((event as any).files) {
         for (const file of (event as any).files) {
           try {
-            const localPath = await downloadAttachment(
-              file.url_private,
-              this.app.client.token!,
-              TMP_DIR,
-            );
+            const localPath = await downloadAttachment(file.url_private, this.app.client.token!, TMP_DIR);
             attachments.push({
               name: file.name,
               url: file.url_private,

@@ -1,3 +1,4 @@
+import { logger } from "../../shared/logger.js";
 import type {
   Connector,
   ConnectorCapabilities,
@@ -7,7 +8,6 @@ import type {
   ReplyContext,
   Target,
 } from "../../shared/types.js";
-import { logger } from "../../shared/logger.js";
 
 const capabilities: ConnectorCapabilities = {
   threading: false,
@@ -18,8 +18,6 @@ const capabilities: ConnectorCapabilities = {
 
 export class CronConnector implements Connector {
   name = "cron";
-  private handler: ((msg: IncomingMessage) => void) | null = null;
-
   constructor(
     private readonly connectors: Map<string, Connector>,
     private readonly delivery?: CronDelivery,
@@ -68,9 +66,8 @@ export class CronConnector implements Connector {
     await connector.editMessage(target, text);
   }
 
-  onMessage(handler: (msg: IncomingMessage) => void): void {
-    this.handler = handler;
-  }
+  // CronConnector is send-only; message reception is not applicable
+  onMessage(_handler: (msg: IncomingMessage) => void): void {}
 
   private async forward(target: Target, text: string, asReply: boolean): Promise<string | void> {
     if (!this.delivery) return undefined;

@@ -1,7 +1,7 @@
 import fs from "node:fs";
-import path from "node:path";
 import os from "node:os";
-import { INSTANCES_REGISTRY, TEMPLATE_DIR } from "../shared/paths.js";
+import path from "node:path";
+import { INSTANCES_REGISTRY } from "../shared/paths.js";
 
 export interface Instance {
   name: string;

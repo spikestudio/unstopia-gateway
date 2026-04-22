@@ -30,10 +30,7 @@ export function loadNotifications(): AppNotification[] {
 export function saveNotifications(notifications: AppNotification[]): void {
   if (typeof window === "undefined") return;
   try {
-    localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify(notifications.slice(0, MAX_NOTIFICATIONS)),
-    );
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(notifications.slice(0, MAX_NOTIFICATIONS)));
   } catch {
     // storage full or unavailable
   }
@@ -119,4 +116,3 @@ export function wsEventToNotification(
       return null;
   }
 }
-

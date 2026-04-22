@@ -1,31 +1,31 @@
-"use client"
+"use client";
 
-import { useEffect, useState, useCallback } from 'react'
-import { Plus } from 'lucide-react'
-import { api } from '@/lib/api'
-import type { Employee, OrgData } from '@/lib/api'
-import type { KanbanTicket, TicketStatus, TicketPriority } from '@/lib/kanban/types'
-import {
-  loadTickets,
-  saveTickets,
-  createTicket,
-  updateTicket,
-  moveTicket,
-  deleteTicket,
-  type KanbanStore,
-} from '@/lib/kanban/store'
-import { PageLayout, ToolbarActions } from '@/components/page-layout'
+import { Plus } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import { CreateTicketModal } from "@/components/kanban/create-ticket-modal";
+import { KanbanBoard } from "@/components/kanban/kanban-board";
+import { TicketDetailPanel } from "@/components/kanban/ticket-detail-panel";
+import { PageLayout, ToolbarActions } from "@/components/page-layout";
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
-  DialogTitle,
   DialogDescription,
   DialogFooter,
-} from '@/components/ui/dialog'
-import { KanbanBoard } from '@/components/kanban/kanban-board'
-import { CreateTicketModal } from '@/components/kanban/create-ticket-modal'
-import { TicketDetailPanel } from '@/components/kanban/ticket-detail-panel'
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import type { Employee, OrgData } from "@/lib/api";
+import { api } from "@/lib/api";
+import {
+  createTicket,
+  deleteTicket,
+  type KanbanStore,
+  loadTickets,
+  moveTicket,
+  saveTickets,
+  updateTicket,
+} from "@/lib/kanban/store";
+import type { KanbanTicket, TicketPriority, TicketStatus } from "@/lib/kanban/types";
 
 /** Delete confirmation dialog */
 function DeleteConfirmDialog({
@@ -33,25 +33,26 @@ function DeleteConfirmDialog({
   onConfirm,
   onCancel,
 }: {
-  ticket: KanbanTicket
-  onConfirm: () => void
-  onCancel: () => void
+  ticket: KanbanTicket;
+  onConfirm: () => void;
+  onCancel: () => void;
 }) {
   return (
-    <Dialog open onOpenChange={(open) => { if (!open) onCancel() }}>
+    <Dialog
+      open
+      onOpenChange={(open) => {
+        if (!open) onCancel();
+      }}
+    >
       <DialogContent
         showCloseButton={false}
         className="bg-[var(--bg)] border border-[var(--separator)] rounded-[var(--radius-lg)] shadow-[var(--shadow-card)] max-w-[400px]"
       >
         <DialogHeader>
-          <DialogTitle
-            className="text-[length:var(--text-title3)] font-[var(--weight-bold)] text-[var(--text-primary)]"
-          >
+          <DialogTitle className="text-[length:var(--text-title3)] font-[var(--weight-bold)] text-[var(--text-primary)]">
             Delete Ticket
           </DialogTitle>
-          <DialogDescription
-            className="text-[length:var(--text-footnote)] text-[var(--text-secondary)] leading-[1.5]"
-          >
+          <DialogDescription className="text-[length:var(--text-footnote)] text-[var(--text-secondary)] leading-[1.5]">
             Are you sure you want to delete &ldquo;{ticket.title}&rdquo;? This cannot be undone.
           </DialogDescription>
         </DialogHeader>
@@ -72,119 +73,125 @@ function DeleteConfirmDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
-  )
+  );
 }
 
 export default function KanbanPage() {
-  const [tickets, setTickets] = useState<KanbanStore>({})
-  const [employees, setEmployees] = useState<Employee[]>([])
-  const [departments, setDepartments] = useState<string[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [createOpen, setCreateOpen] = useState(false)
-  const [selectedTicket, setSelectedTicket] = useState<KanbanTicket | null>(null)
-  const [filterEmployeeId, setFilterEmployeeId] = useState<string | null>(null)
-  const [deleteConfirm, setDeleteConfirm] = useState<KanbanTicket | null>(null)
+  const [tickets, setTickets] = useState<KanbanStore>({});
+  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [departments, setDepartments] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [selectedTicket, setSelectedTicket] = useState<KanbanTicket | null>(null);
+  const [filterEmployeeId, setFilterEmployeeId] = useState<string | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<KanbanTicket | null>(null);
 
   /** Sync tickets to the gateway API, grouped by department */
-  const syncToApi = useCallback(async (store: KanbanStore) => {
-    // Group tickets by department
-    const byDept: Record<string, Array<{
-      id: string
-      title: string
-      description?: string
-      status: string
-      priority: string
-      assignee?: string
-      createdAt: string
-      updatedAt: string
-    }>> = {}
+  const syncToApi = useCallback(
+    async (store: KanbanStore) => {
+      // Group tickets by department
+      const byDept: Record<
+        string,
+        Array<{
+          id: string;
+          title: string;
+          description?: string;
+          status: string;
+          priority: string;
+          assignee?: string;
+          createdAt: string;
+          updatedAt: string;
+        }>
+      > = {};
 
-    for (const ticket of Object.values(store)) {
-      const dept = ticket.department
-      if (!dept) continue
-      if (!byDept[dept]) byDept[dept] = []
-      byDept[dept].push({
-        id: ticket.id,
-        title: ticket.title,
-        description: ticket.description || undefined,
-        status: ticket.status,
-        priority: ticket.priority,
-        assignee: ticket.assigneeId || undefined,
-        createdAt: new Date(ticket.createdAt).toISOString(),
-        updatedAt: new Date(ticket.updatedAt).toISOString(),
-      })
-    }
-
-    // PUT each department's board (including empty arrays to clear deleted tickets)
-    const allDepts = new Set([...Object.keys(byDept), ...departments])
-    const promises = Array.from(allDepts).map(async (dept) => {
-      try {
-        await api.updateDepartmentBoard(dept, byDept[dept] || [])
-      } catch {
-        // API unavailable — localStorage is the fallback
+      for (const ticket of Object.values(store)) {
+        const dept = ticket.department;
+        if (!dept) continue;
+        if (!byDept[dept]) byDept[dept] = [];
+        byDept[dept].push({
+          id: ticket.id,
+          title: ticket.title,
+          description: ticket.description || undefined,
+          status: ticket.status,
+          priority: ticket.priority,
+          assignee: ticket.assigneeId || undefined,
+          createdAt: new Date(ticket.createdAt).toISOString(),
+          updatedAt: new Date(ticket.updatedAt).toISOString(),
+        });
       }
-    })
 
-    await Promise.all(promises)
-  }, [departments])
+      // PUT each department's board (including empty arrays to clear deleted tickets)
+      const allDepts = new Set([...Object.keys(byDept), ...departments]);
+      const promises = Array.from(allDepts).map(async (dept) => {
+        try {
+          await api.updateDepartmentBoard(dept, byDept[dept] || []);
+        } catch {
+          // API unavailable — localStorage is the fallback
+        }
+      });
+
+      await Promise.all(promises);
+    },
+    [departments],
+  );
 
   const loadData = useCallback(() => {
-    setLoading(true)
-    setError(null)
+    setLoading(true);
+    setError(null);
 
     // Load employees from API, then load board data from department boards
     api
       .getOrg()
       .then(async (data: OrgData) => {
-        setEmployees(data.employees)
-        setDepartments(data.departments)
+        setEmployees(data.employees);
+        setDepartments(data.departments);
 
         // Load board tickets from all departments
-        const boardTickets: KanbanStore = {}
+        const boardTickets: KanbanStore = {};
         for (const dept of data.departments) {
           try {
-            const board = await api.getDepartmentBoard(dept) as unknown as Array<{
-              id: string
-              title: string
-              description?: string
-              status: string
-              priority?: string
-              assignee?: string
-              createdAt?: string
-              updatedAt?: string
-            }>
+            const board = (await api.getDepartmentBoard(dept)) as unknown as Array<{
+              id: string;
+              title: string;
+              description?: string;
+              status: string;
+              priority?: string;
+              assignee?: string;
+              createdAt?: string;
+              updatedAt?: string;
+            }>;
             if (Array.isArray(board)) {
               for (const item of board) {
                 // Map board.json status to kanban statuses
                 const statusMap: Record<string, TicketStatus> = {
-                  todo: 'todo',
-                  'in_progress': 'in-progress',
-                  'in-progress': 'in-progress',
-                  done: 'done',
-                  backlog: 'backlog',
-                  review: 'review',
-                }
-                const status = statusMap[item.status] || 'todo'
+                  todo: "todo",
+                  in_progress: "in-progress",
+                  "in-progress": "in-progress",
+                  done: "done",
+                  backlog: "backlog",
+                  review: "review",
+                };
+                const status = statusMap[item.status] || "todo";
                 const priorityMap: Record<string, TicketPriority> = {
-                  low: 'low',
-                  medium: 'medium',
-                  high: 'high',
-                }
-                const priority = priorityMap[item.priority || 'medium'] || 'medium'
+                  low: "low",
+                  medium: "medium",
+                  high: "high",
+                };
+                const priority = priorityMap[item.priority || "medium"] || "medium";
                 boardTickets[item.id] = {
                   id: item.id,
                   title: item.title,
-                  description: item.description || '',
+                  description: item.description || "",
                   status,
                   priority,
                   assigneeId: item.assignee || null,
                   department: dept,
-                  workState: 'idle',
+                  workState: "idle",
                   createdAt: item.createdAt ? new Date(item.createdAt).getTime() : Date.now(),
                   updatedAt: item.updatedAt ? new Date(item.updatedAt).getTime() : Date.now(),
                   departmentId: dept,
-                }
+                };
               }
             }
           } catch {
@@ -195,22 +202,22 @@ export default function KanbanPage() {
         // API is the sole source of truth on load. Do not merge localStorage —
         // agent-made changes (moves, deletes) are only reflected in the API,
         // and stale localStorage entries would cause ghost / wrong-state tickets.
-        setTickets(boardTickets)
+        setTickets(boardTickets);
       })
       .catch((e) => setError(e.message))
-      .finally(() => setLoading(false))
-  }, [])
+      .finally(() => setLoading(false));
+  }, []);
 
   useEffect(() => {
-    loadData()
-  }, [loadData])
+    loadData();
+  }, [loadData]);
 
   // Persist tickets to both localStorage and the API whenever the store changes
   useEffect(() => {
     if (!loading) {
-      saveTickets(tickets)
+      saveTickets(tickets);
     }
-  }, [tickets, loading])
+  }, [tickets, loading]);
 
   /**
    * Persist the current ticket store back to each department's board via the
@@ -220,17 +227,17 @@ export default function KanbanPage() {
   const persistToApi = useCallback(
     async (store: KanbanStore) => {
       // Group tickets by their department
-      const byDept: Record<string, KanbanTicket[]> = {}
+      const byDept: Record<string, KanbanTicket[]> = {};
       for (const ticket of Object.values(store)) {
-        if (!ticket.departmentId) continue
-        if (!byDept[ticket.departmentId]) byDept[ticket.departmentId] = []
-        byDept[ticket.departmentId].push(ticket)
+        if (!ticket.departmentId) continue;
+        if (!byDept[ticket.departmentId]) byDept[ticket.departmentId] = [];
+        byDept[ticket.departmentId].push(ticket);
       }
 
       // Also PUT an empty array for any department that no longer has tickets
       // so deleted tickets don't come back on the next reload
       for (const dept of departments) {
-        if (!byDept[dept]) byDept[dept] = []
+        if (!byDept[dept]) byDept[dept] = [];
       }
 
       // Write each department board; errors are non-fatal (UI still works via localStorage)
@@ -245,93 +252,89 @@ export default function KanbanPage() {
             assignee: t.assigneeId ?? undefined,
             createdAt: new Date(t.createdAt).toISOString(),
             updatedAt: new Date(t.updatedAt).toISOString(),
-          }))
+          }));
           return api.updateDepartmentBoard(dept, boardData).catch(() => {
             // Silently ignore — department dir may not exist on disk yet
-          })
+          });
         }),
-      )
+      );
     },
     [departments],
-  )
+  );
 
   // Keep selectedTicket in sync with store
   useEffect(() => {
     if (selectedTicket && tickets[selectedTicket.id]) {
-      const current = tickets[selectedTicket.id]
+      const current = tickets[selectedTicket.id];
       if (current.updatedAt !== selectedTicket.updatedAt) {
-        setSelectedTicket(current)
+        setSelectedTicket(current);
       }
     }
-  }, [tickets, selectedTicket])
+  }, [tickets, selectedTicket]);
 
   function handleCreateTicket(data: {
-    title: string
-    description: string
-    priority: TicketPriority
-    assigneeId: string | null
+    title: string;
+    description: string;
+    priority: TicketPriority;
+    assigneeId: string | null;
   }) {
     // Infer department from assignee, fallback to first known department
-    const emp = data.assigneeId ? employees.find(e => e.name === data.assigneeId) : null
-    const departmentId = emp?.department || departments[0] || null
+    const emp = data.assigneeId ? employees.find((e) => e.name === data.assigneeId) : null;
+    const departmentId = emp?.department || departments[0] || null;
 
     setTickets((prev) => {
       const next = createTicket(prev, {
         ...data,
-        status: 'backlog',
+        status: "backlog",
         department: departmentId,
         departmentId,
-      })
-      persistToApi(next)
-      return next
-    })
+      });
+      persistToApi(next);
+      return next;
+    });
   }
 
   function handleMoveTicket(ticketId: string, status: TicketStatus) {
     setTickets((prev) => {
-      const next = moveTicket(prev, ticketId, status)
-      persistToApi(next)
-      return next
-    })
+      const next = moveTicket(prev, ticketId, status);
+      persistToApi(next);
+      return next;
+    });
   }
 
   function handleDeleteTicket(ticketId: string) {
     setTickets((prev) => {
-      const next = deleteTicket(prev, ticketId)
-      persistToApi(next)
-      return next
-    })
-    setSelectedTicket(null)
-    setDeleteConfirm(null)
+      const next = deleteTicket(prev, ticketId);
+      persistToApi(next);
+      return next;
+    });
+    setSelectedTicket(null);
+    setDeleteConfirm(null);
   }
 
   function handleAssigneeChange(ticketId: string, assigneeId: string | null) {
     // Update department when assignee changes
-    const emp = assigneeId ? employees.find(e => e.name === assigneeId) : null
-    const updates: Partial<Omit<KanbanTicket, 'id' | 'createdAt'>> = { assigneeId }
+    const emp = assigneeId ? employees.find((e) => e.name === assigneeId) : null;
+    const updates: Partial<Omit<KanbanTicket, "id" | "createdAt">> = { assigneeId };
     if (emp?.department) {
-      updates.department = emp.department
+      updates.department = emp.department;
     }
     setTickets((prev) => {
-      const next = updateTicket(prev, ticketId, updates)
-      persistToApi(next)
-      return next
-    })
+      const next = updateTicket(prev, ticketId, updates);
+      persistToApi(next);
+      return next;
+    });
   }
 
   function handleTicketClick(ticket: KanbanTicket) {
-    setSelectedTicket(ticket)
+    setSelectedTicket(ticket);
   }
 
   if (error) {
     return (
       <PageLayout>
-        <div
-          className="flex flex-col items-center justify-center h-full gap-[var(--space-4)] text-[var(--text-tertiary)]"
-        >
-          <div
-            className="rounded-[var(--radius-md)] bg-[color-mix(in_srgb,var(--system-red)_10%,transparent)] border border-[color-mix(in_srgb,var(--system-red)_30%,transparent)] px-[var(--space-4)] py-[var(--space-3)] text-[length:var(--text-body)] text-[var(--system-red)]"
-          >
+        <div className="flex flex-col items-center justify-center h-full gap-[var(--space-4)] text-[var(--text-tertiary)]">
+          <div className="rounded-[var(--radius-md)] bg-[color-mix(in_srgb,var(--system-red)_10%,transparent)] border border-[color-mix(in_srgb,var(--system-red)_30%,transparent)] px-[var(--space-4)] py-[var(--space-3)] text-[length:var(--text-body)] text-[var(--system-red)]">
             Failed to load employees: {error}
           </div>
           <button
@@ -342,18 +345,18 @@ export default function KanbanPage() {
           </button>
         </div>
       </PageLayout>
-    )
+    );
   }
 
-  const ticketCount = Object.keys(tickets).length
+  const ticketCount = Object.keys(tickets).length;
 
   // Employees that have at least one ticket assigned
   const assignedEmployeeNames = new Set(
     Object.values(tickets)
       .map((t) => t.assigneeId)
       .filter(Boolean),
-  )
-  const assignedEmployees = employees.filter((e) => assignedEmployeeNames.has(e.name))
+  );
+  const assignedEmployees = employees.filter((e) => assignedEmployeeNames.has(e.name));
 
   return (
     <PageLayout>
@@ -361,19 +364,13 @@ export default function KanbanPage() {
         {/* Board area */}
         <div className="flex-1 h-full flex flex-col min-w-0">
           {/* Header */}
-          <div
-            className="px-[var(--space-5)] py-[var(--space-4)] flex items-center justify-between shrink-0 border-b border-[var(--separator)]"
-          >
+          <div className="px-[var(--space-5)] py-[var(--space-4)] flex items-center justify-between shrink-0 border-b border-[var(--separator)]">
             <div>
-              <h1
-                className="text-[length:var(--text-title2)] font-[var(--weight-bold)] text-[var(--text-primary)] m-0 tracking-[-0.3px]"
-              >
+              <h1 className="text-[length:var(--text-title2)] font-[var(--weight-bold)] text-[var(--text-primary)] m-0 tracking-[-0.3px]">
                 Kanban Board
               </h1>
-              <p
-                className="text-[length:var(--text-caption1)] text-[var(--text-tertiary)] mt-[2px] mb-0"
-              >
-                {ticketCount} ticket{ticketCount !== 1 ? 's' : ''}
+              <p className="text-[length:var(--text-caption1)] text-[var(--text-tertiary)] mt-[2px] mb-0">
+                {ticketCount} ticket{ticketCount !== 1 ? "s" : ""}
               </p>
             </div>
 
@@ -390,15 +387,13 @@ export default function KanbanPage() {
 
           {/* Employee filter bar */}
           {assignedEmployees.length > 0 && (
-            <div
-              className="flex items-center gap-[var(--space-2)] px-[var(--space-5)] py-[var(--space-2)] overflow-x-auto shrink-0"
-            >
+            <div className="flex items-center gap-[var(--space-2)] px-[var(--space-5)] py-[var(--space-2)] overflow-x-auto shrink-0">
               <button
                 onClick={() => setFilterEmployeeId(null)}
                 className={`flex items-center gap-[var(--space-1)] px-3 py-1 rounded-full border-none text-[length:var(--text-caption1)] font-semibold cursor-pointer shrink-0 ${
                   filterEmployeeId === null
-                    ? 'bg-[var(--accent)] text-white'
-                    : 'bg-[var(--fill-tertiary)] text-[var(--text-secondary)]'
+                    ? "bg-[var(--accent)] text-white"
+                    : "bg-[var(--fill-tertiary)] text-[var(--text-secondary)]"
                 }`}
               >
                 All
@@ -406,13 +401,11 @@ export default function KanbanPage() {
               {assignedEmployees.map((emp) => (
                 <button
                   key={emp.name}
-                  onClick={() =>
-                    setFilterEmployeeId(filterEmployeeId === emp.name ? null : emp.name)
-                  }
+                  onClick={() => setFilterEmployeeId(filterEmployeeId === emp.name ? null : emp.name)}
                   className={`flex items-center gap-[var(--space-1)] px-3 py-1 rounded-full border-none text-[length:var(--text-caption1)] font-semibold cursor-pointer shrink-0 ${
                     filterEmployeeId === emp.name
-                      ? 'bg-[var(--accent)] text-white'
-                      : 'bg-[var(--fill-tertiary)] text-[var(--text-secondary)]'
+                      ? "bg-[var(--accent)] text-white"
+                      : "bg-[var(--fill-tertiary)] text-[var(--text-secondary)]"
                   }`}
                 >
                   {emp.displayName}
@@ -424,9 +417,7 @@ export default function KanbanPage() {
           {/* Board */}
           <div className="flex-1 px-[var(--space-3)] min-h-0">
             {loading ? (
-              <div
-                className="flex items-center justify-center h-full text-[var(--text-tertiary)] text-[length:var(--text-caption1)]"
-              >
+              <div className="flex items-center justify-center h-full text-[var(--text-tertiary)] text-[length:var(--text-caption1)]">
                 Loading...
               </div>
             ) : (
@@ -445,10 +436,7 @@ export default function KanbanPage() {
 
         {/* Mobile backdrop */}
         {selectedTicket && (
-          <div
-            className="fixed inset-0 z-30 lg:hidden bg-black/50"
-            onClick={() => setSelectedTicket(null)}
-          />
+          <div className="fixed inset-0 z-30 lg:hidden bg-black/50" onClick={() => setSelectedTicket(null)} />
         )}
 
         {/* Detail panel */}
@@ -481,5 +469,5 @@ export default function KanbanPage() {
         />
       </div>
     </PageLayout>
-  )
+  );
 }

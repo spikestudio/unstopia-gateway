@@ -77,8 +77,7 @@ export const DEFAULT_MARKDOWN_RULES: MarkdownRule[] = [
   {
     name: "bold",
     pattern: /\*\*(.+?)\*\*/g,
-    replacement:
-      '<strong class="font-semibold" style="color:var(--text-primary)">$1</strong>',
+    replacement: '<strong class="font-semibold" style="color:var(--text-primary)">$1</strong>',
   },
   {
     name: "inline-code",
@@ -89,20 +88,17 @@ export const DEFAULT_MARKDOWN_RULES: MarkdownRule[] = [
   {
     name: "unordered-list",
     pattern: /^- (.+)$/gm,
-    replacement:
-      '<li class="ml-4 text-[15px] leading-[1.7] list-disc" style="color:var(--text-secondary)">$1</li>',
+    replacement: '<li class="ml-4 text-[15px] leading-[1.7] list-disc" style="color:var(--text-secondary)">$1</li>',
   },
   {
     name: "ordered-list",
     pattern: /^(\d+)\. (.+)$/gm,
-    replacement:
-      '<li class="ml-4 text-[15px] leading-[1.7] list-decimal" style="color:var(--text-secondary)">$2</li>',
+    replacement: '<li class="ml-4 text-[15px] leading-[1.7] list-decimal" style="color:var(--text-secondary)">$2</li>',
   },
   {
     name: "paragraph-break",
     pattern: /\n{2,}/g,
-    replacement:
-      '</p><p class="mb-3" style="color:var(--text-secondary)">',
+    replacement: '</p><p class="mb-3" style="color:var(--text-secondary)">',
   },
   {
     name: "line-break",
@@ -126,10 +122,7 @@ export interface MarkdownRendererOptions {
  * Because escaping happens first, captured groups ($1 etc.) only ever
  * contain escaped text — no raw HTML can slip through.
  */
-export function renderMarkdown(
-  text: string,
-  options?: MarkdownRendererOptions
-): string {
+export function renderMarkdown(text: string, options?: MarkdownRendererOptions): string {
   const rules = options?.rules ?? DEFAULT_MARKDOWN_RULES;
 
   // Step 1 — escape (this is the security boundary)
@@ -152,14 +145,12 @@ export const JSON_COLORIZE_RULES: MarkdownRule[] = [
   {
     name: "json-key",
     pattern: /&quot;((?:(?!&quot;).)*?)&quot;(?=\s*:)/g,
-    replacement:
-      '<span style="color:var(--accent)">&quot;$1&quot;</span>',
+    replacement: '<span style="color:var(--accent)">&quot;$1&quot;</span>',
   },
   {
     name: "json-string-value",
     pattern: /:\s*&quot;((?:(?!&quot;).)*?)&quot;/g,
-    replacement:
-      ': <span style="color:var(--system-green)">&quot;$1&quot;</span>',
+    replacement: ': <span style="color:var(--system-green)">&quot;$1&quot;</span>',
   },
   {
     name: "json-number",
@@ -174,8 +165,7 @@ export const JSON_COLORIZE_RULES: MarkdownRule[] = [
   {
     name: "json-null",
     pattern: /:\s*(null)/g,
-    replacement:
-      ': <span style="color:var(--text-tertiary)">$1</span>',
+    replacement: ': <span style="color:var(--text-tertiary)">$1</span>',
   },
 ];
 

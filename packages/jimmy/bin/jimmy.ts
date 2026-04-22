@@ -1,7 +1,7 @@
 #!/usr/bin/env node
-import { Command } from "commander";
-import path from "node:path";
 import os from "node:os";
+import path from "node:path";
+import { Command } from "commander";
 import pkg from "../package.json" with { type: "json" };
 
 const program = new Command();
@@ -102,9 +102,7 @@ program
 
 // Skills subcommands (jinn skills find|add|remove|list|update|restore)
 {
-  const skillsCmd = program
-    .command("skills")
-    .description("Manage skills from the skills.sh registry");
+  const skillsCmd = program.command("skills").description("Manage skills from the skills.sh registry");
 
   skillsCmd
     .command("find [query]")

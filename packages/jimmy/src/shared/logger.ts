@@ -9,11 +9,7 @@ let minLevel: LogLevel = "info";
 let writeToStdout = true;
 let logStream: fs.WriteStream | null = null;
 
-export function configureLogger(opts: {
-  level?: string;
-  stdout?: boolean;
-  file?: boolean;
-}) {
+export function configureLogger(opts: { level?: string; stdout?: boolean; file?: boolean }) {
   if (opts.level && opts.level in LEVELS) minLevel = opts.level as LogLevel;
   if (opts.stdout !== undefined) writeToStdout = opts.stdout;
   if (opts.file !== false) {

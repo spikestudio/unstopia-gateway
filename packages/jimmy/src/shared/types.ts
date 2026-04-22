@@ -166,8 +166,8 @@ export interface Goal {
   id: string;
   title: string;
   description: string | null;
-  status: 'not_started' | 'in_progress' | 'at_risk' | 'completed';
-  level: 'company' | 'department' | 'task';
+  status: "not_started" | "in_progress" | "at_risk" | "completed";
+  level: "company" | "department" | "task";
   parentId: string | null;
   department: string | null;
   owner: string | null;
@@ -309,7 +309,7 @@ export interface McpGlobalConfig {
   custom?: Record<string, (McpServerStdioConfig | McpServerUrlConfig) & { enabled?: boolean }>;
 }
 
-export interface WebConnectorConfig {}
+export type WebConnectorConfig = {};
 
 export interface SlackConnectorConfig {
   /** Unique instance identifier (e.g. "slack-support") */
@@ -327,7 +327,7 @@ export interface DiscordConnectorConfig {
   id?: string;
   /** Employee to handle messages from this connector instance */
   employee?: string;
-  botToken?: string;       // Make optional — not needed in proxy mode
+  botToken?: string; // Make optional — not needed in proxy mode
   allowFrom?: string | string[];
   ignoreOldMessagesOnBoot?: boolean;
   guildId?: string;
@@ -414,8 +414,8 @@ export interface JinnConfig {
     alertConnector?: string;
   };
   notifications?: {
-    connector?: string;  // defaults to "discord"
-    channel?: string;    // Discord channel ID for admin notifications
+    connector?: string; // defaults to "discord"
+    channel?: string; // Discord channel ID for admin notifications
   };
   portal?: PortalConfig;
   context?: {

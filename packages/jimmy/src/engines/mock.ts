@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import type { Engine, EngineRunOpts, EngineResult } from "../shared/types.js";
+import type { Engine, EngineResult, EngineRunOpts } from "../shared/types.js";
 
 const CANNED_RESPONSES = [
   "This is a mock engine response for testing purposes.",
@@ -27,9 +27,7 @@ export class MockEngine implements Engine {
     const sessionId = opts.resumeSessionId || opts.sessionId || randomUUID();
 
     // Pick the next canned response (cycles through the list)
-    const response =
-      this.fixedResponse ??
-      CANNED_RESPONSES[this.responseIndex++ % CANNED_RESPONSES.length];
+    const response = this.fixedResponse ?? CANNED_RESPONSES[this.responseIndex++ % CANNED_RESPONSES.length];
 
     if (opts.onStream) {
       // Simulate word-by-word streaming with small delays

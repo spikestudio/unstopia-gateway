@@ -1,31 +1,25 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import Link from "next/link";
-import { api } from "@/lib/api";
-import { useGateway } from "@/hooks/use-gateway";
-import { useSettings } from "@/app/settings-provider";
-import { PageLayout } from "@/components/page-layout";
-import { useBreadcrumbs } from "@/context/breadcrumb-context";
 import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardContent,
-  CardDescription,
-} from "@/components/ui/card";
-import {
-  Clock,
-  Users,
-  Cpu,
+  Activity,
   CalendarClock,
+  Clock,
+  Cpu,
+  DollarSign,
+  KanbanSquare,
   MessageSquare,
   Network,
-  KanbanSquare,
   Timer,
-  DollarSign,
-  Activity,
+  Users,
 } from "lucide-react";
+import Link from "next/link";
+import { useEffect, useState } from "react";
+import { useSettings } from "@/app/settings-provider";
+import { PageLayout } from "@/components/page-layout";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useBreadcrumbs } from "@/context/breadcrumb-context";
+import { useGateway } from "@/hooks/use-gateway";
+import { api } from "@/lib/api";
 
 interface StatusData {
   status?: string;
@@ -91,7 +85,7 @@ function getQuickLinks(portalName: string) {
 }
 
 export default function DashboardPage() {
-  useBreadcrumbs([{ label: 'Dashboard' }])
+  useBreadcrumbs([{ label: "Dashboard" }]);
   const { settings } = useSettings();
   const portalName = settings.portalName ?? "Jinn";
   const [status, setStatus] = useState<StatusData | null>(null);
@@ -131,9 +125,7 @@ export default function DashboardPage() {
       .catch(() => {});
   }, []);
 
-  const defaultEngine = status?.engines
-    ? Object.keys(status.engines as Record<string, unknown>)[0] ?? "--"
-    : "--";
+  const defaultEngine = status?.engines ? (Object.keys(status.engines as Record<string, unknown>)[0] ?? "--") : "--";
 
   // Merge live WebSocket events with initial activity from API
   const allEvents = events.length > 0 ? events : initialActivity;
@@ -156,10 +148,8 @@ export default function DashboardPage() {
           <div
             className="mb-[var(--space-4)] rounded-[var(--radius-md,12px)] border px-[var(--space-4)] py-[var(--space-3)] text-[length:var(--text-body)] text-[var(--system-red)]"
             style={{
-              background:
-                "color-mix(in srgb, var(--system-red) 10%, transparent)",
-              borderColor:
-                "color-mix(in srgb, var(--system-red) 30%, transparent)",
+              background: "color-mix(in srgb, var(--system-red) 10%, transparent)",
+              borderColor: "color-mix(in srgb, var(--system-red) 30%, transparent)",
             }}
           >
             Failed to connect: {error}
@@ -173,8 +163,7 @@ export default function DashboardPage() {
               <div
                 className="w-10 h-10 rounded-[var(--radius-md,12px)] flex items-center justify-center text-[var(--system-blue)]"
                 style={{
-                  background:
-                    "color-mix(in srgb, var(--system-blue) 12%, transparent)",
+                  background: "color-mix(in srgb, var(--system-blue) 12%, transparent)",
                 }}
               >
                 <Clock size={20} />
@@ -184,9 +173,7 @@ export default function DashboardPage() {
                   Uptime
                 </p>
                 <p className="text-[length:var(--text-title3)] font-[var(--weight-semibold)] text-[var(--text-primary)]">
-                  {status?.uptime != null
-                    ? formatUptime(status.uptime as number)
-                    : "--"}
+                  {status?.uptime != null ? formatUptime(status.uptime as number) : "--"}
                 </p>
               </div>
             </CardContent>
@@ -197,8 +184,7 @@ export default function DashboardPage() {
               <div
                 className="w-10 h-10 rounded-[var(--radius-md,12px)] flex items-center justify-center text-[var(--system-green)]"
                 style={{
-                  background:
-                    "color-mix(in srgb, var(--system-green) 12%, transparent)",
+                  background: "color-mix(in srgb, var(--system-green) 12%, transparent)",
                 }}
               >
                 <Users size={20} />
@@ -219,8 +205,7 @@ export default function DashboardPage() {
               <div
                 className="w-10 h-10 rounded-[var(--radius-md,12px)] flex items-center justify-center text-[var(--accent)]"
                 style={{
-                  background:
-                    "color-mix(in srgb, var(--accent) 12%, transparent)",
+                  background: "color-mix(in srgb, var(--accent) 12%, transparent)",
                 }}
               >
                 <Cpu size={20} />
@@ -241,8 +226,7 @@ export default function DashboardPage() {
               <div
                 className="w-10 h-10 rounded-[var(--radius-md,12px)] flex items-center justify-center text-[var(--system-orange)]"
                 style={{
-                  background:
-                    "color-mix(in srgb, var(--system-orange) 12%, transparent)",
+                  background: "color-mix(in srgb, var(--system-orange) 12%, transparent)",
                 }}
               >
                 <CalendarClock size={20} />
@@ -268,11 +252,7 @@ export default function DashboardPage() {
             {getQuickLinks(portalName).map((link) => {
               const Icon = link.icon;
               return (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className="no-underline"
-                >
+                <Link key={link.href} href={link.href} className="no-underline">
                   <Card className="py-4 h-full cursor-pointer transition-colors hover:border-[var(--accent)]">
                     <CardContent className="flex flex-col gap-2">
                       <div className="w-9 h-9 rounded-[var(--radius-sm,8px)] bg-[var(--fill-secondary)] flex items-center justify-center text-[var(--accent)]">
@@ -302,9 +282,7 @@ export default function DashboardPage() {
             </h3>
             <span
               className={`w-2 h-2 rounded-full inline-block ${
-                connected
-                  ? "bg-[var(--system-green)]"
-                  : "bg-[var(--text-quaternary)]"
+                connected ? "bg-[var(--system-green)]" : "bg-[var(--text-quaternary)]"
               }`}
             />
           </div>
@@ -319,17 +297,12 @@ export default function DashboardPage() {
                   <div
                     key={i}
                     className="flex items-start gap-[var(--space-3)] px-[var(--space-4)] py-[var(--space-3)]"
-                    style={
-                      i < recentEvents.length - 1
-                        ? { borderBottom: "1px solid var(--separator)" }
-                        : undefined
-                    }
+                    style={i < recentEvents.length - 1 ? { borderBottom: "1px solid var(--separator)" } : undefined}
                   >
                     <span
                       className="text-[length:var(--text-caption2)] font-[family-name:var(--font-mono)] text-[var(--accent)] rounded-[var(--radius-sm,8px)] whitespace-nowrap mt-px px-2 py-0.5"
                       style={{
-                        background:
-                          "color-mix(in srgb, var(--accent) 10%, transparent)",
+                        background: "color-mix(in srgb, var(--accent) 10%, transparent)",
                       }}
                     >
                       {evt.event}

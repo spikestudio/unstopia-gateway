@@ -35,9 +35,7 @@ export function buildReplyContext(event: SlackMessageEventLike): ReplyContext {
   // For channel messages, always set thread so bot replies in a thread
   // For root messages: thread = ts (starts a thread under the root)
   // For thread replies: thread = thread_ts (continues existing thread)
-  const thread = event.thread_ts && event.thread_ts !== event.ts
-    ? event.thread_ts
-    : event.ts ?? null;
+  const thread = event.thread_ts && event.thread_ts !== event.ts ? event.thread_ts : (event.ts ?? null);
 
   return {
     channel: event.channel,

@@ -1,12 +1,13 @@
 "use client";
-import React, { useState } from "react";
+import type React from "react";
+import { useState } from "react";
 import type { Employee, OrgData, OrgHierarchy } from "@/lib/api";
 
 const rankStyles: Record<string, React.CSSProperties> = {
-  executive: { background: 'color-mix(in srgb, var(--system-purple) 15%, transparent)', color: 'var(--system-purple)' },
-  manager: { background: 'color-mix(in srgb, var(--accent) 15%, transparent)', color: 'var(--accent)' },
-  senior: { background: 'color-mix(in srgb, var(--system-green) 15%, transparent)', color: 'var(--system-green)' },
-  employee: { background: 'var(--fill-tertiary)', color: 'var(--text-tertiary)' },
+  executive: { background: "color-mix(in srgb, var(--system-purple) 15%, transparent)", color: "var(--system-purple)" },
+  manager: { background: "color-mix(in srgb, var(--accent) 15%, transparent)", color: "var(--accent)" },
+  senior: { background: "color-mix(in srgb, var(--system-green) 15%, transparent)", color: "var(--system-green)" },
+  employee: { background: "var(--fill-tertiary)", color: "var(--text-tertiary)" },
 };
 
 const engineIcons: Record<string, string> = {
@@ -17,10 +18,7 @@ const engineIcons: Record<string, string> = {
 function RankBadge({ rank }: { rank: string }) {
   const style = rankStyles[rank] || rankStyles.employee;
   return (
-    <span
-      className="text-[10px] font-medium py-[2px] px-[6px] rounded-full"
-      style={style}
-    >
+    <span className="text-[10px] font-medium py-[2px] px-[6px] rounded-full" style={style}>
       {rank}
     </span>
   );
@@ -48,11 +46,15 @@ function EmployeeNode({
       onClick={() => onSelect(employee.name)}
       className="w-full text-left flex items-center gap-2 py-[6px] px-3 rounded-[var(--radius-md)] text-[length:var(--text-subheadline)] border-none cursor-pointer transition-[background,color] duration-150 ease-in-out"
       style={{
-        background: selected ? 'var(--accent-fill)' : 'transparent',
-        color: selected ? 'var(--accent)' : 'var(--text-secondary)',
+        background: selected ? "var(--accent-fill)" : "transparent",
+        color: selected ? "var(--accent)" : "var(--text-secondary)",
       }}
-      onMouseEnter={(e) => { if (!selected) e.currentTarget.style.background = 'var(--fill-tertiary)' }}
-      onMouseLeave={(e) => { if (!selected) e.currentTarget.style.background = 'transparent' }}
+      onMouseEnter={(e) => {
+        if (!selected) e.currentTarget.style.background = "var(--fill-tertiary)";
+      }}
+      onMouseLeave={(e) => {
+        if (!selected) e.currentTarget.style.background = "transparent";
+      }}
     >
       <span className="flex-1 overflow-hidden text-ellipsis whitespace-nowrap">
         {employee.displayName || employee.name}
@@ -102,11 +104,15 @@ function HierarchyNode({
           onClick={() => onSelectEmployee(employee.name)}
           className="flex-1 text-left flex items-center gap-2 py-[6px] px-2 rounded-[var(--radius-md)] text-[length:var(--text-subheadline)] border-none cursor-pointer transition-[background,color] duration-150 ease-in-out"
           style={{
-            background: selectedEmployee === employee.name ? 'var(--accent-fill)' : 'transparent',
-            color: selectedEmployee === employee.name ? 'var(--accent)' : 'var(--text-secondary)',
+            background: selectedEmployee === employee.name ? "var(--accent-fill)" : "transparent",
+            color: selectedEmployee === employee.name ? "var(--accent)" : "var(--text-secondary)",
           }}
-          onMouseEnter={(e) => { if (selectedEmployee !== employee.name) e.currentTarget.style.background = 'var(--fill-tertiary)' }}
-          onMouseLeave={(e) => { if (selectedEmployee !== employee.name) e.currentTarget.style.background = 'transparent' }}
+          onMouseEnter={(e) => {
+            if (selectedEmployee !== employee.name) e.currentTarget.style.background = "var(--fill-tertiary)";
+          }}
+          onMouseLeave={(e) => {
+            if (selectedEmployee !== employee.name) e.currentTarget.style.background = "transparent";
+          }}
         >
           <span className="flex-1 overflow-hidden text-ellipsis whitespace-nowrap">
             {employee.displayName || employee.name}
@@ -120,17 +126,19 @@ function HierarchyNode({
           {employee.engine && <EngineIcon engine={employee.engine} />}
         </button>
       </div>
-      {expanded && hasChildren && directReports.map((childName) => (
-        <HierarchyNode
-          key={childName}
-          name={childName}
-          employees={employees}
-          hierarchy={hierarchy}
-          depth={depth + 1}
-          selectedEmployee={selectedEmployee}
-          onSelectEmployee={onSelectEmployee}
-        />
-      ))}
+      {expanded &&
+        hasChildren &&
+        directReports.map((childName) => (
+          <HierarchyNode
+            key={childName}
+            name={childName}
+            employees={employees}
+            hierarchy={hierarchy}
+            depth={depth + 1}
+            selectedEmployee={selectedEmployee}
+            onSelectEmployee={onSelectEmployee}
+          />
+        ))}
     </div>
   );
 }
@@ -167,11 +175,15 @@ function DepartmentNode({
           onClick={() => onSelectDepartment(name)}
           className="flex-1 text-left py-[6px] px-2 rounded-[var(--radius-md)] text-[length:var(--text-subheadline)] font-medium border-none cursor-pointer transition-[background,color] duration-150 ease-in-out"
           style={{
-            background: isSelected ? 'var(--accent-fill)' : 'transparent',
-            color: isSelected ? 'var(--accent)' : 'var(--text-primary)',
+            background: isSelected ? "var(--accent-fill)" : "transparent",
+            color: isSelected ? "var(--accent)" : "var(--text-primary)",
           }}
-          onMouseEnter={(e) => { if (!isSelected) e.currentTarget.style.background = 'var(--fill-tertiary)' }}
-          onMouseLeave={(e) => { if (!isSelected) e.currentTarget.style.background = 'transparent' }}
+          onMouseEnter={(e) => {
+            if (!isSelected) e.currentTarget.style.background = "var(--fill-tertiary)";
+          }}
+          onMouseLeave={(e) => {
+            if (!isSelected) e.currentTarget.style.background = "transparent";
+          }}
         >
           {name}
           <span className="text-[length:var(--text-caption1)] text-[var(--text-quaternary)] ml-[6px]">
@@ -245,9 +257,7 @@ export function OrgTree({
   const [viewMode, setViewMode] = useState<"hierarchy" | "department">(hasHierarchy ? "hierarchy" : "department");
 
   if (viewMode === "hierarchy" && data.hierarchy) {
-    const rootEmployees = data.employees.filter(
-      (e) => e.parentName === null || e.parentName === undefined,
-    );
+    const rootEmployees = data.employees.filter((e) => e.parentName === null || e.parentName === undefined);
 
     return (
       <div className="flex flex-col gap-1">

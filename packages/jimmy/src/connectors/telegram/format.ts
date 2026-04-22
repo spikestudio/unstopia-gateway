@@ -17,14 +17,14 @@ export function markdownToTelegram(text: string): string {
       return (
         segment
           // Headings: ## text → bold (placeholder to avoid italic capture)
-          .replace(/^(#{1,6})\s+(.+)$/gm, (_match, _hashes, content) => `\x00BOLD${content}\x00BOLD`)
+          .replace(/^(#{1,6})\s+(.+)$/gm, (_match, _hashes, content) => `\u00B6BOLD${content}\u00B6BOLD`)
           // Bold: **text** or __text__ → placeholder
-          .replace(/\*\*(.+?)\*\*/g, "\x00BOLD$1\x00BOLD")
-          .replace(/__(.+?)__/g, "\x00BOLD$1\x00BOLD")
+          .replace(/\*\*(.+?)\*\*/g, "\u00B6BOLD$1\u00B6BOLD")
+          .replace(/__(.+?)__/g, "\u00B6BOLD$1\u00B6BOLD")
           // Italic: *text* → _text_ (after bold is extracted)
           .replace(/\*(.+?)\*/g, "_$1_")
           // Restore bold markers → *text*
-          .replace(/\x00BOLD(.+?)\x00BOLD/g, "*$1*")
+          .replace(/\u00B6BOLD(.+?)\u00B6BOLD/g, "*$1*")
           // Strikethrough: ~~text~~ → ~text~
           .replace(/~~(.+?)~~/g, "~$1~")
           // Bullet lists: - item or * item → • item

@@ -1,50 +1,60 @@
-"use client"
+"use client";
 
-import { useCallback, useEffect, useState } from "react"
-import { useRouter } from "next/navigation"
 import {
-  Home, MessageSquare, Users, LayoutGrid, Clock, DollarSign,
-  Activity, Zap, Settings, Plus, Target, Hash,
-} from "lucide-react"
+  Activity,
+  Clock,
+  DollarSign,
+  Hash,
+  Home,
+  LayoutGrid,
+  MessageSquare,
+  Plus,
+  Settings,
+  Target,
+  Users,
+  Zap,
+} from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useState } from "react";
+import { useSettings } from "@/app/settings-provider";
 import {
   Command,
-  CommandInput,
-  CommandList,
   CommandEmpty,
   CommandGroup,
+  CommandInput,
   CommandItem,
+  CommandList,
   CommandSeparator,
-} from "@/components/ui/command"
-import { Dialog, DialogContent } from "@/components/ui/dialog"
-import { useSettings } from "@/app/settings-provider"
-import { useOrg } from "@/hooks/use-employees"
-import { useCronJobs } from "@/hooks/use-cron"
-import { useSessions } from "@/hooks/use-sessions"
-import { useSkills } from "@/hooks/use-skills"
+} from "@/components/ui/command";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { useCronJobs } from "@/hooks/use-cron";
+import { useOrg } from "@/hooks/use-employees";
+import { useSessions } from "@/hooks/use-sessions";
+import { useSkills } from "@/hooks/use-skills";
 
-const RECENT_KEY = "jinn-command-recent"
-const MAX_RECENT = 5
+const RECENT_KEY = "jinn-command-recent";
+const MAX_RECENT = 5;
 
 interface RecentItem {
-  id: string
-  label: string
-  href: string
-  type: string
+  id: string;
+  label: string;
+  href: string;
+  type: string;
 }
 
 function loadRecent(): RecentItem[] {
   try {
-    const raw = localStorage.getItem(RECENT_KEY)
-    return raw ? JSON.parse(raw) : []
+    const raw = localStorage.getItem(RECENT_KEY);
+    return raw ? JSON.parse(raw) : [];
   } catch {
-    return []
+    return [];
   }
 }
 
 function saveRecent(item: RecentItem) {
-  const items = loadRecent().filter(r => r.id !== item.id)
-  items.unshift(item)
-  localStorage.setItem(RECENT_KEY, JSON.stringify(items.slice(0, MAX_RECENT)))
+  const items = loadRecent().filter((r) => r.id !== item.id);
+  items.unshift(item);
+  localStorage.setItem(RECENT_KEY, JSON.stringify(items.slice(0, MAX_RECENT)));
 }
 
 const STATIC_PAGES = [
@@ -58,49 +68,50 @@ const STATIC_PAGES = [
   { id: "page-skills", label: "Skills", icon: Zap, href: "/skills" },
   { id: "page-settings", label: "Settings", icon: Settings, href: "/settings" },
   { id: "page-goals", label: "Goals", icon: Target, href: "/goals" },
-]
+];
 
 export function GlobalSearch() {
-  const { settings } = useSettings()
-  const portalName = settings.portalName ?? "Jinn"
-  const [open, setOpen] = useState(false)
-  const [recents, setRecents] = useState<RecentItem[]>([])
-  const router = useRouter()
+  const { settings } = useSettings();
+  const portalName = settings.portalName ?? "Jinn";
+  const [open, setOpen] = useState(false);
+  const [recents, setRecents] = useState<RecentItem[]>([]);
+  const router = useRouter();
 
-  const { data: orgData } = useOrg()
-  const { data: cronJobs } = useCronJobs()
-  const { data: sessions } = useSessions()
-  const { data: skills } = useSkills()
+  const { data: orgData } = useOrg();
+  const { data: cronJobs } = useCronJobs();
+  const { data: sessions } = useSessions();
+  const { data: skills } = useSkills();
 
   // Cmd+K toggle
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
       if ((e.metaKey || e.ctrlKey) && e.key === "k") {
-        e.preventDefault()
-        setOpen(prev => !prev)
+        e.preventDefault();
+        setOpen((prev) => !prev);
       }
     }
-    window.addEventListener("keydown", handleKeyDown)
-    return () => window.removeEventListener("keydown", handleKeyDown)
-  }, [])
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
 
   // Load recents when opened
   useEffect(() => {
-    if (open) setRecents(loadRecent())
-  }, [open])
+    if (open) setRecents(loadRecent());
+  }, [open]);
 
-  const navigate = useCallback((href: string, item: RecentItem) => {
-    saveRecent(item)
-    setOpen(false)
-    router.push(href)
-  }, [router])
+  const navigate = useCallback(
+    (href: string, item: RecentItem) => {
+      saveRecent(item);
+      setOpen(false);
+      router.push(href);
+    },
+    [router],
+  );
 
-  const employeeNames: string[] = Array.isArray(orgData?.employees)
-    ? orgData.employees.map((e) => e.name)
-    : []
-  const crons = Array.isArray(cronJobs) ? cronJobs : []
-  const sessionList = Array.isArray(sessions) ? sessions.slice(0, 10) : []
-  const skillList = Array.isArray(skills) ? skills.slice(0, 10) : []
+  const employeeNames: string[] = Array.isArray(orgData?.employees) ? orgData.employees.map((e) => e.name) : [];
+  const crons = Array.isArray(cronJobs) ? cronJobs : [];
+  const sessionList = Array.isArray(sessions) ? sessions.slice(0, 10) : [];
+  const skillList = Array.isArray(skills) ? skills.slice(0, 10) : [];
 
   return (
     <>
@@ -115,11 +126,8 @@ export function GlobalSearch() {
               {recents.length > 0 && (
                 <>
                   <CommandGroup heading="Recent">
-                    {recents.map(item => (
-                      <CommandItem
-                        key={item.id}
-                        onSelect={() => navigate(item.href, item)}
-                      >
+                    {recents.map((item) => (
+                      <CommandItem key={item.id} onSelect={() => navigate(item.href, item)}>
                         <Hash size={16} className="mr-2 opacity-50" />
                         {item.label}
                       </CommandItem>
@@ -131,10 +139,12 @@ export function GlobalSearch() {
 
               {/* Pages */}
               <CommandGroup heading="Pages">
-                {STATIC_PAGES.map(page => (
+                {STATIC_PAGES.map((page) => (
                   <CommandItem
                     key={page.id}
-                    onSelect={() => navigate(page.href, { id: page.id, label: page.label, href: page.href, type: 'page' })}
+                    onSelect={() =>
+                      navigate(page.href, { id: page.id, label: page.label, href: page.href, type: "page" })
+                    }
                   >
                     <page.icon size={16} className="mr-2 opacity-50" />
                     {page.label}
@@ -144,7 +154,12 @@ export function GlobalSearch() {
 
               {/* Actions */}
               <CommandGroup heading="Actions">
-                <CommandItem onSelect={() => { setOpen(false); router.push('/chat') }}>
+                <CommandItem
+                  onSelect={() => {
+                    setOpen(false);
+                    router.push("/chat");
+                  }}
+                >
                   <Plus size={16} className="mr-2 opacity-50" />
                   New Chat
                 </CommandItem>
@@ -156,7 +171,9 @@ export function GlobalSearch() {
                   {employeeNames.slice(0, 8).map((name) => (
                     <CommandItem
                       key={name}
-                      onSelect={() => navigate('/org', { id: `emp-${name}`, label: name, href: '/org', type: 'employee' })}
+                      onSelect={() =>
+                        navigate("/org", { id: `emp-${name}`, label: name, href: "/org", type: "employee" })
+                      }
                     >
                       <Users size={16} className="mr-2 opacity-50" />
                       {name}
@@ -169,17 +186,19 @@ export function GlobalSearch() {
               {sessionList.length > 0 && (
                 <CommandGroup heading="Recent Sessions">
                   {sessionList.map((session) => {
-                    const id = String(session.id ?? '')
-                    const title = String(session.title ?? session.id ?? '').slice(0, 50)
+                    const id = String(session.id ?? "");
+                    const title = String(session.title ?? session.id ?? "").slice(0, 50);
                     return (
                       <CommandItem
                         key={id}
-                        onSelect={() => navigate('/chat', { id: `session-${id}`, label: title, href: '/chat', type: 'session' })}
+                        onSelect={() =>
+                          navigate("/chat", { id: `session-${id}`, label: title, href: "/chat", type: "session" })
+                        }
                       >
                         <MessageSquare size={16} className="mr-2 opacity-50" />
                         {title}
                       </CommandItem>
-                    )
+                    );
                   })}
                 </CommandGroup>
               )}
@@ -188,17 +207,19 @@ export function GlobalSearch() {
               {crons.length > 0 && (
                 <CommandGroup heading="Cron Jobs">
                   {crons.slice(0, 6).map((job) => {
-                    const id = String(job.id ?? '')
-                    const name = String(job.name ?? id)
+                    const id = String(job.id ?? "");
+                    const name = String(job.name ?? id);
                     return (
                       <CommandItem
                         key={id}
-                        onSelect={() => navigate('/cron', { id: `cron-${id}`, label: name, href: '/cron', type: 'cron' })}
+                        onSelect={() =>
+                          navigate("/cron", { id: `cron-${id}`, label: name, href: "/cron", type: "cron" })
+                        }
                       >
                         <Clock size={16} className="mr-2 opacity-50" />
                         {name}
                       </CommandItem>
-                    )
+                    );
                   })}
                 </CommandGroup>
               )}
@@ -207,16 +228,18 @@ export function GlobalSearch() {
               {skillList.length > 0 && (
                 <CommandGroup heading="Skills">
                   {skillList.map((skill) => {
-                    const name = String(skill.name ?? '')
+                    const name = String(skill.name ?? "");
                     return (
                       <CommandItem
                         key={name}
-                        onSelect={() => navigate('/skills', { id: `skill-${name}`, label: name, href: '/skills', type: 'skill' })}
+                        onSelect={() =>
+                          navigate("/skills", { id: `skill-${name}`, label: name, href: "/skills", type: "skill" })
+                        }
                       >
                         <Zap size={16} className="mr-2 opacity-50" />
                         {name}
                       </CommandItem>
-                    )
+                    );
                   })}
                 </CommandGroup>
               )}
@@ -225,5 +248,5 @@ export function GlobalSearch() {
         </DialogContent>
       </Dialog>
     </>
-  )
+  );
 }

@@ -1,5 +1,5 @@
-import { describe, it, expect } from "vitest";
-import { markdownToTelegram, formatResponse } from "../format.js";
+import { describe, expect, it } from "vitest";
+import { formatResponse, markdownToTelegram } from "../format.js";
 
 describe("markdownToTelegram", () => {
   describe("headings", () => {
@@ -34,23 +34,17 @@ describe("markdownToTelegram", () => {
 
   describe("links", () => {
     it("converts markdown links to Telegram inline links", () => {
-      expect(markdownToTelegram("[Google](https://google.com)")).toBe(
-        "[Google](https://google.com)",
-      );
+      expect(markdownToTelegram("[Google](https://google.com)")).toBe("[Google](https://google.com)");
     });
   });
 
   describe("bullet lists", () => {
     it("converts - items to bullet points", () => {
-      expect(markdownToTelegram("- item one\n- item two")).toBe(
-        "• item one\n• item two",
-      );
+      expect(markdownToTelegram("- item one\n- item two")).toBe("• item one\n• item two");
     });
 
     it("converts * items to bullet points", () => {
-      expect(markdownToTelegram("* item one\n* item two")).toBe(
-        "• item one\n• item two",
-      );
+      expect(markdownToTelegram("* item one\n* item two")).toBe("• item one\n• item two");
     });
 
     it("preserves indentation", () => {

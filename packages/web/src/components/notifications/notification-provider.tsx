@@ -1,15 +1,15 @@
 "use client";
 
-import { useState, useCallback, useEffect, useRef, type ReactNode } from "react";
-import { createGatewaySocket } from "@/lib/ws";
+import { type ReactNode, useCallback, useEffect, useRef, useState } from "react";
+import { NotificationContext } from "@/hooks/use-notifications";
 import {
   type AppNotification,
+  generateId,
   loadNotifications,
   saveNotifications,
-  generateId,
   wsEventToNotification,
 } from "@/lib/notifications";
-import { NotificationContext } from "@/hooks/use-notifications";
+import { createGatewaySocket } from "@/lib/ws";
 
 const TOAST_DURATION_MS = 5_000;
 
@@ -42,25 +42,21 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const addNotification = useCallback(
-    (event: string, payload: Record<string, unknown>) => {
-      const template = wsEventToNotification(event, payload);
-      if (!template) return;
+  const addNotification = useCallback((event: string, payload: Record<string, unknown>) => {
+    const template = wsEventToNotification(event, payload);
+    if (!template) return;
 
-      const notif: AppNotification = {
-        ...template,
-        id: generateId(),
-        timestamp: Date.now(),
-        read: false,
-      };
+    const notif: AppNotification = {
+      ...template,
+      id: generateId(),
+      timestamp: Date.now(),
+      read: false,
+    };
 
-      // Add to persistent notifications
-      setNotifications((prev) => [notif, ...prev].slice(0, 50));
-      initialized.current = true;
-
-    },
-    [],
-  );
+    // Add to persistent notifications
+    setNotifications((prev) => [notif, ...prev].slice(0, 50));
+    initialized.current = true;
+  }, []);
 
   // Subscribe to WebSocket events
   const addNotificationRef = useRef(addNotification);

@@ -1,4 +1,4 @@
-import type { Employee, OrgNode, OrgWarning, OrgHierarchy } from "../shared/types.js";
+import type { Employee, OrgHierarchy, OrgNode, OrgWarning } from "../shared/types.js";
 
 const RANK_PRIORITY: Record<string, number> = {
   executive: 0,
@@ -7,25 +7,19 @@ const RANK_PRIORITY: Record<string, number> = {
   employee: 3,
 };
 
-export function getPrimaryParent(
-  reportsTo: string | string[] | undefined,
-): string | undefined {
+export function getPrimaryParent(reportsTo: string | string[] | undefined): string | undefined {
   if (reportsTo === undefined) return undefined;
   if (typeof reportsTo === "string") return reportsTo;
   return reportsTo.length > 0 ? reportsTo[0] : undefined;
 }
 
-export function getAllParents(
-  reportsTo: string | string[] | undefined,
-): string[] {
+export function getAllParents(reportsTo: string | string[] | undefined): string[] {
   if (reportsTo === undefined) return [];
   if (typeof reportsTo === "string") return [reportsTo];
   return [...reportsTo];
 }
 
-export function resolveOrgHierarchy(
-  registry: Map<string, Employee>,
-): OrgHierarchy {
+export function resolveOrgHierarchy(registry: Map<string, Employee>): OrgHierarchy {
   const warnings: OrgWarning[] = [];
   const parentMap = new Map<string, string | null>();
 
@@ -55,11 +49,21 @@ export function resolveOrgHierarchy(
     const primary = getPrimaryParent(emp.reportsTo);
     if (primary === undefined) continue;
     if (primary === name) {
-      warnings.push({ employee: name, type: "self_ref", message: `"${name}" lists itself as reportsTo.`, ref: primary });
+      warnings.push({
+        employee: name,
+        type: "self_ref",
+        message: `"${name}" lists itself as reportsTo.`,
+        ref: primary,
+      });
       continue;
     }
     if (!registry.has(primary)) {
-      warnings.push({ employee: name, type: "broken_ref", message: `"${name}" reports to "${primary}" which does not exist.`, ref: primary });
+      warnings.push({
+        employee: name,
+        type: "broken_ref",
+        message: `"${name}" reports to "${primary}" which does not exist.`,
+        ref: primary,
+      });
       continue;
     }
     parentMap.set(name, primary);
@@ -68,11 +72,12 @@ export function resolveOrgHierarchy(
   // Step 3: Smart defaults for unresolved
   for (const [name, emp] of registry) {
     if (parentMap.has(name)) continue;
-    if (name === rootName) { parentMap.set(name, null); continue; }
+    if (name === rootName) {
+      parentMap.set(name, null);
+      continue;
+    }
 
-    const deptMembers = [...registry.values()].filter(
-      (m) => m.department === emp.department && m.name !== name,
-    );
+    const deptMembers = [...registry.values()].filter((m) => m.department === emp.department && m.name !== name);
     const empRank = RANK_PRIORITY[emp.rank] ?? 3;
     const candidates = deptMembers
       .filter((m) => (RANK_PRIORITY[m.rank] ?? 3) < empRank)

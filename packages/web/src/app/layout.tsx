@@ -1,17 +1,17 @@
-import type { Metadata, Viewport } from "next"
-import { ClientProviders } from "./client-providers"
-import "./globals.css"
+import type { Metadata, Viewport } from "next";
+import { ClientProviders } from "./client-providers";
+import "./globals.css";
 
 export const metadata: Metadata = {
   description: "AI Gateway Dashboard",
-}
+};
 
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
-}
+};
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -24,10 +24,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       </head>
       <body>
-        <ClientProviders>
-          {children}
-        </ClientProviders>
+        <ClientProviders>{children}</ClientProviders>
       </body>
     </html>
-  )
+  );
 }

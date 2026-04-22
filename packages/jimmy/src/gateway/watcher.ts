@@ -1,8 +1,8 @@
 import fs from "node:fs";
 import path from "node:path";
-import { watch, type FSWatcher } from "chokidar";
-import { CONFIG_PATH, CRON_JOBS, ORG_DIR, SKILLS_DIR, CLAUDE_SKILLS_DIR, AGENTS_SKILLS_DIR } from "../shared/paths.js";
+import { type FSWatcher, watch } from "chokidar";
 import { logger } from "../shared/logger.js";
+import { AGENTS_SKILLS_DIR, CLAUDE_SKILLS_DIR, CONFIG_PATH, CRON_JOBS, ORG_DIR, SKILLS_DIR } from "../shared/paths.js";
 
 export interface WatcherCallbacks {
   onConfigReload: () => void;
@@ -31,7 +31,8 @@ export function syncSkillSymlinks(): void {
   // Get current skill directories
   let skillNames: string[] = [];
   if (fs.existsSync(SKILLS_DIR)) {
-    skillNames = fs.readdirSync(SKILLS_DIR, { withFileTypes: true })
+    skillNames = fs
+      .readdirSync(SKILLS_DIR, { withFileTypes: true })
       .filter((e) => e.isDirectory())
       .map((e) => e.name);
   }

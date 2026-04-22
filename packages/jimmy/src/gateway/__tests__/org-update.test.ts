@@ -1,8 +1,8 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import fs from "node:fs";
-import path from "node:path";
 import os from "node:os";
+import path from "node:path";
 import yaml from "js-yaml";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 let tmpDir: string;
 
@@ -43,11 +43,15 @@ describe("updateEmployeeYaml", () => {
   });
 
   it("updates alwaysNotify field in existing YAML", () => {
-    writeYaml("platform", "dev.yaml", `
+    writeYaml(
+      "platform",
+      "dev.yaml",
+      `
 name: dev
 persona: A developer
 rank: senior
-`);
+`,
+    );
     const result = updateEmployeeYaml("dev", { alwaysNotify: false });
     expect(result).toBe(true);
 
@@ -59,11 +63,15 @@ rank: senior
   });
 
   it("sets alwaysNotify to true", () => {
-    writeYaml("platform", "worker.yaml", `
+    writeYaml(
+      "platform",
+      "worker.yaml",
+      `
 name: worker
 persona: A worker
 alwaysNotify: false
-`);
+`,
+    );
     const result = updateEmployeeYaml("worker", { alwaysNotify: true });
     expect(result).toBe(true);
 
@@ -77,7 +85,10 @@ alwaysNotify: false
   });
 
   it("preserves all other YAML fields", () => {
-    writeYaml("homy", "lead.yaml", `
+    writeYaml(
+      "homy",
+      "lead.yaml",
+      `
 name: homy-lead
 displayName: Homy Lead
 department: homy
@@ -86,7 +97,8 @@ engine: claude
 model: opus
 persona: The homy lead
 emoji: "🏠"
-`);
+`,
+    );
     updateEmployeeYaml("homy-lead", { alwaysNotify: false });
 
     const data = readYaml("homy", "lead.yaml");
@@ -100,11 +112,15 @@ emoji: "🏠"
   });
 
   it("only allows updating alwaysNotify (ignores other fields)", () => {
-    writeYaml("platform", "safe.yaml", `
+    writeYaml(
+      "platform",
+      "safe.yaml",
+      `
 name: safe
 persona: Original persona
 rank: employee
-`);
+`,
+    );
     // Try to sneak in a rank change — should be ignored
     updateEmployeeYaml("safe", { alwaysNotify: false } as any);
 

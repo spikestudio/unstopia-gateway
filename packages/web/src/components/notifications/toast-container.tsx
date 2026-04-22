@@ -1,7 +1,7 @@
 "use client";
 
+import { AlertTriangle, CheckCircle, Info, X, XCircle } from "lucide-react";
 import { useNotifications } from "@/hooks/use-notifications";
-import { X, CheckCircle, AlertTriangle, Info, XCircle } from "lucide-react";
 import type { NotificationType } from "@/lib/notifications";
 
 const ICON_MAP: Record<NotificationType, typeof CheckCircle> = {
@@ -42,15 +42,11 @@ export function ToastContainer() {
           >
             <Icon size={18} className="shrink-0 mt-px" style={{ color }} />
             <div className="flex-1 min-w-0">
-              <div className="text-[13px] font-semibold text-[var(--text-primary)] leading-[1.3]">
-                {toast.title}
-              </div>
+              <div className="text-[13px] font-semibold text-[var(--text-primary)] leading-[1.3]">{toast.title}</div>
               <div className="text-xs text-[var(--text-secondary)] mt-0.5 leading-[1.3] overflow-hidden text-ellipsis whitespace-nowrap">
                 {toast.message}
               </div>
-              <div className="text-[11px] text-[var(--text-quaternary)] mt-1">
-                {formatTime(toast.timestamp)}
-              </div>
+              <div className="text-[11px] text-[var(--text-quaternary)] mt-1">{formatTime(toast.timestamp)}</div>
             </div>
             <button
               onClick={() => dismissToast(toast.id)}

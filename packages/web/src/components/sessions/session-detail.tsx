@@ -1,16 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardContent,
-} from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { api } from "@/lib/api";
 import { useSettings } from "@/app/settings-provider";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useResetSession } from "@/hooks/use-sessions";
+import { api } from "@/lib/api";
 
 interface Session {
   id: string;
@@ -48,9 +43,7 @@ function Field({ label, value }: { label: string; value: React.ReactNode }) {
         {label}
       </span>
       <span className="text-[length:var(--text-body)] text-[var(--text-primary)] text-right break-all">
-        {value || (
-          <span className="text-[var(--text-quaternary)]">--</span>
-        )}
+        {value || <span className="text-[var(--text-quaternary)]">--</span>}
       </span>
     </div>
   );
@@ -76,7 +69,8 @@ export function SessionDetail({
   const canReset = ["error", "waiting", "paused"].includes(session.status);
 
   useEffect(() => {
-    api.getSessionChildren(session.id)
+    api
+      .getSessionChildren(session.id)
       .then((data) => setChildren(data as unknown as Session[]))
       .catch(() => setChildren([]));
   }, [session.id]);
@@ -120,13 +114,13 @@ export function SessionDetail({
               </Badge>
             }
           />
-          <Field label="Queue Depth" value={typeof session.queueDepth === "number" ? String(session.queueDepth) : "--"} />
+          <Field
+            label="Queue Depth"
+            value={typeof session.queueDepth === "number" ? String(session.queueDepth) : "--"}
+          />
           <Field label="Message ID" value={session.messageId || "--"} />
           <Field label="Created" value={formatDate(session.createdAt)} />
-          <Field
-            label="Last Activity"
-            value={formatDate(session.lastActivity)}
-          />
+          <Field label="Last Activity" value={formatDate(session.lastActivity)} />
 
           {/* Parent session link */}
           {session.parentSessionId && (
@@ -159,9 +153,7 @@ export function SessionDetail({
                     <span className="text-[length:var(--text-caption1)] text-[var(--text-primary)] font-[var(--weight-medium)]">
                       {child.title || child.employee || "Session"}
                     </span>
-                    <Badge variant={statusVariant[child.status] ?? "secondary"}>
-                      {child.status}
-                    </Badge>
+                    <Badge variant={statusVariant[child.status] ?? "secondary"}>{child.status}</Badge>
                   </button>
                 ))}
               </div>
@@ -176,8 +168,7 @@ export function SessionDetail({
               <div
                 className="text-[length:var(--text-caption1)] font-[family-name:var(--font-mono)] text-[var(--system-red)] rounded-[var(--radius-sm,8px)] p-[var(--space-3)]"
                 style={{
-                  background:
-                    "color-mix(in srgb, var(--system-red) 10%, transparent)",
+                  background: "color-mix(in srgb, var(--system-red) 10%, transparent)",
                 }}
               >
                 {session.lastError}

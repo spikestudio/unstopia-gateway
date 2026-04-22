@@ -1,81 +1,95 @@
-"use client"
+"use client";
 
-import { useRef, useState, type MouseEvent, type DragEvent, type ReactNode } from 'react'
-import { X, Plus, PanelLeftOpen, PanelLeftClose } from 'lucide-react'
-import { NotificationBell } from '@/components/notifications/notification-bell'
-import type { ChatTab } from '@/hooks/use-chat-tabs'
-import { cn } from '@/lib/utils'
-import { EmployeeAvatar } from '@/components/ui/employee-avatar'
-import { cleanPreview } from '@/lib/clean-preview'
+import { PanelLeftClose, PanelLeftOpen, Plus, X } from "lucide-react";
+import { type DragEvent, type MouseEvent, type ReactNode, useRef, useState } from "react";
+import { NotificationBell } from "@/components/notifications/notification-bell";
+import { EmployeeAvatar } from "@/components/ui/employee-avatar";
+import type { ChatTab } from "@/hooks/use-chat-tabs";
+import { cleanPreview } from "@/lib/clean-preview";
+import { cn } from "@/lib/utils";
 
 interface ChatTabBarProps {
-  tabs: ChatTab[]
-  activeIndex: number
-  onSwitch: (index: number) => void
-  onClose: (index: number) => void
-  onNew: () => void
-  onPin?: (index: number) => void
-  onMove?: (from: number, to: number) => void
-  toolbarActions?: ReactNode
-  sidebarCollapsed?: boolean
-  onToggleSidebar?: () => void
+  tabs: ChatTab[];
+  activeIndex: number;
+  onSwitch: (index: number) => void;
+  onClose: (index: number) => void;
+  onNew: () => void;
+  onPin?: (index: number) => void;
+  onMove?: (from: number, to: number) => void;
+  toolbarActions?: ReactNode;
+  sidebarCollapsed?: boolean;
+  onToggleSidebar?: () => void;
 }
 
 const STATUS_COLORS: Record<string, string> = {
-  running: 'bg-blue-500 animate-pulse',
-  error: 'bg-red-500',
-  idle: 'bg-zinc-500',
-}
+  running: "bg-blue-500 animate-pulse",
+  error: "bg-red-500",
+  idle: "bg-zinc-500",
+};
 
-export function ChatTabBar({ tabs, activeIndex, onSwitch, onClose, onNew, onPin, onMove, toolbarActions, sidebarCollapsed, onToggleSidebar }: ChatTabBarProps) {
-  const scrollRef = useRef<HTMLDivElement>(null)
-  const [dragIndex, setDragIndex] = useState<number | null>(null)
-  const [dropTarget, setDropTarget] = useState<number | null>(null)
+export function ChatTabBar({
+  tabs,
+  activeIndex,
+  onSwitch,
+  onClose,
+  onNew,
+  onPin,
+  onMove,
+  toolbarActions,
+  sidebarCollapsed,
+  onToggleSidebar,
+}: ChatTabBarProps) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
+  const [dropTarget, setDropTarget] = useState<number | null>(null);
 
   const handleMiddleClick = (e: MouseEvent, index: number) => {
-    if (e.button === 1) { e.preventDefault(); onClose(index) }
-  }
+    if (e.button === 1) {
+      e.preventDefault();
+      onClose(index);
+    }
+  };
 
   const handleDoubleClick = (index: number) => {
-    onPin?.(index)
-  }
+    onPin?.(index);
+  };
 
   // --- Drag & drop ---
   const handleDragStart = (e: DragEvent, index: number) => {
-    setDragIndex(index)
-    e.dataTransfer.effectAllowed = 'move'
-    e.dataTransfer.setData('text/plain', String(index))
+    setDragIndex(index);
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/plain", String(index));
     // Make the drag ghost semi-transparent
     if (e.currentTarget instanceof HTMLElement) {
-      e.currentTarget.style.opacity = '0.5'
+      e.currentTarget.style.opacity = "0.5";
     }
-  }
+  };
 
   const handleDragEnd = (e: DragEvent) => {
     if (e.currentTarget instanceof HTMLElement) {
-      e.currentTarget.style.opacity = '1'
+      e.currentTarget.style.opacity = "1";
     }
-    setDragIndex(null)
-    setDropTarget(null)
-  }
+    setDragIndex(null);
+    setDropTarget(null);
+  };
 
   const handleDragOver = (e: DragEvent, index: number) => {
-    e.preventDefault()
-    e.dataTransfer.dropEffect = 'move'
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
     if (index !== dragIndex) {
-      setDropTarget(index)
+      setDropTarget(index);
     }
-  }
+  };
 
   const handleDrop = (e: DragEvent, toIndex: number) => {
-    e.preventDefault()
-    const fromIndex = dragIndex
-    setDragIndex(null)
-    setDropTarget(null)
+    e.preventDefault();
+    const fromIndex = dragIndex;
+    setDragIndex(null);
+    setDropTarget(null);
     if (fromIndex !== null && fromIndex !== toIndex) {
-      onMove?.(fromIndex, toIndex)
+      onMove?.(fromIndex, toIndex);
     }
-  }
+  };
 
   return (
     <div className="relative z-[100] flex h-10 shrink-0 items-center border-b border-border bg-[var(--bg-secondary)]">
@@ -114,16 +128,18 @@ export function ChatTabBar({ tabs, activeIndex, onSwitch, onClose, onNew, onPin,
                 dropTarget === i && dragIndex !== null && dragIndex !== i && "border-l-2 border-l-[var(--accent)]",
               )}
             >
-              <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${STATUS_COLORS[tab.status] || STATUS_COLORS.idle}`} />
+              <span
+                className={`w-1.5 h-1.5 rounded-full shrink-0 ${STATUS_COLORS[tab.status] || STATUS_COLORS.idle}`}
+              />
               {tab.employeeName && <EmployeeAvatar name={tab.employeeName} size={16} />}
-              <span className={cn(
-                "truncate",
-                tab.pinned ? "font-medium" : "font-normal italic",
-              )}>
+              <span className={cn("truncate", tab.pinned ? "font-medium" : "font-normal italic")}>
                 {cleanPreview(tab.label)}
               </span>
               <span
-                onClick={(e) => { e.stopPropagation(); onClose(i) }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onClose(i);
+                }}
                 className="ml-auto rounded-sm p-0.5 opacity-0 transition-all hover:bg-accent hover:text-foreground group-hover:opacity-100"
               >
                 <X size={12} />
@@ -148,5 +164,5 @@ export function ChatTabBar({ tabs, activeIndex, onSwitch, onClose, onNew, onPin,
         </div>
       )}
     </div>
-  )
+  );
 }

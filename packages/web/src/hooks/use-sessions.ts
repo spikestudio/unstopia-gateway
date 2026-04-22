@@ -1,12 +1,12 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { queryKeys } from '@/lib/query-keys'
-import { api } from '@/lib/api'
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { api } from "@/lib/api";
+import { queryKeys } from "@/lib/query-keys";
 
 export function useSessions() {
   return useQuery({
     queryKey: queryKeys.sessions.all,
     queryFn: () => api.getSessions(),
-  })
+  });
 }
 
 export function useSession(id: string | null) {
@@ -14,7 +14,7 @@ export function useSession(id: string | null) {
     queryKey: queryKeys.sessions.detail(id!),
     queryFn: () => api.getSession(id!),
     enabled: !!id,
-  })
+  });
 }
 
 export function useSessionChildren(id: string | null) {
@@ -22,7 +22,7 @@ export function useSessionChildren(id: string | null) {
     queryKey: queryKeys.sessions.children(id!),
     queryFn: () => api.getSessionChildren(id!),
     enabled: !!id,
-  })
+  });
 }
 
 export function useSessionTranscript(id: string | null) {
@@ -30,7 +30,7 @@ export function useSessionTranscript(id: string | null) {
     queryKey: queryKeys.sessions.transcript(id!),
     queryFn: () => api.getSessionTranscript(id!),
     enabled: !!id,
-  })
+  });
 }
 
 export function useSessionQueue(id: string | null) {
@@ -39,68 +39,67 @@ export function useSessionQueue(id: string | null) {
     queryFn: () => api.getSessionQueue(id!),
     enabled: !!id,
     refetchInterval: 5_000,
-  })
+  });
 }
 
 export function useUpdateSession() {
-  const qc = useQueryClient()
+  const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: { title?: string } }) =>
-      api.updateSession(id, data),
+    mutationFn: ({ id, data }: { id: string; data: { title?: string } }) => api.updateSession(id, data),
     onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.sessions.all }),
     onError: () => qc.invalidateQueries({ queryKey: queryKeys.sessions.all }),
-  })
+  });
 }
 
 export function useDeleteSession() {
-  const qc = useQueryClient()
+  const qc = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => api.deleteSession(id),
     onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.sessions.all }),
-  })
+  });
 }
 
 export function useBulkDeleteSessions() {
-  const qc = useQueryClient()
+  const qc = useQueryClient();
   return useMutation({
     mutationFn: (ids: string[]) => api.bulkDeleteSessions(ids),
     onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.sessions.all }),
-  })
+  });
 }
 
 export function useCreateSession() {
-  const qc = useQueryClient()
+  const qc = useQueryClient();
   return useMutation({
     mutationFn: (data: Parameters<typeof api.createSession>[0]) => api.createSession(data),
     onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.sessions.all }),
-  })
+  });
 }
 
 export function useSendMessage() {
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: Parameters<typeof api.sendMessage>[1] }) =>
       api.sendMessage(id, data),
-  })
+  });
 }
 
 export function useStopSession() {
   return useMutation({
     mutationFn: (id: string) => api.stopSession(id),
-  })
+  });
 }
 
 export function useResetSession() {
-  const qc = useQueryClient()
+  const qc = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => api.resetSession(id),
     onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.sessions.all }),
-  })
+  });
 }
 
 export function useDuplicateSession() {
-  const qc = useQueryClient()
+  const qc = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => api.duplicateSession(id),
     onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.sessions.all }),
-  })
+  });
 }

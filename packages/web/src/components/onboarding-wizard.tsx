@@ -1,23 +1,23 @@
-"use client"
+"use client";
 
-import { useCallback, useEffect, useState } from "react"
-import { useRouter } from "next/navigation"
 import {
-  MessageSquare,
-  Users,
-  Columns3,
-  Clock,
-  DollarSign,
   Activity,
-  Check,
   ArrowLeft,
   ArrowRight,
+  Check,
+  Clock,
+  Columns3,
+  DollarSign,
+  MessageSquare,
   Rocket,
-} from "lucide-react"
-import { useSettings } from "@/app/settings-provider"
-import { useTheme } from "@/app/providers"
-import { THEMES } from "@/lib/themes"
-import { api } from "@/lib/api"
+  Users,
+} from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useState } from "react";
+import { useTheme } from "@/app/providers";
+import { useSettings } from "@/app/settings-provider";
+import { api } from "@/lib/api";
+import { THEMES } from "@/lib/themes";
 
 // ---------------------------------------------------------------------------
 // Accent color presets
@@ -36,7 +36,7 @@ const ACCENT_PRESETS = [
   { label: "Indigo", value: "#6366F1" },
   { label: "Violet", value: "#8B5CF6" },
   { label: "Pink", value: "#EC4899" },
-]
+];
 
 // ---------------------------------------------------------------------------
 // Feature cards for overview step
@@ -49,112 +49,102 @@ const FEATURES = [
   { icon: Clock, name: "Cron", desc: "Scheduled jobs with status monitoring" },
   { icon: DollarSign, name: "Costs", desc: "Token usage and cost tracking" },
   { icon: Activity, name: "Activity", desc: "Real-time logs and event stream" },
-]
+];
 
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
 
 interface OnboardingWizardProps {
-  forceOpen?: boolean
-  onClose?: () => void
+  forceOpen?: boolean;
+  onClose?: () => void;
 }
 
 export function OnboardingWizard({ forceOpen, onClose }: OnboardingWizardProps) {
-  const {
-    settings,
-    setPortalName,
-    setOperatorName,
-    setAccentColor,
-    setLanguage,
-  } = useSettings()
-  const { theme, setTheme } = useTheme()
-  const router = useRouter()
+  const { settings, setPortalName, setOperatorName, setAccentColor, setLanguage } = useSettings();
+  const { theme, setTheme } = useTheme();
+  const router = useRouter();
 
-  const [visible, setVisible] = useState(false)
-  const [step, setStep] = useState(0)
-  const [direction, setDirection] = useState<"forward" | "back">("forward")
+  const [visible, setVisible] = useState(false);
+  const [step, setStep] = useState(0);
+  const [direction, setDirection] = useState<"forward" | "back">("forward");
 
   // Local input values
-  const [localName, setLocalName] = useState("")
-  const [localOperator, setLocalOperator] = useState("")
-  const [localLanguage, setLocalLanguage] = useState(settings.language ?? "English")
+  const [localName, setLocalName] = useState("");
+  const [localOperator, setLocalOperator] = useState("");
+  const [localLanguage, setLocalLanguage] = useState(settings.language ?? "English");
 
-  const TOTAL_STEPS = 4
+  const TOTAL_STEPS = 4;
 
   // First-run detection — check server-side flag, not just localStorage
   useEffect(() => {
     if (forceOpen) {
-      setLocalName(settings.portalName ?? "")
-      setLocalOperator(settings.operatorName ?? "")
-      setVisible(true)
-      return
+      setLocalName(settings.portalName ?? "");
+      setLocalOperator(settings.operatorName ?? "");
+      setVisible(true);
+      return;
     }
     // If localStorage says onboarded, trust it (fast path)
     if (typeof window !== "undefined" && localStorage.getItem("jinn-onboarded")) {
-      return
+      return;
     }
     // Otherwise check server — the onboarded flag persists across browsers
-    api.getOnboarding().then((data) => {
-      if (data.onboarded) {
-        localStorage.setItem("jinn-onboarded", "true")
-      } else if (data.needed) {
-        setVisible(true)
-      }
-    }).catch(() => {
-      // Fallback: show wizard if we can't reach the server and no localStorage flag
-      if (!localStorage.getItem("jinn-onboarded")) {
-        setVisible(true)
-      }
-    })
-  }, [forceOpen]) // eslint-disable-line react-hooks/exhaustive-deps
+    api
+      .getOnboarding()
+      .then((data) => {
+        if (data.onboarded) {
+          localStorage.setItem("jinn-onboarded", "true");
+        } else if (data.needed) {
+          setVisible(true);
+        }
+      })
+      .catch(() => {
+        // Fallback: show wizard if we can't reach the server and no localStorage flag
+        if (!localStorage.getItem("jinn-onboarded")) {
+          setVisible(true);
+        }
+      });
+  }, [forceOpen]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleNext = useCallback(() => {
     // Commit name/operator/language on step 0
     if (step === 0) {
-      setPortalName(localName || null)
-      setOperatorName(localOperator || null)
-      setLanguage(localLanguage || "English")
+      setPortalName(localName || null);
+      setOperatorName(localOperator || null);
+      setLanguage(localLanguage || "English");
     }
 
     if (step < TOTAL_STEPS - 1) {
-      setDirection("forward")
-      setStep(step + 1)
+      setDirection("forward");
+      setStep(step + 1);
     } else {
       // Complete — persist to backend config
-      api.completeOnboarding({
-        portalName: localName || undefined,
-        operatorName: localOperator || undefined,
-        language: localLanguage || undefined,
-      }).catch(() => {
-        // Best-effort: localStorage still has the values
-      })
+      api
+        .completeOnboarding({
+          portalName: localName || undefined,
+          operatorName: localOperator || undefined,
+          language: localLanguage || undefined,
+        })
+        .catch(() => {
+          // Best-effort: localStorage still has the values
+        });
       if (!forceOpen) {
-        localStorage.setItem("jinn-onboarded", "true")
+        localStorage.setItem("jinn-onboarded", "true");
       }
-      setVisible(false)
-      onClose?.()
-      router.push("/chat")
+      setVisible(false);
+      onClose?.();
+      router.push("/chat");
     }
-  }, [
-    step,
-    localName,
-    localOperator,
-    forceOpen,
-    onClose,
-    setPortalName,
-    setOperatorName,
-    router,
-  ])
+  }, [step, localName, localOperator, forceOpen, onClose, setPortalName, setOperatorName, router]);
 
   const handleBack = useCallback(() => {
     if (step > 0) {
-      setDirection("back")
-      setStep(step - 1)
+      setDirection("back");
+      setStep(step - 1);
     }
-  }, [step])
+  }, [step]);
 
-  if (!visible) return null
+  if (!visible) return null;
 
   return (
     <div
@@ -178,12 +168,7 @@ export function OnboardingWizard({ forceOpen, onClose }: OnboardingWizardProps) 
               className="h-2 rounded-full transition-all duration-200"
               style={{
                 width: i === step ? 24 : 8,
-                background:
-                  i === step
-                    ? "var(--accent)"
-                    : i < step
-                      ? "var(--accent)"
-                      : "var(--fill-tertiary)",
+                background: i === step ? "var(--accent)" : i < step ? "var(--accent)" : "var(--fill-tertiary)",
                 opacity: i < step ? 0.5 : 1,
               }}
             />
@@ -194,13 +179,8 @@ export function OnboardingWizard({ forceOpen, onClose }: OnboardingWizardProps) 
         <div className="px-[var(--space-5)] pt-[var(--space-5)] pb-[var(--space-4)] overflow-y-auto flex-1">
           {/* Step 0: Welcome */}
           {step === 0 && (
-            <div
-              key="step-0"
-              className="animate-fade-in text-center"
-            >
-              <div className="text-[56px] mb-[var(--space-3)] leading-none">
-                {"\ud83e\udd16"}
-              </div>
+            <div key="step-0" className="animate-fade-in text-center">
+              <div className="text-[56px] mb-[var(--space-3)] leading-none">{"\ud83e\udd16"}</div>
               <h2 className="text-[length:var(--text-large-title)] font-[var(--weight-bold)] tracking-[var(--tracking-tight)] text-[var(--text-primary)] mb-[var(--space-2)]">
                 Welcome to {localName || "Jinn"}
               </h2>
@@ -277,34 +257,28 @@ export function OnboardingWizard({ forceOpen, onClose }: OnboardingWizardProps) 
 
               <div className="grid grid-cols-[repeat(auto-fill,minmax(130px,1fr))] gap-[var(--space-3)]">
                 {THEMES.map((t) => {
-                  const isActive = theme === t.id
+                  const isActive = theme === t.id;
                   return (
                     <button
                       key={t.id}
                       onClick={() => setTheme(t.id)}
                       className="flex flex-col items-center gap-[var(--space-2)] px-[var(--space-3)] py-[var(--space-4)] rounded-[var(--radius-md)] bg-[var(--fill-quaternary)] cursor-pointer transition-all duration-150"
                       style={{
-                        border: isActive
-                          ? "2px solid var(--accent)"
-                          : "2px solid var(--separator)",
+                        border: isActive ? "2px solid var(--accent)" : "2px solid var(--separator)",
                       }}
                     >
                       <span className="text-[28px]">{t.emoji}</span>
                       <span
                         className="text-[length:var(--text-footnote)]"
                         style={{
-                          fontWeight: isActive
-                            ? "var(--weight-semibold)"
-                            : "var(--weight-medium)",
-                          color: isActive
-                            ? "var(--accent)"
-                            : "var(--text-secondary)",
+                          fontWeight: isActive ? "var(--weight-semibold)" : "var(--weight-medium)",
+                          color: isActive ? "var(--accent)" : "var(--text-secondary)",
                         }}
                       >
                         {t.label}
                       </span>
                     </button>
-                  )
+                  );
                 })}
               </div>
             </div>
@@ -322,7 +296,7 @@ export function OnboardingWizard({ forceOpen, onClose }: OnboardingWizardProps) 
 
               <div className="grid grid-cols-6 gap-[var(--space-3)] justify-items-center">
                 {ACCENT_PRESETS.map((preset) => {
-                  const isActive = settings.accentColor === preset.value
+                  const isActive = settings.accentColor === preset.value;
                   return (
                     <button
                       key={preset.value}
@@ -332,17 +306,13 @@ export function OnboardingWizard({ forceOpen, onClose }: OnboardingWizardProps) 
                       className="w-10 h-10 rounded-full border-none cursor-pointer flex items-center justify-center transition-all duration-100"
                       style={{
                         background: preset.value,
-                        outline: isActive
-                          ? `3px solid ${preset.value}`
-                          : "none",
+                        outline: isActive ? `3px solid ${preset.value}` : "none",
                         outlineOffset: 3,
                       }}
                     >
-                      {isActive && (
-                        <Check size={18} color="#fff" strokeWidth={3} />
-                      )}
+                      {isActive && <Check size={18} color="#fff" strokeWidth={3} />}
                     </button>
-                  )
+                  );
                 })}
               </div>
             </div>
@@ -360,28 +330,23 @@ export function OnboardingWizard({ forceOpen, onClose }: OnboardingWizardProps) 
 
               <div className="flex flex-col gap-[var(--space-2)]">
                 {FEATURES.map((f) => {
-                  const Icon = f.icon
+                  const Icon = f.icon;
                   return (
                     <div
                       key={f.name}
                       className="flex items-center gap-[var(--space-3)] p-[var(--space-3)] rounded-[var(--radius-md)] bg-[var(--fill-quaternary)] border border-[var(--separator)]"
                     >
                       <div className="w-9 h-9 rounded-lg bg-[var(--accent-fill)] flex items-center justify-center shrink-0">
-                        <Icon
-                          size={18}
-                          className="text-[var(--accent)]"
-                        />
+                        <Icon size={18} className="text-[var(--accent)]" />
                       </div>
                       <div className="min-w-0">
                         <div className="text-[length:var(--text-subheadline)] font-[var(--weight-semibold)] text-[var(--text-primary)]">
                           {f.name}
                         </div>
-                        <div className="text-[length:var(--text-caption1)] text-[var(--text-tertiary)]">
-                          {f.desc}
-                        </div>
+                        <div className="text-[length:var(--text-caption1)] text-[var(--text-tertiary)]">{f.desc}</div>
                       </div>
                     </div>
-                  )
+                  );
                 })}
               </div>
             </div>
@@ -405,19 +370,11 @@ export function OnboardingWizard({ forceOpen, onClose }: OnboardingWizardProps) 
             onClick={handleNext}
             className="px-[var(--space-6)] py-[var(--space-2)] rounded-[var(--radius-md)] bg-[var(--accent)] text-[var(--accent-contrast)] border-none cursor-pointer text-[length:var(--text-subheadline)] font-[var(--weight-semibold)] transition-all duration-150 inline-flex items-center gap-1.5"
           >
-            {step === 0
-              ? "Next"
-              : step === TOTAL_STEPS - 1
-                ? "Get Started"
-                : "Next"}
-            {step === TOTAL_STEPS - 1 ? (
-              <Rocket size={16} />
-            ) : (
-              <ArrowRight size={16} />
-            )}
+            {step === 0 ? "Next" : step === TOTAL_STEPS - 1 ? "Get Started" : "Next"}
+            {step === TOTAL_STEPS - 1 ? <Rocket size={16} /> : <ArrowRight size={16} />}
           </button>
         </div>
       </div>
     </div>
-  )
+  );
 }

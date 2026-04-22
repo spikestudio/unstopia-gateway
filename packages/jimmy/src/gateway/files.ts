@@ -1,14 +1,12 @@
-import type { IncomingMessage as HttpRequest, ServerResponse } from "node:http";
 import crypto from "node:crypto";
 import fs from "node:fs";
-import path from "node:path";
+import type { IncomingMessage as HttpRequest, ServerResponse } from "node:http";
 import os from "node:os";
-import { pipeline } from "node:stream/promises";
-import { Readable } from "node:stream";
+import path from "node:path";
 import Busboy from "busboy";
-import { FILES_DIR } from "../shared/paths.js";
+import { deleteFile, type FileMeta, getFile, insertFile, listFiles } from "../sessions/registry.js";
 import { logger } from "../shared/logger.js";
-import { insertFile, getFile, listFiles, deleteFile, type FileMeta } from "../sessions/registry.js";
+import { FILES_DIR } from "../shared/paths.js";
 import type { ApiContext } from "./api.js";
 
 // Ensure managed files directory exists
@@ -153,8 +151,12 @@ async function handleMultipartUpload(req: HttpRequest, res: ServerResponse, cont
       filename = info.filename;
       const chunks: Buffer[] = [];
       file.on("data", (chunk: Buffer) => chunks.push(chunk));
-      (file as NodeJS.EventEmitter).on("limit", () => { fileTruncated = true; });
-      file.on("end", () => { fileBuffer = Buffer.concat(chunks); });
+      (file as NodeJS.EventEmitter).on("limit", () => {
+        fileTruncated = true;
+      });
+      file.on("end", () => {
+        fileBuffer = Buffer.concat(chunks);
+      });
     });
 
     busboy.on("field", (name: string, val: string) => {
@@ -174,13 +176,16 @@ async function handleMultipartUpload(req: HttpRequest, res: ServerResponse, cont
         return;
       }
       try {
-        const meta = await saveFile({
-          id: crypto.randomUUID(),
-          filename,
-          buffer: fileBuffer,
-          customPath,
-          open,
-        }, context);
+        const meta = await saveFile(
+          {
+            id: crypto.randomUUID(),
+            filename,
+            buffer: fileBuffer,
+            customPath,
+            open,
+          },
+          context,
+        );
         json(res, meta, 201);
       } catch (err) {
         serverError(res, err instanceof Error ? err.message : "Upload failed");
@@ -240,13 +245,16 @@ async function handleJsonUpload(req: HttpRequest, res: ServerResponse, context: 
   }
 
   try {
-    const meta = await saveFile({
-      id: crypto.randomUUID(),
-      filename,
-      buffer,
-      customPath,
-      open,
-    }, context);
+    const meta = await saveFile(
+      {
+        id: crypto.randomUUID(),
+        filename,
+        buffer,
+        customPath,
+        open,
+      },
+      context,
+    );
     json(res, meta, 201);
   } catch (err) {
     serverError(res, err instanceof Error ? err.message : "Upload failed");
@@ -256,14 +264,15 @@ async function handleJsonUpload(req: HttpRequest, res: ServerResponse, context: 
 // ── Transfer types ──────────────────────────────────────────────
 
 interface TransferSpec {
-  file: string;       // absolute local path OR file ID from /api/files
+  file: string; // absolute local path OR file ID from /api/files
   remotePath?: string; // destination path on remote (defaults to same relative path)
 }
 
-interface TransferRequest {
-  destination: string; // remote gateway URL or remote name from config
-  files: TransferSpec[];
-}
+// TransferRequest reserved for future remote transfer feature
+// interface TransferRequest {
+//   destination: string;
+//   files: TransferSpec[];
+// }
 
 interface TransferResult {
   file: string;
@@ -289,9 +298,7 @@ function resolveFileSpec(spec: TransferSpec): { buffer: Buffer; filename: string
     const filename = path.basename(expanded);
     // Compute relative path from ~/.jinn/ for default remotePath
     const jinnHome = path.join(os.homedir(), ".jinn");
-    const relativePath = expanded.startsWith(jinnHome)
-      ? path.relative(jinnHome, expanded)
-      : null;
+    const relativePath = expanded.startsWith(jinnHome) ? path.relative(jinnHome, expanded) : null;
     return { buffer, filename, relativePath };
   }
 
@@ -334,7 +341,7 @@ function resolveDestination(destination: string, config: { remotes?: Record<stri
 function isAllowedRemote(destUrl: string, config: { remotes?: Record<string, { url: string }> }): boolean {
   if (!config.remotes) return false;
   const normalized = destUrl.replace(/\/+$/, "");
-  return Object.values(config.remotes).some(r => r.url.replace(/\/+$/, "") === normalized);
+  return Object.values(config.remotes).some((r) => r.url.replace(/\/+$/, "") === normalized);
 }
 
 /** POST /api/files/transfer — send files to a remote gateway. */
@@ -354,10 +361,12 @@ async function handleTransfer(req: HttpRequest, res: ServerResponse, context: Ap
   if (body.files && Array.isArray(body.files)) {
     fileSpecs = body.files as TransferSpec[];
   } else if (body.file) {
-    fileSpecs = [{
-      file: body.file as string,
-      remotePath: body.remotePath as string | undefined,
-    }];
+    fileSpecs = [
+      {
+        file: body.file as string,
+        remotePath: body.remotePath as string | undefined,
+      },
+    ];
   } else {
     return badRequest(res, "file or files is required");
   }
@@ -398,18 +407,28 @@ async function handleTransfer(req: HttpRequest, res: ServerResponse, context: Ap
 
       if (!response.ok) {
         const errText = await response.text();
-        results.push({ file: spec.file, remotePath: targetPath, status: "error", error: `HTTP ${response.status}: ${errText}` });
+        results.push({
+          file: spec.file,
+          remotePath: targetPath,
+          status: "error",
+          error: `HTTP ${response.status}: ${errText}`,
+        });
       } else {
-        const remoteMeta = await response.json() as { id: string };
+        const remoteMeta = (await response.json()) as { id: string };
         results.push({ file: spec.file, remotePath: targetPath, status: "ok", remoteId: remoteMeta.id });
       }
     } catch (err) {
-      results.push({ file: spec.file, remotePath: spec.remotePath || null, status: "error", error: err instanceof Error ? err.message : String(err) });
+      results.push({
+        file: spec.file,
+        remotePath: spec.remotePath || null,
+        status: "error",
+        error: err instanceof Error ? err.message : String(err),
+      });
     }
   }
 
-  const ok = results.filter(r => r.status === "ok").length;
-  const failed = results.filter(r => r.status === "error").length;
+  const ok = results.filter((r) => r.status === "ok").length;
+  const failed = results.filter((r) => r.status === "error").length;
   context.emit("file:transferred", { destination: destUrl, ok, failed });
   logger.info(`File transfer to ${destUrl}: ${ok} ok, ${failed} failed`);
 
@@ -451,7 +470,10 @@ export async function handleFilesRequest(
   const metaMatch = pathname.match(/^\/api\/files\/([^/]+)\/meta$/);
   if (method === "GET" && metaMatch) {
     const meta = getFile(metaMatch[1]);
-    if (!meta) { notFound(res); return true; }
+    if (!meta) {
+      notFound(res);
+      return true;
+    }
     json(res, meta);
     return true;
   }
@@ -460,7 +482,10 @@ export async function handleFilesRequest(
   const dlMatch = pathname.match(/^\/api\/files\/([^/]+)$/);
   if (method === "GET" && dlMatch) {
     const meta = getFile(dlMatch[1]);
-    if (!meta) { notFound(res); return true; }
+    if (!meta) {
+      notFound(res);
+      return true;
+    }
     const filePath = path.join(FILES_DIR, meta.id, meta.filename);
     if (!fs.existsSync(filePath)) {
       notFound(res);
@@ -485,7 +510,10 @@ export async function handleFilesRequest(
   if (method === "DELETE" && delMatch) {
     const id = delMatch[1];
     const meta = getFile(id);
-    if (!meta) { notFound(res); return true; }
+    if (!meta) {
+      notFound(res);
+      return true;
+    }
 
     // Remove managed storage directory
     const fileDir = path.join(FILES_DIR, id);

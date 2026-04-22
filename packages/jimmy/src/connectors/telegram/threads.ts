@@ -29,10 +29,7 @@ export function buildReplyContext(msg: TelegramMessageLike): ReplyContext {
  * Check if a Telegram message predates the gateway boot time.
  * Telegram dates are Unix timestamps in seconds; bootTimeMs is in milliseconds.
  */
-export function isOldTelegramMessage(
-  date: number | undefined,
-  bootTimeMs: number,
-): boolean {
+export function isOldTelegramMessage(date: number | undefined, bootTimeMs: number): boolean {
   if (date === undefined) return false;
   return date * 1000 < bootTimeMs;
 }

@@ -1,6 +1,6 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import fs from "node:fs";
 import path from "node:path";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 // vi.mock factory is hoisted — cannot reference local variables.
 // Use a fixed path that the mock can resolve at hoist time.
@@ -8,10 +8,7 @@ vi.mock("../paths.js", () => ({
   JINN_HOME: path.join(import.meta.dirname || __dirname, ".tmp-usage-test"),
 }));
 
-import {
-  isLikelyNearClaudeUsageLimit,
-  recordClaudeRateLimit,
-} from "../usageAwareness.js";
+import { isLikelyNearClaudeUsageLimit, recordClaudeRateLimit } from "../usageAwareness.js";
 
 const TEMP_DIR = path.join(import.meta.dirname || __dirname, ".tmp-usage-test");
 const STATE_PATH = path.join(TEMP_DIR, "tmp", "claude-usage.json");
@@ -44,29 +41,20 @@ describe("isLikelyNearClaudeUsageLimit", () => {
   it("returns false when lastResetsAt has passed, even if lastRateLimitAt is recent", () => {
     const recentHit = new Date(Date.now() - 30 * 60_000).toISOString(); // 30 min ago
     const pastReset = new Date(Date.now() - 10 * 60_000).toISOString(); // 10 min ago
-    fs.writeFileSync(
-      STATE_PATH,
-      JSON.stringify({ lastRateLimitAt: recentHit, lastResetsAt: pastReset }),
-    );
+    fs.writeFileSync(STATE_PATH, JSON.stringify({ lastRateLimitAt: recentHit, lastResetsAt: pastReset }));
     expect(isLikelyNearClaudeUsageLimit()).toBe(false);
   });
 
   it("returns true when lastResetsAt is in the future", () => {
     const recentHit = new Date(Date.now() - 30 * 60_000).toISOString(); // 30 min ago
     const futureReset = new Date(Date.now() + 60 * 60_000).toISOString(); // 1h from now
-    fs.writeFileSync(
-      STATE_PATH,
-      JSON.stringify({ lastRateLimitAt: recentHit, lastResetsAt: futureReset }),
-    );
+    fs.writeFileSync(STATE_PATH, JSON.stringify({ lastRateLimitAt: recentHit, lastResetsAt: futureReset }));
     expect(isLikelyNearClaudeUsageLimit()).toBe(true);
   });
 
   it("ignores invalid lastResetsAt and falls back to 6h heuristic", () => {
     const recentHit = new Date(Date.now() - 30 * 60_000).toISOString();
-    fs.writeFileSync(
-      STATE_PATH,
-      JSON.stringify({ lastRateLimitAt: recentHit, lastResetsAt: "not-a-date" }),
-    );
+    fs.writeFileSync(STATE_PATH, JSON.stringify({ lastRateLimitAt: recentHit, lastResetsAt: "not-a-date" }));
     expect(isLikelyNearClaudeUsageLimit()).toBe(true);
   });
 

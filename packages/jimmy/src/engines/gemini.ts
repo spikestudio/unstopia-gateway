@@ -1,6 +1,6 @@
-import { spawn, type ChildProcess } from "node:child_process";
-import type { InterruptibleEngine, EngineRunOpts, EngineResult, StreamDelta } from "../shared/types.js";
+import { type ChildProcess, spawn } from "node:child_process";
 import { logger } from "../shared/logger.js";
+import type { EngineResult, EngineRunOpts, InterruptibleEngine, StreamDelta } from "../shared/types.js";
 
 interface LiveProcess {
   proc: ChildProcess;
@@ -156,7 +156,9 @@ export class GeminiEngine implements InterruptibleEngine {
           }
         }
 
-        logger.info(`Gemini engine exited with code ${code} (session: ${geminiSessionId || "none"}, turns: ${numTurns})`);
+        logger.info(
+          `Gemini engine exited with code ${code} (session: ${geminiSessionId || "none"}, turns: ${numTurns})`,
+        );
 
         if (terminationReason) {
           resolve({
@@ -306,9 +308,12 @@ export class GeminiEngine implements InterruptibleEngine {
 
     if (Array.isArray(parsed)) {
       // Look for a result event in the array
-      const resultEvent = [...parsed].reverse().find(
-        (e): e is Record<string, unknown> => !!e && typeof e === "object" && (e as Record<string, unknown>).type === "result",
-      );
+      const resultEvent = [...parsed]
+        .reverse()
+        .find(
+          (e): e is Record<string, unknown> =>
+            !!e && typeof e === "object" && (e as Record<string, unknown>).type === "result",
+        );
       if (resultEvent) {
         return {
           sessionId: String(resultEvent.session_id || resultEvent.sessionId || fallbackSessionId || ""),
@@ -319,11 +324,14 @@ export class GeminiEngine implements InterruptibleEngine {
         };
       }
       // Fall back to last text event
-      const lastText = [...parsed].reverse().find(
-        (e): e is Record<string, unknown> =>
-          !!e && typeof e === "object" &&
-          ((e as Record<string, unknown>).type === "text" || (e as Record<string, unknown>).type === "content.text"),
-      );
+      const lastText = [...parsed]
+        .reverse()
+        .find(
+          (e): e is Record<string, unknown> =>
+            !!e &&
+            typeof e === "object" &&
+            ((e as Record<string, unknown>).type === "text" || (e as Record<string, unknown>).type === "content.text"),
+        );
       return {
         sessionId: fallbackSessionId || "",
         result: lastText ? String(lastText.text || lastText.content || "") : "",

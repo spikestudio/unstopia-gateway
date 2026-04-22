@@ -1,7 +1,7 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import fs from "node:fs";
-import path from "node:path";
 import os from "node:os";
+import path from "node:path";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 // We need to mock ORG_DIR to point to a temp directory
 let tmpDir: string;
@@ -39,10 +39,14 @@ describe("scanOrg — alwaysNotify field", () => {
   });
 
   it("defaults alwaysNotify to true when not specified in YAML", () => {
-    writeYaml("platform", "dev.yaml", `
+    writeYaml(
+      "platform",
+      "dev.yaml",
+      `
 name: dev
 persona: A developer
-`);
+`,
+    );
     const registry = scanOrg();
     const emp = registry.get("dev");
     expect(emp).toBeDefined();
@@ -50,11 +54,15 @@ persona: A developer
   });
 
   it("parses alwaysNotify: false from YAML", () => {
-    writeYaml("platform", "worker.yaml", `
+    writeYaml(
+      "platform",
+      "worker.yaml",
+      `
 name: worker
 persona: A worker
 alwaysNotify: false
-`);
+`,
+    );
     const registry = scanOrg();
     const emp = registry.get("worker");
     expect(emp).toBeDefined();
@@ -62,11 +70,15 @@ alwaysNotify: false
   });
 
   it("parses alwaysNotify: true from YAML", () => {
-    writeYaml("platform", "lead.yaml", `
+    writeYaml(
+      "platform",
+      "lead.yaml",
+      `
 name: lead
 persona: A lead
 alwaysNotify: true
-`);
+`,
+    );
     const registry = scanOrg();
     const emp = registry.get("lead");
     expect(emp).toBeDefined();
@@ -74,11 +86,15 @@ alwaysNotify: true
   });
 
   it("ignores non-boolean alwaysNotify values and defaults to true", () => {
-    writeYaml("platform", "bad.yaml", `
+    writeYaml(
+      "platform",
+      "bad.yaml",
+      `
 name: bad
 persona: A bad config
 alwaysNotify: "yes"
-`);
+`,
+    );
     const registry = scanOrg();
     const emp = registry.get("bad");
     expect(emp).toBeDefined();

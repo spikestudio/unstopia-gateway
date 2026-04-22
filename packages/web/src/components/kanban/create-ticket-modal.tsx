@@ -1,75 +1,64 @@
-"use client"
+"use client";
 
-import { useState, useCallback } from 'react'
-import { Plus } from 'lucide-react'
-import type { Employee } from '@/lib/api'
-import type { TicketPriority } from '@/lib/kanban/types'
-import { PRIORITY_COLORS } from '@/lib/kanban/types'
-import { EmployeePicker } from './employee-picker'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from '@/components/ui/dialog'
+import { Plus } from "lucide-react";
+import { useCallback, useState } from "react";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import type { Employee } from "@/lib/api";
+import type { TicketPriority } from "@/lib/kanban/types";
+import { PRIORITY_COLORS } from "@/lib/kanban/types";
+import { EmployeePicker } from "./employee-picker";
 
 interface CreateTicketModalProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  employees: Employee[]
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  employees: Employee[];
   onSubmit: (ticket: {
-    title: string
-    description: string
-    priority: TicketPriority
-    assigneeId: string | null
-  }) => void
+    title: string;
+    description: string;
+    priority: TicketPriority;
+    assigneeId: string | null;
+  }) => void;
 }
 
-const PRIORITIES: TicketPriority[] = ['low', 'medium', 'high']
+const PRIORITIES: TicketPriority[] = ["low", "medium", "high"];
 const PRIORITY_LABELS: Record<TicketPriority, string> = {
-  low: 'Low',
-  medium: 'Medium',
-  high: 'High',
-}
+  low: "Low",
+  medium: "Medium",
+  high: "High",
+};
 
 const initialState = {
-  title: '',
-  description: '',
-  priority: 'medium' as TicketPriority,
-  assigneeId: '' as string,
-}
+  title: "",
+  description: "",
+  priority: "medium" as TicketPriority,
+  assigneeId: "" as string,
+};
 
-export function CreateTicketModal({
-  open,
-  onOpenChange,
-  employees,
-  onSubmit,
-}: CreateTicketModalProps) {
-  const [form, setForm] = useState(initialState)
+export function CreateTicketModal({ open, onOpenChange, employees, onSubmit }: CreateTicketModalProps) {
+  const [form, setForm] = useState(initialState);
 
   const resetForm = useCallback(() => {
-    setForm(initialState)
-  }, [])
+    setForm(initialState);
+  }, []);
 
   function handleOpenChange(next: boolean) {
-    if (!next) resetForm()
-    onOpenChange(next)
+    if (!next) resetForm();
+    onOpenChange(next);
   }
 
   function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    if (!form.title.trim()) return
+    e.preventDefault();
+    if (!form.title.trim()) return;
 
     onSubmit({
       title: form.title.trim(),
       description: form.description.trim(),
       priority: form.priority,
       assigneeId: form.assigneeId || null,
-    })
+    });
 
-    resetForm()
-    onOpenChange(false)
+    resetForm();
+    onOpenChange(false);
   }
 
   return (
@@ -79,22 +68,15 @@ export function CreateTicketModal({
         className="bg-[var(--bg)] border border-[var(--separator)] rounded-[var(--radius-lg)] shadow-[var(--shadow-card)] max-w-[480px]"
       >
         <DialogHeader>
-          <DialogTitle
-            className="text-[length:var(--text-title3)] font-[var(--weight-bold)] text-[var(--text-primary)]"
-          >
+          <DialogTitle className="text-[length:var(--text-title3)] font-[var(--weight-bold)] text-[var(--text-primary)]">
             Create Ticket
           </DialogTitle>
-          <DialogDescription
-            className="text-[length:var(--text-caption1)] text-[var(--text-tertiary)]"
-          >
+          <DialogDescription className="text-[length:var(--text-caption1)] text-[var(--text-tertiary)]">
             Add a new ticket to the backlog.
           </DialogDescription>
         </DialogHeader>
 
-        <form
-          onSubmit={handleSubmit}
-          className="flex flex-col gap-[var(--space-4)]"
-        >
+        <form onSubmit={handleSubmit} className="flex flex-col gap-[var(--space-4)]">
           {/* Title */}
           <div className="flex flex-col gap-[var(--space-1)]">
             <label
@@ -135,14 +117,12 @@ export function CreateTicketModal({
 
           {/* Priority */}
           <div className="flex flex-col gap-[var(--space-2)]">
-            <span
-              className="text-[length:var(--text-caption1)] font-[var(--weight-medium)] text-[var(--text-secondary)]"
-            >
+            <span className="text-[length:var(--text-caption1)] font-[var(--weight-medium)] text-[var(--text-secondary)]">
               Priority
             </span>
             <div className="flex gap-[var(--space-2)]">
               {PRIORITIES.map((p) => {
-                const isSelected = form.priority === p
+                const isSelected = form.priority === p;
                 return (
                   <button
                     key={p}
@@ -150,29 +130,22 @@ export function CreateTicketModal({
                     onClick={() => setForm((f) => ({ ...f, priority: p }))}
                     className="flex-1 flex items-center justify-center gap-[var(--space-1)] py-[var(--space-2)] px-[var(--space-3)] rounded-[var(--radius-md)] cursor-pointer text-[length:var(--text-caption1)] font-[var(--weight-medium)] transition-all duration-150 ease-[var(--ease-smooth)]"
                     style={{
-                      border: isSelected
-                        ? `2px solid ${PRIORITY_COLORS[p]}`
-                        : '2px solid var(--separator)',
-                      background: isSelected ? 'var(--fill-tertiary)' : 'transparent',
-                      color: isSelected ? 'var(--text-primary)' : 'var(--text-tertiary)',
+                      border: isSelected ? `2px solid ${PRIORITY_COLORS[p]}` : "2px solid var(--separator)",
+                      background: isSelected ? "var(--fill-tertiary)" : "transparent",
+                      color: isSelected ? "var(--text-primary)" : "var(--text-tertiary)",
                     }}
                   >
-                    <span
-                      className="w-2 h-2 rounded-full shrink-0"
-                      style={{ background: PRIORITY_COLORS[p] }}
-                    />
+                    <span className="w-2 h-2 rounded-full shrink-0" style={{ background: PRIORITY_COLORS[p] }} />
                     {PRIORITY_LABELS[p]}
                   </button>
-                )
+                );
               })}
             </div>
           </div>
 
           {/* Assignee */}
           <div className="flex flex-col gap-[var(--space-1)]">
-            <label
-              className="text-[length:var(--text-caption1)] font-[var(--weight-medium)] text-[var(--text-secondary)]"
-            >
+            <label className="text-[length:var(--text-caption1)] font-[var(--weight-medium)] text-[var(--text-secondary)]">
               Assignee
             </label>
             <EmployeePicker
@@ -188,7 +161,7 @@ export function CreateTicketModal({
             disabled={!form.title.trim()}
             className="rounded-[var(--radius-md)] py-3 px-5 w-full text-[length:var(--text-body)] font-[var(--weight-semibold)] border-none flex items-center justify-center gap-[var(--space-2)] mt-[var(--space-2)] bg-[var(--accent)] text-white transition-opacity duration-150 ease-linear"
             style={{
-              cursor: form.title.trim() ? 'pointer' : 'default',
+              cursor: form.title.trim() ? "pointer" : "default",
               opacity: form.title.trim() ? 1 : 0.5,
             }}
           >
@@ -198,5 +171,5 @@ export function CreateTicketModal({
         </form>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

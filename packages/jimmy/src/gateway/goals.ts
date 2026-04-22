@@ -1,14 +1,14 @@
-import { v4 as uuid } from 'uuid';
-import type { Database } from 'better-sqlite3';
-import type { Goal } from '../shared/types.js';
+import type { Database } from "better-sqlite3";
+import { v4 as uuid } from "uuid";
+import type { Goal } from "../shared/types.js";
 
 function rowToGoal(row: Record<string, unknown>): Goal {
   return {
     id: row.id as string,
     title: row.title as string,
     description: row.description as string | null,
-    status: row.status as Goal['status'],
-    level: row.level as Goal['level'],
+    status: row.status as Goal["status"],
+    level: row.level as Goal["level"],
     parentId: row.parent_id as string | null,
     department: row.department as string | null,
     owner: row.owner as string | null,
@@ -19,7 +19,7 @@ function rowToGoal(row: Record<string, unknown>): Goal {
 }
 
 export function listGoals(db: Database): Goal[] {
-  const rows = db.prepare('SELECT * FROM goals ORDER BY created_at DESC').all() as Record<string, unknown>[];
+  const rows = db.prepare("SELECT * FROM goals ORDER BY created_at DESC").all() as Record<string, unknown>[];
   return rows.map(rowToGoal);
 }
 
@@ -41,7 +41,7 @@ export function getGoalTree(db: Database): (Goal & { children: Goal[] })[] {
 }
 
 export function getGoal(db: Database, id: string): Goal | null {
-  const row = db.prepare('SELECT * FROM goals WHERE id = ?').get(id) as Record<string, unknown> | undefined;
+  const row = db.prepare("SELECT * FROM goals WHERE id = ?").get(id) as Record<string, unknown> | undefined;
   return row ? rowToGoal(row) : null;
 }
 
@@ -53,10 +53,10 @@ export function createGoal(db: Database, data: Partial<Goal>): Goal {
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
     id,
-    data.title || 'Untitled',
+    data.title || "Untitled",
     data.description ?? null,
-    data.status ?? 'not_started',
-    data.level ?? 'company',
+    data.status ?? "not_started",
+    data.level ?? "company",
     data.parentId ?? null,
     data.department ?? null,
     data.owner ?? null,
@@ -93,9 +93,9 @@ export function updateGoal(db: Database, id: string, updates: Partial<Goal>): Go
 
 export function deleteGoal(db: Database, id: string): void {
   // Cascade delete children
-  const children = db.prepare('SELECT id FROM goals WHERE parent_id = ?').all(id) as { id: string }[];
+  const children = db.prepare("SELECT id FROM goals WHERE parent_id = ?").all(id) as { id: string }[];
   for (const child of children) {
     deleteGoal(db, child.id);
   }
-  db.prepare('DELETE FROM goals WHERE id = ?').run(id);
+  db.prepare("DELETE FROM goals WHERE id = ?").run(id);
 }

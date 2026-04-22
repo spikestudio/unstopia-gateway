@@ -1,6 +1,6 @@
+import { randomUUID } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
-import { randomUUID } from "node:crypto";
 
 const SLACK_MAX_LENGTH = 3000;
 
@@ -78,11 +78,7 @@ export function formatResponse(text: string): string[] {
  * Download a Slack file attachment to a local directory.
  * Returns the local file path.
  */
-export async function downloadAttachment(
-  url: string,
-  token: string,
-  destDir: string,
-): Promise<string> {
+export async function downloadAttachment(url: string, token: string, destDir: string): Promise<string> {
   fs.mkdirSync(destDir, { recursive: true });
 
   const response = await fetch(url, {

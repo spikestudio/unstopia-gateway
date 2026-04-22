@@ -1,25 +1,20 @@
-"use client"
+"use client";
 
-import { useSettings } from "@/app/settings-provider"
-import { emojiForName } from "@/lib/emoji-pool"
+import { useSettings } from "@/app/settings-provider";
+import { emojiForName } from "@/lib/emoji-pool";
 
 interface EmployeeAvatarProps {
-  name: string
-  size?: number
-  className?: string
-  onClick?: () => void
+  name: string;
+  size?: number;
+  className?: string;
+  onClick?: () => void;
 }
 
-export function EmployeeAvatar({
-  name,
-  size = 32,
-  className,
-  onClick,
-}: EmployeeAvatarProps) {
-  const { settings } = useSettings()
-  const override = name ? settings.employeeOverrides[name] : undefined
-  const emoji = override?.emoji || emojiForName(name || '')
-  const fontSize = Math.round(size * 0.6)
+export function EmployeeAvatar({ name, size = 32, className, onClick }: EmployeeAvatarProps) {
+  const { settings } = useSettings();
+  const override = name ? settings.employeeOverrides[name] : undefined;
+  const emoji = override?.emoji || emojiForName(name || "");
+  const fontSize = Math.round(size * 0.6);
 
   return (
     <span
@@ -42,7 +37,7 @@ export function EmployeeAvatar({
     >
       {emoji}
     </span>
-  )
+  );
 }
 
 /** Standalone avatar preview without settings context (for pickers / settings page) */
@@ -53,8 +48,8 @@ export function AvatarPreview({
   onClick,
   emoji: overrideEmoji,
 }: EmployeeAvatarProps & { emoji?: string }) {
-  const emoji = overrideEmoji || emojiForName(name)
-  const fontSize = Math.round(size * 0.6)
+  const emoji = overrideEmoji || emojiForName(name);
+  const fontSize = Math.round(size * 0.6);
 
   return (
     <span
@@ -77,5 +72,5 @@ export function AvatarPreview({
     >
       {emoji}
     </span>
-  )
+  );
 }

@@ -1,13 +1,9 @@
 import cron from "node-cron";
-import type {
-  CronJob,
-  JinnConfig,
-  Connector,
-} from "../shared/types.js";
-import { runCronJob } from "./runner.js";
-import { logger } from "../shared/logger.js";
 import type { SessionManager } from "../sessions/manager.js";
+import { logger } from "../shared/logger.js";
+import type { Connector, CronJob, JinnConfig } from "../shared/types.js";
 import { loadJobs, saveJobs } from "./jobs.js";
+import { runCronJob } from "./runner.js";
 
 let tasks: cron.ScheduledTask[] = [];
 let currentSessionManager: SessionManager;
@@ -42,9 +38,7 @@ function scheduleJobs(jobs: CronJob[]): void {
   for (const job of jobs) {
     if (!job.enabled) continue;
     if (!cron.validate(job.schedule)) {
-      logger.warn(
-        `Invalid cron schedule for job "${job.name}": ${job.schedule}`,
-      );
+      logger.warn(`Invalid cron schedule for job "${job.name}": ${job.schedule}`);
       continue;
     }
     const task = cron.schedule(

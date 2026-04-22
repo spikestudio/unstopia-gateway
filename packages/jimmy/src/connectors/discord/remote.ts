@@ -1,11 +1,5 @@
-import type {
-  Connector,
-  ConnectorCapabilities,
-  ConnectorHealth,
-  IncomingMessage,
-  Target,
-} from "../../shared/types.js";
 import { logger } from "../../shared/logger.js";
+import type { Connector, ConnectorCapabilities, ConnectorHealth, IncomingMessage, Target } from "../../shared/types.js";
 
 export interface RemoteDiscordConfig {
   /** URL of the primary Jinn instance that holds the Discord WebSocket connection */

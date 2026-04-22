@@ -1,5 +1,5 @@
-import type { Employee, ServiceDeclaration, OrgHierarchy, OrgNode } from "../shared/types.js";
 import { logger } from "../shared/logger.js";
+import type { Employee, OrgHierarchy, OrgNode, ServiceDeclaration } from "../shared/types.js";
 
 export interface ServiceEntry {
   provider: Employee;
@@ -11,9 +11,7 @@ export interface ServiceEntry {
  * If two employees provide the same service, the higher-ranked one wins.
  * Ties broken alphabetically by name.
  */
-export function buildServiceRegistry(
-  employees: Map<string, Employee>,
-): Map<string, ServiceEntry> {
+export function buildServiceRegistry(employees: Map<string, Employee>): Map<string, ServiceEntry> {
   const RANK_PRIORITY: Record<string, number> = {
     executive: 0,
     manager: 1,
@@ -31,7 +29,9 @@ export function buildServiceRegistry(
         const existingRank = RANK_PRIORITY[existing.provider.rank] ?? 3;
         const newRank = RANK_PRIORITY[emp.rank] ?? 3;
         if (newRank < existingRank || (newRank === existingRank && emp.name < existing.provider.name)) {
-          logger.info(`Service "${decl.name}": "${emp.name}" overrides "${existing.provider.name}" (higher rank or alphabetical)`);
+          logger.info(
+            `Service "${decl.name}": "${emp.name}" overrides "${existing.provider.name}" (higher rank or alphabetical)`,
+          );
           registry.set(decl.name, { provider: emp, declaration: decl });
         } else {
           logger.info(`Service "${decl.name}": "${existing.provider.name}" retained over "${emp.name}"`);
@@ -50,11 +50,7 @@ export function buildServiceRegistry(
  * Walks up parentName chains. Returns the ancestor name, or null if both are root-level.
  * Safe from infinite loops — resolveOrgHierarchy breaks cycles before this runs.
  */
-export function findCommonAncestor(
-  employeeA: string,
-  employeeB: string,
-  hierarchy: OrgHierarchy,
-): string | null {
+export function findCommonAncestor(employeeA: string, employeeB: string, hierarchy: OrgHierarchy): string | null {
   const nodeA = hierarchy.nodes[employeeA];
   const nodeB = hierarchy.nodes[employeeB];
   if (!nodeA || !nodeB) return null;
@@ -83,11 +79,7 @@ export function findCommonAncestor(
  * Build the route path from source employee to target employee.
  * Returns an array of employee names: [source, ..., LCA, ..., target].
  */
-export function buildRoutePath(
-  from: string,
-  to: string,
-  hierarchy: OrgHierarchy,
-): string[] {
+export function buildRoutePath(from: string, to: string, hierarchy: OrgHierarchy): string[] {
   if (from === to) return [from];
 
   const ancestor = findCommonAncestor(from, to, hierarchy);
@@ -116,10 +108,7 @@ export function buildRoutePath(
  * Resolve the manager chain along a route path.
  * Returns employees that have direct reports (i.e., are actual managers).
  */
-export function resolveManagerChain(
-  routePath: string[],
-  hierarchy: OrgHierarchy,
-): OrgNode[] {
+export function resolveManagerChain(routePath: string[], hierarchy: OrgHierarchy): OrgNode[] {
   const chain: OrgNode[] = [];
   const seen = new Set<string>();
 

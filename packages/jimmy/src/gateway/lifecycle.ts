@@ -2,11 +2,11 @@ import { execSync, fork } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { PID_FILE, JINN_HOME } from "../shared/paths.js";
+import { loadConfig } from "../shared/config.js";
 import { logger } from "../shared/logger.js";
+import { JINN_HOME, PID_FILE } from "../shared/paths.js";
 import type { JinnConfig } from "../shared/types.js";
 import { startGateway } from "./server.js";
-import { loadConfig } from "../shared/config.js";
 
 export async function startForeground(config: JinnConfig): Promise<void> {
   const cleanup = await startGateway(config);
@@ -35,7 +35,7 @@ export async function startForeground(config: JinnConfig): Promise<void> {
   process.on("SIGTERM", shutdown);
 }
 
-export function startDaemon(config: JinnConfig): void {
+export function startDaemon(_config: JinnConfig): void {
   const __filename = fileURLToPath(import.meta.url);
   const candidateEntryScripts = [
     // When running from a built bundle, __filename is dist/src/gateway/lifecycle.js
@@ -126,9 +126,7 @@ function findPidOnPort(port: number): number | null {
       return isNaN(pid) ? null : pid;
     } else {
       const output = execSync(
-        process.platform === "darwin"
-          ? `/usr/sbin/lsof -ti tcp:${port}`
-          : `lsof -ti tcp:${port}`,
+        process.platform === "darwin" ? `/usr/sbin/lsof -ti tcp:${port}` : `lsof -ti tcp:${port}`,
         { encoding: "utf-8" },
       ).trim();
       if (!output) return null;

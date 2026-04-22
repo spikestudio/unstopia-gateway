@@ -1,5 +1,6 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import type React from "react";
+import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
@@ -20,9 +21,17 @@ interface BoardData {
 }
 
 const priorityStyles: Record<string, React.CSSProperties> = {
-  high: { background: 'color-mix(in srgb, var(--system-red) 12%, transparent)', color: 'var(--system-red)', borderColor: 'color-mix(in srgb, var(--system-red) 25%, transparent)' },
-  medium: { background: 'color-mix(in srgb, var(--system-orange) 12%, transparent)', color: 'var(--system-orange)', borderColor: 'color-mix(in srgb, var(--system-orange) 25%, transparent)' },
-  low: { background: 'var(--fill-tertiary)', color: 'var(--text-tertiary)', borderColor: 'var(--separator)' },
+  high: {
+    background: "color-mix(in srgb, var(--system-red) 12%, transparent)",
+    color: "var(--system-red)",
+    borderColor: "color-mix(in srgb, var(--system-red) 25%, transparent)",
+  },
+  medium: {
+    background: "color-mix(in srgb, var(--system-orange) 12%, transparent)",
+    color: "var(--system-orange)",
+    borderColor: "color-mix(in srgb, var(--system-orange) 25%, transparent)",
+  },
+  low: { background: "var(--fill-tertiary)", color: "var(--text-tertiary)", borderColor: "var(--separator)" },
 };
 
 const columnLabels: Record<string, string> = {
@@ -66,9 +75,7 @@ function Column({ title, tasks }: { title: string; tasks: Task[] }) {
           <TaskCard key={task.id || idx} task={task} />
         ))}
         {tasks.length === 0 && (
-          <p className="py-4 text-center text-[length:var(--text-caption1)] text-[var(--text-quaternary)]">
-            No tasks
-          </p>
+          <p className="py-4 text-center text-[length:var(--text-caption1)] text-[var(--text-quaternary)]">No tasks</p>
         )}
       </div>
     </div>
@@ -122,9 +129,7 @@ export function BoardView({ department }: { department: string }) {
   } else if (Array.isArray(board.tasks)) {
     columns = {
       todo: board.tasks.filter((t) => t.status === "todo"),
-      in_progress: board.tasks.filter(
-        (t) => t.status === "in_progress" || t.status === "inProgress",
-      ),
+      in_progress: board.tasks.filter((t) => t.status === "in_progress" || t.status === "inProgress"),
       done: board.tasks.filter((t) => t.status === "done"),
     };
   } else {

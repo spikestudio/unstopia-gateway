@@ -1,23 +1,17 @@
 import {
   Client,
-  GatewayIntentBits,
-  Partials,
-  type Message,
-  type TextChannel,
   type DMChannel,
+  GatewayIntentBits,
+  type Message,
+  Partials,
+  type TextChannel,
   type ThreadChannel,
 } from "discord.js";
-import type {
-  Connector,
-  ConnectorCapabilities,
-  ConnectorHealth,
-  IncomingMessage,
-  Target,
-} from "../../shared/types.js";
 import { logger } from "../../shared/logger.js";
 import { TMP_DIR } from "../../shared/paths.js";
-import { formatResponse, downloadAttachment } from "./format.js";
-import { deriveSessionKey, buildReplyContext, isOldMessage } from "./threads.js";
+import type { Connector, ConnectorCapabilities, ConnectorHealth, IncomingMessage, Target } from "../../shared/types.js";
+import { downloadAttachment, formatResponse } from "./format.js";
+import { buildReplyContext, deriveSessionKey, isOldMessage } from "./threads.js";
 
 export interface DiscordConnectorConfig {
   /** Unique instance identifier (e.g. "discord-vox") */
@@ -57,15 +51,11 @@ export class DiscordConnector implements Connector {
     if (this.config.channelId) this.config.channelId = String(this.config.channelId);
     if (this.config.channelRouting) {
       this.config.channelRouting = Object.fromEntries(
-        Object.entries(this.config.channelRouting).map(([k, v]) => [String(k), v])
+        Object.entries(this.config.channelRouting).map(([k, v]) => [String(k), v]),
       );
     }
     this.allowedUserIds = new Set(
-      Array.isArray(config.allowFrom)
-        ? config.allowFrom
-        : config.allowFrom
-        ? [config.allowFrom]
-        : [],
+      Array.isArray(config.allowFrom) ? config.allowFrom : config.allowFrom ? [config.allowFrom] : [],
     );
     this.client = new Client({
       intents: [
@@ -145,7 +135,7 @@ export class DiscordConnector implements Connector {
   async sendMessage(target: Target, text: string): Promise<string | undefined> {
     try {
       const channel = await this.client.channels.fetch(target.channel);
-      if (!channel || !channel.isTextBased()) return;
+      if (!channel || !channel.isTextBased()) return undefined;
       const chunks = formatResponse(text);
       let lastId: string | undefined;
       for (const chunk of chunks) {
@@ -155,13 +145,14 @@ export class DiscordConnector implements Connector {
       return lastId;
     } catch (err) {
       logger.error(`Discord sendMessage error: ${err instanceof Error ? err.message : err}`);
+      return undefined;
     }
   }
 
   async replyMessage(target: Target, text: string): Promise<string | undefined> {
     try {
       const channel = await this.client.channels.fetch(target.thread ?? target.channel);
-      if (!channel || !channel.isTextBased()) return;
+      if (!channel || !channel.isTextBased()) return undefined;
       const chunks = formatResponse(text);
       let lastId: string | undefined;
       for (const chunk of chunks) {
@@ -171,6 +162,7 @@ export class DiscordConnector implements Connector {
       return lastId;
     } catch (err) {
       logger.error(`Discord replyMessage error: ${err instanceof Error ? err.message : err}`);
+      return undefined;
     }
   }
 
@@ -225,7 +217,9 @@ export class DiscordConnector implements Connector {
         const interval = setInterval(async () => {
           try {
             await (channel as TextChannel).sendTyping();
-          } catch { /* non-fatal */ }
+          } catch {
+            /* non-fatal */
+          }
         }, 8_000);
         this.typingIntervals.set(channelId, interval);
       }
@@ -240,10 +234,8 @@ export class DiscordConnector implements Connector {
     logger.debug(`Discord message from ${message.author.username} in channel ${message.channel.id}`);
 
     // Ignore old messages on boot
-    if (
-      this.config.ignoreOldMessagesOnBoot !== false &&
-      isOldMessage(message.createdTimestamp, this.bootTimeMs)
-    ) return;
+    if (this.config.ignoreOldMessagesOnBoot !== false && isOldMessage(message.createdTimestamp, this.bootTimeMs))
+      return;
 
     // Guild restriction
     if (this.config.guildId && message.guild?.id !== this.config.guildId) return;
@@ -298,9 +290,8 @@ export class DiscordConnector implements Connector {
       messageId: message.id,
       raw: message,
       transportMeta: {
-        channelName: message.channel.isTextBased() && "name" in message.channel
-          ? (message.channel as TextChannel).name
-          : "dm",
+        channelName:
+          message.channel.isTextBased() && "name" in message.channel ? (message.channel as TextChannel).name : "dm",
         guildId: message.guild?.id ?? null,
         isDM: message.channel.isDMBased(),
       },
@@ -329,9 +320,8 @@ export class DiscordConnector implements Connector {
         attachments,
         replyContext: buildReplyContext(message),
         transportMeta: {
-          channelName: message.channel.isTextBased() && "name" in message.channel
-            ? (message.channel as TextChannel).name
-            : "dm",
+          channelName:
+            message.channel.isTextBased() && "name" in message.channel ? (message.channel as TextChannel).name : "dm",
           guildId: message.guild?.id ?? null,
           isDM: message.channel.isDMBased(),
         },

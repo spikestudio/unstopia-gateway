@@ -1,23 +1,18 @@
+import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
-import { execFileSync } from "node:child_process";
 import yaml from "js-yaml";
-import {
-  JINN_HOME,
-  CONFIG_PATH,
-  MIGRATIONS_DIR,
-  TEMPLATE_DIR,
-  SKILLS_DIR,
-  CLAUDE_SKILLS_DIR,
-  AGENTS_SKILLS_DIR,
-} from "../shared/paths.js";
 import { loadConfig } from "../shared/config.js";
 import {
-  compareSemver,
-  getPackageVersion,
-  getInstanceVersion,
-  getPendingMigrations,
-} from "../shared/version.js";
+  AGENTS_SKILLS_DIR,
+  CLAUDE_SKILLS_DIR,
+  CONFIG_PATH,
+  JINN_HOME,
+  MIGRATIONS_DIR,
+  SKILLS_DIR,
+  TEMPLATE_DIR,
+} from "../shared/paths.js";
+import { compareSemver, getInstanceVersion, getPackageVersion, getPendingMigrations } from "../shared/version.js";
 
 const GREEN = "\x1b[32m";
 const YELLOW = "\x1b[33m";
@@ -193,7 +188,7 @@ export async function runMigrate(opts: { check?: boolean; auto?: boolean }): Pro
     });
 
     console.log(`\n${GREEN}Migration complete.${RESET}\n`);
-  } catch (err: any) {
+  } catch {
     console.error(`\n${RED}Migration failed.${RESET} You can retry with: jinn migrate`);
     console.error(`The staged files are still in ${MIGRATIONS_DIR}\n`);
     process.exit(1);
@@ -204,11 +199,7 @@ export async function runMigrate(opts: { check?: boolean; auto?: boolean }): Pro
  * Auto-migration: deterministically apply safe changes without AI.
  * Copies new files, adds new config keys. Does NOT modify user-customized files.
  */
-async function applyAutoMigrations(
-  pending: string[],
-  instanceVersion: string,
-  packageVersion: string,
-): Promise<void> {
+async function applyAutoMigrations(pending: string[], instanceVersion: string, packageVersion: string): Promise<void> {
   let applied = 0;
 
   for (const version of pending) {
@@ -249,7 +240,9 @@ async function applyAutoMigrations(
   // Clean up
   fs.rmSync(MIGRATIONS_DIR, { recursive: true, force: true });
 
-  console.log(`\n${DIM}Tip: Run ${RESET}jinn migrate${DIM} (without --auto) to also merge updated files with AI.${RESET}\n`);
+  console.log(
+    `\n${DIM}Tip: Run ${RESET}jinn migrate${DIM} (without --auto) to also merge updated files with AI.${RESET}\n`,
+  );
 }
 
 /** Recursively collect relative file paths under a directory. */

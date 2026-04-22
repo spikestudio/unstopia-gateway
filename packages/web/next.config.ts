@@ -1,5 +1,5 @@
-import { PHASE_DEVELOPMENT_SERVER } from "next/constants.js";
 import type { NextConfig } from "next";
+import { PHASE_DEVELOPMENT_SERVER } from "next/constants.js";
 
 export default (phase: string): NextConfig => {
   const config: NextConfig = {

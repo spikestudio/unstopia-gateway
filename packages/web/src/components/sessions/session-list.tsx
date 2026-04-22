@@ -1,13 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import {
-  Card,
-  CardContent,
-} from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { api } from "@/lib/api";
 import { useSettings } from "@/app/settings-provider";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
+import { api } from "@/lib/api";
 
 interface Session {
   id: string;
@@ -80,7 +77,9 @@ export function SessionList({
     try {
       await api.deleteSession(confirmDelete);
       onDeleted?.();
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
     setConfirmDelete(null);
   }
 
@@ -98,10 +97,7 @@ export function SessionList({
 
   return (
     <>
-      <div
-        className="flex flex-col gap-[var(--space-3)]"
-        onClick={() => setContextMenu(null)}
-      >
+      <div className="flex flex-col gap-[var(--space-3)]" onClick={() => setContextMenu(null)}>
         {sessions.map((s) => (
           <Card
             key={s.id}
@@ -109,14 +105,9 @@ export function SessionList({
             onClick={() => onSelect(s.id)}
             onContextMenu={(e) => handleContextMenu(e, s.id)}
             style={{
-              borderColor:
-                selectedId === s.id
-                  ? "var(--accent)"
-                  : undefined,
+              borderColor: selectedId === s.id ? "var(--accent)" : undefined,
               background:
-                selectedId === s.id
-                  ? "color-mix(in srgb, var(--accent) 5%, var(--bg-card, var(--bg)))"
-                  : undefined,
+                selectedId === s.id ? "color-mix(in srgb, var(--accent) 5%, var(--bg-card, var(--bg)))" : undefined,
             }}
           >
             <CardContent className="flex items-center justify-between gap-4">
@@ -155,10 +146,7 @@ export function SessionList({
 
       {/* Context menu */}
       {contextMenu && (
-        <div
-          className="fixed inset-0 z-50"
-          onClick={() => setContextMenu(null)}
-        >
+        <div className="fixed inset-0 z-50" onClick={() => setContextMenu(null)}>
           <div
             className="fixed bg-[var(--bg)] border border-[var(--separator)] rounded-[var(--radius-md)] shadow-[var(--shadow-lg)] p-[var(--space-1)] z-[51] min-w-[160px]"
             style={{
@@ -171,7 +159,16 @@ export function SessionList({
               onClick={() => handleDelete(contextMenu.sessionId)}
               className="w-full text-left px-[var(--space-3)] py-[var(--space-2)] text-[length:var(--text-footnote)] text-[var(--system-red)] bg-transparent border-none cursor-pointer rounded-[var(--radius-sm)] flex items-center gap-[var(--space-2)]"
             >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
                 <polyline points="3 6 5 6 21 6" />
                 <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
               </svg>

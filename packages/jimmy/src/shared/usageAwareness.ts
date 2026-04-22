@@ -71,4 +71,3 @@ export function isLikelyNearClaudeUsageLimit(now = new Date()): boolean {
   // Heuristic: if we've hit the limit recently, we're likely near it again.
   return now.getTime() - d.getTime() < 6 * 60 * 60_000;
 }
-

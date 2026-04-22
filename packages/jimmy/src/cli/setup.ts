@@ -1,24 +1,24 @@
+import { execSync, spawn } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import readline from "node:readline";
-import { execSync, spawn } from "node:child_process";
 import yaml from "js-yaml";
+import { initDb } from "../sessions/registry.js";
 import {
-  JINN_HOME,
+  AGENTS_SKILLS_DIR,
+  CLAUDE_SKILLS_DIR,
   CONFIG_PATH,
   CRON_JOBS,
   CRON_RUNS,
-  TMP_DIR,
-  TEMPLATE_DIR,
-  LOGS_DIR,
   DOCS_DIR,
-  SKILLS_DIR,
+  JINN_HOME,
+  LOGS_DIR,
   ORG_DIR,
-  CLAUDE_SKILLS_DIR,
-  AGENTS_SKILLS_DIR,
+  SKILLS_DIR,
+  TEMPLATE_DIR,
+  TMP_DIR,
 } from "../shared/paths.js";
-import { initDb } from "../sessions/registry.js";
 import { getPackageVersion } from "../shared/version.js";
 
 const GREEN = "\x1b[32m";
@@ -88,10 +88,7 @@ function ensureFile(filePath: string, content: string): boolean {
  * Apply template placeholder replacements to file content.
  * Only applies to .md and .yaml files.
  */
-function applyTemplateReplacements(
-  content: string,
-  replacements: Record<string, string>,
-): string {
+function applyTemplateReplacements(content: string, replacements: Record<string, string>): string {
   let result = content;
   for (const [placeholder, value] of Object.entries(replacements)) {
     result = result.replaceAll(placeholder, value);
@@ -104,11 +101,7 @@ function applyTemplateReplacements(
  * Applies template placeholder replacements to .md and .yaml files.
  * Returns list of created file paths.
  */
-function copyTemplateDir(
-  srcDir: string,
-  destDir: string,
-  replacements?: Record<string, string>,
-): string[] {
+function copyTemplateDir(srcDir: string, destDir: string, replacements?: Record<string, string>): string[] {
   const created: string[] = [];
   if (!fs.existsSync(srcDir)) return created;
 
@@ -122,8 +115,6 @@ function copyTemplateDir(
     if (entry.isDirectory()) {
       created.push(...copyTemplateDir(srcPath, destPath, replacements));
     } else if (entry.name === ".gitkeep") {
-      // skip .gitkeep — directory already created
-      continue;
     } else if (!fs.existsSync(destPath)) {
       fs.mkdirSync(path.dirname(destPath), { recursive: true });
       const ext = path.extname(entry.name).toLowerCase();
@@ -152,7 +143,9 @@ function detectProjectContext(portalSlug: string): void {
       check: (dir) => {
         try {
           return fs.readdirSync(dir).some((e) => e.endsWith(".xcodeproj"));
-        } catch { return false; }
+        } catch {
+          return false;
+        }
       },
       query: "ios swift xcode",
       label: "iOS",
@@ -176,7 +169,9 @@ function detectProjectContext(portalSlug: string): void {
       check: (dir) => {
         try {
           return fs.readdirSync(dir).some((e) => e.startsWith("playwright.config"));
-        } catch { return false; }
+        } catch {
+          return false;
+        }
       },
       query: "playwright testing",
       label: "Playwright",
@@ -189,7 +184,9 @@ function detectProjectContext(portalSlug: string): void {
           const pkg = JSON.parse(fs.readFileSync(pkgPath, "utf-8"));
           const deps = { ...pkg.dependencies, ...pkg.devDependencies };
           return deps != null && ("react" in deps || "next" in deps);
-        } catch { return false; }
+        } catch {
+          return false;
+        }
       },
       query: "react nextjs",
       label: "React",
@@ -199,8 +196,7 @@ function detectProjectContext(portalSlug: string): void {
   const detected = new Map<string, string>(); // label → query
 
   try {
-    const topLevel = fs.readdirSync(projectsDir, { withFileTypes: true })
-      .filter((e) => e.isDirectory());
+    const topLevel = fs.readdirSync(projectsDir, { withFileTypes: true }).filter((e) => e.isDirectory());
 
     const projectDirs: string[] = [];
     for (const dir of topLevel) {
@@ -208,8 +204,7 @@ function detectProjectContext(portalSlug: string): void {
       projectDirs.push(dirPath);
       // One level deeper for org-style folders (e.g. ~/Projects/Personal/foo)
       try {
-        const subDirs = fs.readdirSync(dirPath, { withFileTypes: true })
-          .filter((e) => e.isDirectory());
+        const subDirs = fs.readdirSync(dirPath, { withFileTypes: true }).filter((e) => e.isDirectory());
         for (const sub of subDirs) {
           projectDirs.push(path.join(dirPath, sub.name));
         }
@@ -233,7 +228,9 @@ function detectProjectContext(portalSlug: string): void {
   if (detected.size > 0) {
     console.log("");
     for (const [label, query] of detected) {
-      console.log(`  💡 Detected ${label} projects. Run ${DIM}${portalSlug} skills find ${query}${RESET} to discover relevant skills.`);
+      console.log(
+        `  💡 Detected ${label} projects. Run ${DIM}${portalSlug} skills find ${query}${RESET} to discover relevant skills.`,
+      );
     }
   }
 }
@@ -330,9 +327,7 @@ export async function runSetup(opts?: { force?: boolean }): Promise<void> {
 
   // Derive default COO name from instance name if set, otherwise "Jinn"
   const instanceName = process.env.JINN_INSTANCE;
-  const defaultName = instanceName
-    ? instanceName.charAt(0).toUpperCase() + instanceName.slice(1)
-    : "Jinn";
+  const defaultName = instanceName ? instanceName.charAt(0).toUpperCase() + instanceName.slice(1) : "Jinn";
 
   let chosenName = defaultName;
   let chosenEngine: "claude" | "codex" = "claude";
@@ -367,9 +362,7 @@ export async function runSetup(opts?: { force?: boolean }): Promise<void> {
   const templateAgents = path.join(TEMPLATE_DIR, "AGENTS.md");
 
   if (!fs.existsSync(CONFIG_PATH)) {
-    let source = fs.existsSync(templateConfig)
-      ? fs.readFileSync(templateConfig, "utf-8")
-      : DEFAULT_CONFIG;
+    let source = fs.existsSync(templateConfig) ? fs.readFileSync(templateConfig, "utf-8") : DEFAULT_CONFIG;
     // Stamp the current package version into the config
     source = source.replace(/version:\s*"[^"]*"/, `version: "${getPackageVersion()}"`);
     // Apply interactive choices
@@ -386,7 +379,9 @@ export async function runSetup(opts?: { force?: boolean }): Promise<void> {
     try {
       const cfg = yaml.load(fs.readFileSync(CONFIG_PATH, "utf-8")) as any;
       return cfg?.portal?.portalName || "Jinn";
-    } catch { return "Jinn"; }
+    } catch {
+      return "Jinn";
+    }
   })();
   const portalSlug = portalName.toLowerCase().replace(/\s+/g, "-");
 
@@ -397,9 +392,7 @@ export async function runSetup(opts?: { force?: boolean }): Promise<void> {
 
   const claudeMdPath = path.join(JINN_HOME, "CLAUDE.md");
   if (!fs.existsSync(claudeMdPath)) {
-    let source = fs.existsSync(templateClaude)
-      ? fs.readFileSync(templateClaude, "utf-8")
-      : defaultClaudeMd(portalName);
+    let source = fs.existsSync(templateClaude) ? fs.readFileSync(templateClaude, "utf-8") : defaultClaudeMd(portalName);
     source = applyTemplateReplacements(source, templateReplacements);
     ensureFile(claudeMdPath, source);
     created.push(claudeMdPath);
@@ -407,9 +400,7 @@ export async function runSetup(opts?: { force?: boolean }): Promise<void> {
 
   const agentsMdPath = path.join(JINN_HOME, "AGENTS.md");
   if (!fs.existsSync(agentsMdPath)) {
-    let source = fs.existsSync(templateAgents)
-      ? fs.readFileSync(templateAgents, "utf-8")
-      : defaultAgentsMd(portalName);
+    let source = fs.existsSync(templateAgents) ? fs.readFileSync(templateAgents, "utf-8") : defaultAgentsMd(portalName);
     source = applyTemplateReplacements(source, templateReplacements);
     ensureFile(agentsMdPath, source);
     created.push(agentsMdPath);
@@ -466,7 +457,8 @@ export async function runSetup(opts?: { force?: boolean }): Promise<void> {
   ensureDir(AGENTS_SKILLS_DIR);
 
   if (fs.existsSync(SKILLS_DIR)) {
-    const skillDirs = fs.readdirSync(SKILLS_DIR, { withFileTypes: true })
+    const skillDirs = fs
+      .readdirSync(SKILLS_DIR, { withFileTypes: true })
       .filter((e) => e.isDirectory())
       .map((e) => e.name);
     for (const name of skillDirs) {
@@ -486,21 +478,43 @@ export async function runSetup(opts?: { force?: boolean }): Promise<void> {
 
   // Create .claude/settings.local.json for engine permissions
   const settingsPath = path.join(JINN_HOME, ".claude", "settings.local.json");
-  if (ensureFile(settingsPath, JSON.stringify({
-    permissions: {
-      allow: [
-        "Bash(npm:*)", "Bash(pnpm:*)", "Bash(node:*)", "Bash(jinn:*)",
-        "Bash(curl:*)", "Bash(cat:*)", "Bash(ls:*)", "Bash(mkdir:*)",
-        "Bash(cp:*)", "Bash(mv:*)", "Bash(rm:*)", "Bash(git:*)",
-        "Read", "Write", "Edit", "Glob", "Grep",
-      ],
-    },
-  }, null, 2) + "\n")) {
+  if (
+    ensureFile(
+      settingsPath,
+      JSON.stringify(
+        {
+          permissions: {
+            allow: [
+              "Bash(npm:*)",
+              "Bash(pnpm:*)",
+              "Bash(node:*)",
+              "Bash(jinn:*)",
+              "Bash(curl:*)",
+              "Bash(cat:*)",
+              "Bash(ls:*)",
+              "Bash(mkdir:*)",
+              "Bash(cp:*)",
+              "Bash(mv:*)",
+              "Bash(rm:*)",
+              "Bash(git:*)",
+              "Read",
+              "Write",
+              "Edit",
+              "Glob",
+              "Grep",
+            ],
+          },
+        },
+        null,
+        2,
+      ) + "\n",
+    )
+  ) {
     created.push(settingsPath);
   }
 
   // Pre-cache skills CLI for instant searches later
-  spawn('npx', ['skills', '--version'], { stdio: 'ignore', detached: true }).unref();
+  spawn("npx", ["skills", "--version"], { stdio: "ignore", detached: true }).unref();
 
   // Detect project context and suggest relevant skills
   detectProjectContext(portalSlug);

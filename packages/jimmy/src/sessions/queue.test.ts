@@ -1,5 +1,5 @@
-import test from "node:test";
 import assert from "node:assert/strict";
+import test from "node:test";
 import { SessionQueue } from "./queue.js";
 
 test("SessionQueue tracks queued work behind the active task", async () => {
