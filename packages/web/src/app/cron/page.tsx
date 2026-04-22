@@ -56,7 +56,7 @@ function titleCase(slug: string): string {
 function timeAgo(dateStr: string | null | undefined): string {
   if (!dateStr) return "never";
   const d = new Date(dateStr);
-  if (isNaN(d.getTime())) return "\u2014";
+  if (Number.isNaN(d.getTime())) return "\u2014";
   const diff = Date.now() - d.getTime();
   const mins = Math.floor(diff / 60000);
   const hrs = Math.floor(diff / 3600000);

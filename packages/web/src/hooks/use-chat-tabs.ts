@@ -123,15 +123,12 @@ export function useChatTabs() {
     });
   }, []);
 
-  const switchTab = useCallback(
-    (index: number) => {
-      setState((current) => {
-        if (index < 0 || index >= current.tabs.length) return current;
-        return { ...current, activeIndex: index };
-      });
-    },
-    [tabs.length],
-  );
+  const switchTab = useCallback((index: number) => {
+    setState((current) => {
+      if (index < 0 || index >= current.tabs.length) return current;
+      return { ...current, activeIndex: index };
+    });
+  }, []);
 
   /** Move a tab from one position to another (for drag & drop reordering). */
   const moveTab = useCallback((from: number, to: number) => {
@@ -163,14 +160,14 @@ export function useChatTabs() {
       if (current.tabs.length === 0) return current;
       return { ...current, activeIndex: (current.activeIndex + 1 + current.tabs.length) % current.tabs.length };
     });
-  }, [tabs.length]);
+  }, []);
 
   const prevTab = useCallback(() => {
     setState((current) => {
       if (current.tabs.length === 0) return current;
       return { ...current, activeIndex: (current.activeIndex - 1 + current.tabs.length) % current.tabs.length };
     });
-  }, [tabs.length]);
+  }, []);
 
   const clearActiveTab = useCallback(() => {
     setState((current) => ({ ...current, activeIndex: -1 }));

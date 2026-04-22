@@ -40,7 +40,7 @@ export async function runNuke(name?: string): Promise<void> {
 
     // Try as number first
     const num = parseInt(choice, 10);
-    if (!isNaN(num) && num >= 1 && num <= instances.length) {
+    if (!Number.isNaN(num) && num >= 1 && num <= instances.length) {
       name = instances[num - 1].name;
     } else {
       name = choice;

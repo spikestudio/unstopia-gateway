@@ -95,8 +95,8 @@ export interface Connector {
   getCapabilities(): ConnectorCapabilities;
   getHealth(): ConnectorHealth;
   reconstructTarget(replyContext: ReplyContext): Target;
-  sendMessage(target: Target, text: string): Promise<string | void>;
-  replyMessage(target: Target, text: string): Promise<string | void>;
+  sendMessage(target: Target, text: string): Promise<string | undefined>;
+  replyMessage(target: Target, text: string): Promise<string | undefined>;
   addReaction(target: Target, emoji: string): Promise<void>;
   removeReaction(target: Target, emoji: string): Promise<void>;
   editMessage(target: Target, text: string): Promise<void>;

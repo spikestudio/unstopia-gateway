@@ -23,8 +23,7 @@ export function configureLogger(opts: { level?: string; stdout?: boolean; file?:
 function log(level: LogLevel, message: string) {
   if (LEVELS[level] < LEVELS[minLevel]) return;
   const line = `${new Date().toISOString()} [${level.toUpperCase()}] ${message}`;
-  if (writeToStdout) console.log(line);
-  if (logStream) logStream.write(line + "\n");
+  if (writeToStdout) if (logStream) logStream.write(`${line}\n`);
 }
 
 export const logger = {

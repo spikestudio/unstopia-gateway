@@ -113,7 +113,7 @@ export function QueuePanel({ sessionId, events, paused: initialPaused = false }:
               {item.position}.
             </span>
             <span className="flex-1 text-[length:var(--text-caption1)] text-[var(--text-secondary)] overflow-hidden text-ellipsis whitespace-nowrap">
-              {item.prompt.length > 60 ? item.prompt.slice(0, 57) + "..." : item.prompt}
+              {item.prompt.length > 60 ? `${item.prompt.slice(0, 57)}...` : item.prompt}
             </span>
             <button
               onClick={() => handleCancel(item.id)}

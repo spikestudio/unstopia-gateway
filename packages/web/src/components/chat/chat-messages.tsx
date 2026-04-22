@@ -156,7 +156,7 @@ function inlineFormat(text: string): React.ReactNode {
     last = match.index + match[0].length;
   }
   if (last < text.length) parts.push(text.slice(last));
-  return parts.length === 1 ? parts[0] : <>{parts}</>;
+  return parts.length === 1 ? parts[0] : parts;
 }
 
 function CodeBlock({ code, keyProp }: { code: string; keyProp: number }) {
@@ -404,7 +404,7 @@ function formatTimestamp(ts: number): string {
 
   if (isToday) return `Today ${time}`;
   if (isYesterday) return `Yesterday ${time}`;
-  return date.toLocaleDateString("en-US", { month: "short", day: "numeric" }) + ` ${time}`;
+  return `${date.toLocaleDateString("en-US", { month: "short", day: "numeric" })} ${time}`;
 }
 
 function shouldShowTimestamp(messages: Message[], index: number): boolean {

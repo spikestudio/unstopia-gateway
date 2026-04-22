@@ -302,7 +302,7 @@ function isBrowserRunning(browser: BrowserConfig): boolean {
     } else if (platform === "linux") {
       execSync(`pgrep -x '${browser.processName.toLowerCase()}'`, { stdio: "ignore" });
     } else if (platform === "win32") {
-      const exe = browser.processName.toLowerCase().replace(/ /g, "") + ".exe";
+      const exe = `${browser.processName.toLowerCase().replace(/ /g, "")}.exe`;
       execSync(`tasklist /FI "IMAGENAME eq ${exe}" | findstr ${exe}`, { stdio: "ignore" });
     }
     return true;
@@ -319,7 +319,7 @@ function quitBrowser(browser: BrowserConfig): boolean {
     } else if (platform === "linux") {
       execSync(`pkill -TERM '${browser.processName.toLowerCase()}'`, { stdio: "ignore" });
     } else if (platform === "win32") {
-      const exe = browser.processName.toLowerCase().replace(/ /g, "") + ".exe";
+      const exe = `${browser.processName.toLowerCase().replace(/ /g, "")}.exe`;
       execSync(`taskkill /IM ${exe}`, { stdio: "ignore" });
     }
     const deadline = Date.now() + 10000;

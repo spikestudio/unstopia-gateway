@@ -50,7 +50,7 @@ persona: A developer
     const registry = scanOrg();
     const emp = registry.get("dev");
     expect(emp).toBeDefined();
-    expect(emp!.alwaysNotify).toBe(true);
+    expect(emp?.alwaysNotify).toBe(true);
   });
 
   it("parses alwaysNotify: false from YAML", () => {
@@ -66,7 +66,7 @@ alwaysNotify: false
     const registry = scanOrg();
     const emp = registry.get("worker");
     expect(emp).toBeDefined();
-    expect(emp!.alwaysNotify).toBe(false);
+    expect(emp?.alwaysNotify).toBe(false);
   });
 
   it("parses alwaysNotify: true from YAML", () => {
@@ -82,7 +82,7 @@ alwaysNotify: true
     const registry = scanOrg();
     const emp = registry.get("lead");
     expect(emp).toBeDefined();
-    expect(emp!.alwaysNotify).toBe(true);
+    expect(emp?.alwaysNotify).toBe(true);
   });
 
   it("ignores non-boolean alwaysNotify values and defaults to true", () => {
@@ -98,6 +98,6 @@ alwaysNotify: "yes"
     const registry = scanOrg();
     const emp = registry.get("bad");
     expect(emp).toBeDefined();
-    expect(emp!.alwaysNotify).toBe(true);
+    expect(emp?.alwaysNotify).toBe(true);
   });
 });

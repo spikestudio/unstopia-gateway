@@ -40,7 +40,7 @@ export interface RouteOptions {
 
 function maybeRevertEngineOverride(session: Session): Session {
   const meta = (session.transportMeta || {}) as Record<string, unknown>;
-  const override = meta["engineOverride"] as Record<string, unknown> | undefined;
+  const override = meta.engineOverride as Record<string, unknown> | undefined;
   if (!override) return session;
 
   const originalEngine = typeof override.originalEngine === "string" ? override.originalEngine : null;
@@ -54,7 +54,7 @@ function maybeRevertEngineOverride(session: Session): Session {
   if (Number.isNaN(until.getTime())) return session;
   if (until.getTime() > Date.now()) return session;
 
-  const engineSessionsRaw = meta["engineSessions"];
+  const engineSessionsRaw = meta.engineSessions;
   const engineSessions =
     engineSessionsRaw && typeof engineSessionsRaw === "object" && !Array.isArray(engineSessionsRaw)
       ? { ...(engineSessionsRaw as Record<string, unknown>) }
@@ -71,9 +71,9 @@ function maybeRevertEngineOverride(session: Session): Session {
 
   const nextMeta = { ...meta, engineSessions } as Record<string, unknown>;
   if (originalEngine === "claude" && syncSince && session.engine !== "claude") {
-    nextMeta["claudeSyncSince"] = syncSince;
+    nextMeta.claudeSyncSince = syncSince;
   }
-  delete (nextMeta as Record<string, unknown>)["engineOverride"];
+  delete (nextMeta as Record<string, unknown>).engineOverride;
   return (
     updateSession(session.id, {
       engine: originalEngine,
@@ -132,7 +132,7 @@ export class SessionManager {
     msg: IncomingMessage,
     connector: Connector,
     opts: RouteOptions = {},
-  ): Promise<{ sessionId: string } | void> {
+  ): Promise<{ sessionId: string } | undefined> {
     if (await this.handleCommand(msg, connector)) return;
 
     let session = getSessionBySessionKey(msg.sessionKey);
@@ -378,8 +378,8 @@ export class SessionManager {
       if (isDead) {
         logger.warn(`Dead session detected for ${session.id} — clearing stale engine IDs`);
         const meta = { ...(session.transportMeta || {}) } as Record<string, unknown>;
-        delete meta["engineSessions"];
-        delete meta["engineOverride"];
+        delete meta.engineSessions;
+        delete meta.engineOverride;
         updateSession(session.id, {
           engineSessionId: null,
           transportMeta: meta as any,
@@ -764,7 +764,7 @@ export class SessionManager {
             msg.transportMeta,
           ) as Record<string, unknown>;
           if (syncRequested && !rateLimit.limited && !wasInterrupted) {
-            delete merged["claudeSyncSince"];
+            delete merged.claudeSyncSince;
           }
           return merged as any;
         })(),

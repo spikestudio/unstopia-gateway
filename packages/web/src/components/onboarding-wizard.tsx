@@ -67,7 +67,7 @@ export function OnboardingWizard({ forceOpen, onClose }: OnboardingWizardProps) 
 
   const [visible, setVisible] = useState(false);
   const [step, setStep] = useState(0);
-  const [direction, setDirection] = useState<"forward" | "back">("forward");
+  const [_direction, setDirection] = useState<"forward" | "back">("forward");
 
   // Local input values
   const [localName, setLocalName] = useState("");
@@ -104,7 +104,7 @@ export function OnboardingWizard({ forceOpen, onClose }: OnboardingWizardProps) 
           setVisible(true);
         }
       });
-  }, [forceOpen]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [forceOpen, settings.operatorName, settings.portalName]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleNext = useCallback(() => {
     // Commit name/operator/language on step 0
@@ -135,7 +135,18 @@ export function OnboardingWizard({ forceOpen, onClose }: OnboardingWizardProps) 
       onClose?.();
       router.push("/chat");
     }
-  }, [step, localName, localOperator, forceOpen, onClose, setPortalName, setOperatorName, router]);
+  }, [
+    step,
+    localName,
+    localOperator,
+    forceOpen,
+    onClose,
+    setPortalName,
+    setOperatorName,
+    router,
+    setLanguage,
+    localLanguage,
+  ]);
 
   const handleBack = useCallback(() => {
     if (step > 0) {
@@ -199,7 +210,6 @@ export function OnboardingWizard({ forceOpen, onClose }: OnboardingWizardProps) 
                     placeholder="Jinn"
                     value={localName}
                     onChange={(e) => setLocalName(e.target.value)}
-                    autoFocus
                   />
                 </div>
 

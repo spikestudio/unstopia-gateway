@@ -16,7 +16,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useSettings } from "@/app/settings-provider";
 import { PageLayout } from "@/components/page-layout";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { useBreadcrumbs } from "@/context/breadcrumb-context";
 import { useGateway } from "@/hooks/use-gateway";
 import { api } from "@/lib/api";

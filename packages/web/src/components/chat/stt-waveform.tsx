@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useRef } from "react";
+import { useEffect, useRef } from "react";
 
 interface SttWaveformProps {
   analyser: AnalyserNode;
@@ -29,7 +29,7 @@ export function SttWaveform({ analyser, width = 64, height = 32, color = "var(--
       rafRef.current = requestAnimationFrame(draw);
       analyser.getByteFrequencyData(dataArray);
 
-      ctx!.clearRect(0, 0, width, height);
+      ctx?.clearRect(0, 0, width, height);
 
       for (let i = 0; i < barCount; i++) {
         const dataIndex = Math.floor((i / barCount) * (bufferLength * 0.6));
@@ -39,9 +39,9 @@ export function SttWaveform({ analyser, width = 64, height = 32, color = "var(--
         const y = (height - barHeight) / 2;
 
         ctx!.fillStyle = color;
-        ctx!.beginPath();
-        ctx!.roundRect(x, y, barWidth, barHeight, 1.5);
-        ctx!.fill();
+        ctx?.beginPath();
+        ctx?.roundRect(x, y, barWidth, barHeight, 1.5);
+        ctx?.fill();
       }
     }
 

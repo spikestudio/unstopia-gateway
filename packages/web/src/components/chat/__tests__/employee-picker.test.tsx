@@ -106,7 +106,7 @@ describe("ChatEmployeePicker", () => {
     // Jimmy Dev should be selected
     const jimmyRow = screen.getAllByRole("option").find((el) => el.textContent?.includes("Jimmy Dev"));
     expect(jimmyRow).toBeDefined();
-    expect(jimmyRow!.getAttribute("aria-selected")).toBe("true");
+    expect(jimmyRow?.getAttribute("aria-selected")).toBe("true");
   });
 
   // --- Search / filter ---

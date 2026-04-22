@@ -326,7 +326,7 @@ export class SlackConnector implements Connector {
   }
 
   async sendMessage(target: Target, text: string): Promise<string | undefined> {
-    if (!text || !text.trim()) return undefined;
+    if (!text?.trim()) return undefined;
     const chunks = formatResponse(text);
     let lastTs: string | undefined;
     for (const chunk of chunks) {
@@ -341,7 +341,7 @@ export class SlackConnector implements Connector {
   }
 
   async replyMessage(target: Target, text: string): Promise<string | undefined> {
-    if (!text || !text.trim()) return undefined;
+    if (!text?.trim()) return undefined;
     const threadTs = target.thread || target.messageTs;
     const chunks = formatResponse(text);
     let lastTs: string | undefined;
@@ -385,7 +385,7 @@ export class SlackConnector implements Connector {
 
   async editMessage(target: Target, text: string) {
     if (!target.messageTs) return;
-    if (!text || !text.trim()) return;
+    if (!text?.trim()) return;
     await this.app.client.chat.update({
       channel: target.channel,
       ts: target.messageTs,

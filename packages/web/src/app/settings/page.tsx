@@ -8,7 +8,6 @@ import { PageLayout } from "@/components/page-layout";
 import { EmojiPicker } from "@/components/ui/emoji-picker";
 import { useBreadcrumbs } from "@/context/breadcrumb-context";
 import { api } from "@/lib/api";
-import type { ThemeId } from "@/lib/themes";
 import { THEMES } from "@/lib/themes";
 
 // ---------------------------------------------------------------------------
@@ -362,72 +361,70 @@ function SttSettingsSection() {
 
       {/* Languages section — only when model is available */}
       {status.available && (
-        <>
-          <div className="border-t border-[var(--separator)] mt-[var(--space-2)] pt-[var(--space-3)]">
-            <div className="text-[length:var(--text-caption1)] font-[var(--weight-semibold)] text-[var(--text-tertiary)] mb-[var(--space-2)]">
-              Transcription Languages
-            </div>
-            <div className="text-[length:var(--text-caption2)] text-[var(--text-tertiary)] mb-[var(--space-3)]">
-              First language is the default. Add multiple to show a language picker in chat.
-            </div>
-
-            {/* Language chips */}
-            <div className="flex flex-wrap gap-[var(--space-2)] mb-[var(--space-3)]">
-              {status.languages.map((code) => (
-                <div
-                  key={code}
-                  className="inline-flex items-center gap-[var(--space-1)] px-[8px] py-[3px] rounded-[var(--radius-sm)] bg-[var(--fill-secondary)] text-[length:var(--text-caption1)] font-[var(--weight-medium)] text-[var(--text-primary)]"
-                >
-                  <span className="font-[family-name:var(--font-mono)] uppercase text-[length:var(--text-caption2)] font-[var(--weight-semibold)] text-[var(--accent)] mr-[2px]">
-                    {code}
-                  </span>
-                  {WHISPER_LANGUAGES[code] || code}
-                  {status.languages.length > 1 && (
-                    <button
-                      onClick={() => handleRemoveLanguage(code)}
-                      disabled={saving}
-                      aria-label={`Remove ${WHISPER_LANGUAGES[code] || code}`}
-                      className="bg-none border-none cursor-pointer p-0 ml-[2px] text-[var(--text-quaternary)] text-[14px] leading-none flex items-center"
-                    >
-                      ×
-                    </button>
-                  )}
-                </div>
-              ))}
-            </div>
-
-            {/* Add language */}
-            <div className="flex gap-[var(--space-2)]">
-              <select
-                value={addLang}
-                onChange={(e) => setAddLang(e.target.value)}
-                className="flex-1 bg-[var(--bg-secondary)] border border-[var(--separator)] rounded-[var(--radius-sm)] px-[10px] py-[6px] text-[length:var(--text-footnote)] cursor-pointer"
-                style={{
-                  color: addLang ? "var(--text-primary)" : "var(--text-tertiary)",
-                }}
-              >
-                <option value="">Add a language…</option>
-                {availableLangs.map(([code, name]) => (
-                  <option key={code} value={code}>
-                    {code.toUpperCase()} — {name}
-                  </option>
-                ))}
-              </select>
-              <button
-                onClick={handleAddLanguage}
-                disabled={!addLang || saving}
-                className="px-[14px] py-[6px] rounded-[var(--radius-sm)] border-none text-[length:var(--text-footnote)] font-[var(--weight-semibold)] shrink-0"
-                style={{
-                  background: addLang ? "var(--accent)" : "var(--fill-tertiary)",
-                  color: addLang ? "var(--accent-contrast)" : "var(--text-quaternary)",
-                  cursor: addLang ? "pointer" : "default",
-                }}
-              >
-                Add
-              </button>
-            </div>
+        <div className="border-t border-[var(--separator)] mt-[var(--space-2)] pt-[var(--space-3)]">
+          <div className="text-[length:var(--text-caption1)] font-[var(--weight-semibold)] text-[var(--text-tertiary)] mb-[var(--space-2)]">
+            Transcription Languages
           </div>
-        </>
+          <div className="text-[length:var(--text-caption2)] text-[var(--text-tertiary)] mb-[var(--space-3)]">
+            First language is the default. Add multiple to show a language picker in chat.
+          </div>
+
+          {/* Language chips */}
+          <div className="flex flex-wrap gap-[var(--space-2)] mb-[var(--space-3)]">
+            {status.languages.map((code) => (
+              <div
+                key={code}
+                className="inline-flex items-center gap-[var(--space-1)] px-[8px] py-[3px] rounded-[var(--radius-sm)] bg-[var(--fill-secondary)] text-[length:var(--text-caption1)] font-[var(--weight-medium)] text-[var(--text-primary)]"
+              >
+                <span className="font-[family-name:var(--font-mono)] uppercase text-[length:var(--text-caption2)] font-[var(--weight-semibold)] text-[var(--accent)] mr-[2px]">
+                  {code}
+                </span>
+                {WHISPER_LANGUAGES[code] || code}
+                {status.languages.length > 1 && (
+                  <button
+                    onClick={() => handleRemoveLanguage(code)}
+                    disabled={saving}
+                    aria-label={`Remove ${WHISPER_LANGUAGES[code] || code}`}
+                    className="bg-none border-none cursor-pointer p-0 ml-[2px] text-[var(--text-quaternary)] text-[14px] leading-none flex items-center"
+                  >
+                    ×
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+
+          {/* Add language */}
+          <div className="flex gap-[var(--space-2)]">
+            <select
+              value={addLang}
+              onChange={(e) => setAddLang(e.target.value)}
+              className="flex-1 bg-[var(--bg-secondary)] border border-[var(--separator)] rounded-[var(--radius-sm)] px-[10px] py-[6px] text-[length:var(--text-footnote)] cursor-pointer"
+              style={{
+                color: addLang ? "var(--text-primary)" : "var(--text-tertiary)",
+              }}
+            >
+              <option value="">Add a language…</option>
+              {availableLangs.map(([code, name]) => (
+                <option key={code} value={code}>
+                  {code.toUpperCase()} — {name}
+                </option>
+              ))}
+            </select>
+            <button
+              onClick={handleAddLanguage}
+              disabled={!addLang || saving}
+              className="px-[14px] py-[6px] rounded-[var(--radius-sm)] border-none text-[length:var(--text-footnote)] font-[var(--weight-semibold)] shrink-0"
+              style={{
+                background: addLang ? "var(--accent)" : "var(--fill-tertiary)",
+                color: addLang ? "var(--accent-contrast)" : "var(--text-quaternary)",
+                cursor: addLang ? "pointer" : "default",
+              }}
+            >
+              Add
+            </button>
+          </div>
+        </div>
       )}
     </Section>
   );
@@ -526,7 +523,7 @@ export default function SettingsPage() {
 
   useEffect(() => {
     loadConfig();
-  }, []);
+  }, [loadConfig]);
 
   // Poll for WhatsApp QR code when WhatsApp connector is configured
   useEffect(() => {
@@ -1128,7 +1125,7 @@ export default function SettingsPage() {
                           ? v
                               .split(",")
                               .map((entry) => Number(entry.trim()))
-                              .filter((n) => !isNaN(n))
+                              .filter((n) => !Number.isNaN(n))
                           : undefined,
                       )
                     }

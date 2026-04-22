@@ -481,7 +481,7 @@ export async function runSetup(opts?: { force?: boolean }): Promise<void> {
   if (
     ensureFile(
       settingsPath,
-      JSON.stringify(
+      `${JSON.stringify(
         {
           permissions: {
             allow: [
@@ -507,7 +507,7 @@ export async function runSetup(opts?: { force?: boolean }): Promise<void> {
         },
         null,
         2,
-      ) + "\n",
+      )}\n`,
     )
   ) {
     created.push(settingsPath);

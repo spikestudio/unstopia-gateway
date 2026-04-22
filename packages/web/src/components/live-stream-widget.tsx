@@ -116,7 +116,7 @@ export function LiveStreamWidget() {
     if (autoScroll && scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [entries, autoScroll]);
+  }, [autoScroll]);
 
   const handleScroll = useCallback(() => {
     if (!scrollRef.current) return;

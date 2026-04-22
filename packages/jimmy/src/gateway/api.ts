@@ -113,7 +113,7 @@ export function resumePendingWebQueueItems(context: ApiContext): void {
 
 function maybeRevertEngineOverride(session: Session): Session {
   const meta = (session.transportMeta || {}) as Record<string, unknown>;
-  const override = meta["engineOverride"] as Record<string, unknown> | undefined;
+  const override = meta.engineOverride as Record<string, unknown> | undefined;
   if (!override) return session;
 
   const originalEngine = typeof override.originalEngine === "string" ? override.originalEngine : null;
@@ -127,7 +127,7 @@ function maybeRevertEngineOverride(session: Session): Session {
   if (Number.isNaN(until.getTime())) return session;
   if (until.getTime() > Date.now()) return session;
 
-  const engineSessionsRaw = meta["engineSessions"];
+  const engineSessionsRaw = meta.engineSessions;
   const engineSessions =
     engineSessionsRaw && typeof engineSessionsRaw === "object" && !Array.isArray(engineSessionsRaw)
       ? { ...(engineSessionsRaw as Record<string, unknown>) }
@@ -144,9 +144,9 @@ function maybeRevertEngineOverride(session: Session): Session {
 
   const nextMeta = { ...meta, engineSessions } as Record<string, unknown>;
   if (originalEngine === "claude" && syncSince && session.engine !== "claude") {
-    nextMeta["claudeSyncSince"] = syncSince;
+    nextMeta.claudeSyncSince = syncSince;
   }
-  delete (nextMeta as Record<string, unknown>)["engineOverride"];
+  delete (nextMeta as Record<string, unknown>).engineOverride;
   return (
     updateSession(session.id, {
       engine: originalEngine,
@@ -514,8 +514,8 @@ export async function handleApiRequest(req: HttpRequest, res: ServerResponse, co
       }
       context.sessionManager.getQueue().clearQueue(session.sessionKey || session.sourceRef || session.id);
       const meta = { ...(session.transportMeta || {}) } as Record<string, unknown>;
-      delete meta["engineSessions"];
-      delete meta["engineOverride"];
+      delete meta.engineSessions;
+      delete meta.engineOverride;
       updateSession(params.id, {
         status: "idle",
         engineSessionId: null,
@@ -663,7 +663,7 @@ export async function handleApiRequest(req: HttpRequest, res: ServerResponse, co
     // GET /api/sessions/:id/children
     params = matchRoute("/api/sessions/:id/children", pathname);
     if (method === "GET" && params) {
-      const children = listSessions().filter((s) => s.parentSessionId === params!.id);
+      const children = listSessions().filter((s) => s.parentSessionId === params?.id);
       return json(
         res,
         children.map((child) => serializeSession(child, context)),
@@ -933,7 +933,7 @@ export async function handleApiRequest(req: HttpRequest, res: ServerResponse, co
     params = matchRoute("/api/cron/:id", pathname);
     if (method === "PUT" && params) {
       const jobs = loadJobs();
-      const idx = jobs.findIndex((j) => j.id === params!.id);
+      const idx = jobs.findIndex((j) => j.id === params?.id);
       if (idx === -1) return notFound(res);
       const _parsed = await readJsonBody(req, res);
       if (!_parsed.ok) return;
@@ -949,7 +949,7 @@ export async function handleApiRequest(req: HttpRequest, res: ServerResponse, co
     params = matchRoute("/api/cron/:id", pathname);
     if (method === "DELETE" && params) {
       const jobs = loadJobs();
-      const idx = jobs.findIndex((j) => j.id === params!.id);
+      const idx = jobs.findIndex((j) => j.id === params?.id);
       if (idx === -1) return notFound(res);
       const removed = jobs.splice(idx, 1)[0];
       saveJobs(jobs);
@@ -961,7 +961,7 @@ export async function handleApiRequest(req: HttpRequest, res: ServerResponse, co
     params = matchRoute("/api/cron/:id/trigger", pathname);
     if (method === "POST" && params) {
       const jobs = loadJobs();
-      const job = jobs.find((j) => j.id === params!.id);
+      const job = jobs.find((j) => j.id === params?.id);
       if (!job) return notFound(res);
 
       logger.info(`Manual trigger for cron job "${job.name}" (${job.id})`);
@@ -1677,7 +1677,7 @@ Handle this as a priority request from a colleague.`;
           "",
         );
         if (languageSection) {
-          claudeMd = claudeMd.trimEnd() + languageSection + "\n";
+          claudeMd = `${claudeMd.trimEnd() + languageSection}\n`;
         }
         fs.writeFileSync(claudeMdPath, claudeMd);
       }
@@ -1694,7 +1694,7 @@ Handle this as a priority request from a colleague.`;
           "",
         );
         if (languageSection) {
-          agentsMd = agentsMd.trimEnd() + languageSection + "\n";
+          agentsMd = `${agentsMd.trimEnd() + languageSection}\n`;
         }
         fs.writeFileSync(agentsMdPath, agentsMd);
       }
@@ -1957,7 +1957,8 @@ Handle this as a priority request from a colleague.`;
  * ```
  */
 function stripAnsi(str: string): string {
-  return str.replace(/\x1b\[[0-9;]*m/g, "");
+  // biome-ignore lint/suspicious/noControlCharactersInRegex: intentional ANSI escape sequence
+  return str.replace(/\u001b\[[0-9;]*m/g, "");
 }
 
 function parseSkillsSearchOutput(
@@ -2588,7 +2589,7 @@ async function runWebSession(
       >;
       if (meta && typeof meta === "object" && !Array.isArray(meta)) {
         const nextMeta = { ...meta } as Record<string, unknown>;
-        delete nextMeta["claudeSyncSince"];
+        delete nextMeta.claudeSyncSince;
         updateSession(currentSession.id, { transportMeta: nextMeta as any });
       }
     }

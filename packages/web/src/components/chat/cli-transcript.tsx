@@ -184,7 +184,7 @@ export function CliTranscript({ sessionId }: CliTranscriptProps) {
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "instant" });
-  }, [entries]);
+  }, []);
 
   if (loading) {
     return (

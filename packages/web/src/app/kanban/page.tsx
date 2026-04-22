@@ -20,7 +20,6 @@ import {
   createTicket,
   deleteTicket,
   type KanbanStore,
-  loadTickets,
   moveTicket,
   saveTickets,
   updateTicket,
@@ -65,7 +64,6 @@ function DeleteConfirmDialog({
           </button>
           <button
             onClick={onConfirm}
-            autoFocus
             className="px-[var(--space-4)] py-[var(--space-2)] rounded-[var(--radius-md)] border-none bg-[var(--system-red)] text-white text-[length:var(--text-footnote)] font-semibold cursor-pointer"
           >
             Delete
@@ -88,7 +86,7 @@ export default function KanbanPage() {
   const [deleteConfirm, setDeleteConfirm] = useState<KanbanTicket | null>(null);
 
   /** Sync tickets to the gateway API, grouped by department */
-  const syncToApi = useCallback(
+  const _syncToApi = useCallback(
     async (store: KanbanStore) => {
       // Group tickets by department
       const byDept: Record<

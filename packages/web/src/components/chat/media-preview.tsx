@@ -1,5 +1,4 @@
 "use client";
-import React from "react";
 import type { MediaAttachment } from "@/lib/conversations";
 
 interface MediaPreviewProps {
