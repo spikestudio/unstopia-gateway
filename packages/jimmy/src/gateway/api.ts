@@ -553,7 +553,8 @@ export async function handleApiRequest(req: HttpRequest, res: ServerResponse, co
         // 3. Store the new engine session ID
         updateSession(newSession.id, { engineSessionId: forkResult.engineSessionId });
 
-        const result = getSession(newSession.id)!;
+        const result = getSession(newSession.id);
+        if (!result) return serverError(res, "Failed to retrieve duplicated session");
         logger.info(
           `Session duplicated: ${params.id} → ${newSession.id} (engine: ${forkResult.engineSessionId}, ${messageCount} messages)`,
         );
@@ -1157,8 +1158,9 @@ Handle this as a priority request from a colleague.`;
     }
 
     // PUT /api/org/departments/:name/board
-    if (method === "PUT" && matchRoute("/api/org/departments/:name/board", pathname)) {
-      const p = matchRoute("/api/org/departments/:name/board", pathname)!;
+    const putBoardParams = matchRoute("/api/org/departments/:name/board", pathname);
+    if (method === "PUT" && putBoardParams) {
+      const p = putBoardParams;
       const boardPath = path.join(ORG_DIR, p.name, "board.json");
       const deptDir = path.join(ORG_DIR, p.name);
       if (!fs.existsSync(deptDir)) return notFound(res);

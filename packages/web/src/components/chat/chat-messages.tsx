@@ -101,9 +101,9 @@ function inlineFormat(text: string): React.ReactNode {
   const regex =
     /\[([^\]]+)\]\(([^)]+)\)|(https?:\/\/[^\s<]+[^\s<.,;:!?)}\]'"])|(\*\*(.+?)\*\*)|(`([^`]+)`)|\*([^*]+)\*/g;
   let last = 0;
-  let match;
+  let match = regex.exec(text);
 
-  while ((match = regex.exec(text)) !== null) {
+  while (match !== null) {
     if (match.index > last) parts.push(text.slice(last, match.index));
     if (match[1] && match[2]) {
       // Markdown link: [text](url)
@@ -154,6 +154,7 @@ function inlineFormat(text: string): React.ReactNode {
       );
     }
     last = match.index + match[0].length;
+    match = regex.exec(text);
   }
   if (last < text.length) parts.push(text.slice(last));
   return parts.length === 1 ? parts[0] : parts;

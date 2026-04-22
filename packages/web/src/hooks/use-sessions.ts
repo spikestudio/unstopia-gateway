@@ -11,32 +11,32 @@ export function useSessions() {
 
 export function useSession(id: string | null) {
   return useQuery({
-    queryKey: queryKeys.sessions.detail(id!),
-    queryFn: () => api.getSession(id!),
+    queryKey: queryKeys.sessions.detail(id ?? ""),
+    queryFn: () => api.getSession(id ?? ""),
     enabled: !!id,
   });
 }
 
 export function useSessionChildren(id: string | null) {
   return useQuery({
-    queryKey: queryKeys.sessions.children(id!),
-    queryFn: () => api.getSessionChildren(id!),
+    queryKey: queryKeys.sessions.children(id ?? ""),
+    queryFn: () => api.getSessionChildren(id ?? ""),
     enabled: !!id,
   });
 }
 
 export function useSessionTranscript(id: string | null) {
   return useQuery({
-    queryKey: queryKeys.sessions.transcript(id!),
-    queryFn: () => api.getSessionTranscript(id!),
+    queryKey: queryKeys.sessions.transcript(id ?? ""),
+    queryFn: () => api.getSessionTranscript(id ?? ""),
     enabled: !!id,
   });
 }
 
 export function useSessionQueue(id: string | null) {
   return useQuery({
-    queryKey: queryKeys.sessions.queue(id!),
-    queryFn: () => api.getSessionQueue(id!),
+    queryKey: queryKeys.sessions.queue(id ?? ""),
+    queryFn: () => api.getSessionQueue(id ?? ""),
     enabled: !!id,
     refetchInterval: 5_000,
   });

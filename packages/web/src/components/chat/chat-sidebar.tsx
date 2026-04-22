@@ -401,7 +401,7 @@ export function ChatSidebar({
       const allVisible: string[] = [];
       const addGroup = (items: FlatItem[]) => {
         for (const item of items) {
-          const empName = item.employeeName!;
+          const empName = item.employeeName ?? "";
           const empSessions = item.sessions || [];
           // Always add the latest session (employee row click selects it)
           if (empSessions.length === 1) {
@@ -484,7 +484,7 @@ export function ChatSidebar({
     if (isCronSession(s)) cronSessions.push(s);
     else if (isDirectSession(s, portalSlug)) directSessions.push(s);
     else {
-      const emp = s.employee!;
+      const emp = s.employee ?? "";
       if (!employeeSessionMap.has(emp)) employeeSessionMap.set(emp, []);
       employeeSessionMap.get(emp)?.push(s);
     }
@@ -543,7 +543,7 @@ export function ChatSidebar({
     const empNames: string[] = [];
     const empMap: Record<string, string[]> = {};
     for (const item of [...pinnedFlat, ...unpinnedFlat]) {
-      const name = item.employeeName!;
+      const name = item.employeeName ?? "";
       empNames.push(name);
       const sessionIds = item.sessions?.map((s) => s.id) ?? [];
       empMap[name] = sessionIds;
@@ -566,8 +566,8 @@ export function ChatSidebar({
   }
 
   function handleEmployeeClick(item: FlatItem) {
-    const empName = item.employeeName!;
-    const empSessions = item.sessions!;
+    const empName = item.employeeName ?? "";
+    const empSessions = item.sessions ?? [];
     if (empSessions.length > 1) {
       // Toggle expand/collapse — selecting latest session when expanding
       const wasExpanded = expanded[empName] || false;
@@ -723,8 +723,8 @@ export function ChatSidebar({
   }
 
   function renderEmployeeItem(item: FlatItem) {
-    const empName = item.employeeName!;
-    const empSessions = item.sessions!;
+    const empName = item.employeeName ?? "";
+    const empSessions = item.sessions ?? [];
     const latestSession = empSessions[0];
     const empInfo = item.employeeData;
     const displayName = empInfo?.displayName || titleCase(empName);

@@ -11,8 +11,8 @@ export function useCronJobs() {
 
 export function useCronRuns(id: string | null) {
   return useQuery({
-    queryKey: queryKeys.cron.runs(id!),
-    queryFn: () => api.getCronRuns(id!),
+    queryKey: queryKeys.cron.runs(id ?? ""),
+    queryFn: () => api.getCronRuns(id ?? ""),
     enabled: !!id,
   });
 }

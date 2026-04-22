@@ -148,7 +148,7 @@ export class SlackConnector implements Connector {
       if ((event as any).files) {
         for (const file of (event as any).files) {
           try {
-            const localPath = await downloadAttachment(file.url_private, this.app.client.token!, TMP_DIR);
+            const localPath = await downloadAttachment(file.url_private, this.app.client.token ?? "", TMP_DIR);
             attachments.push({
               name: file.name,
               url: file.url_private,

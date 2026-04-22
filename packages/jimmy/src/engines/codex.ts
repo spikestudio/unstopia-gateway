@@ -220,7 +220,8 @@ export class CodexEngine implements InterruptibleEngine {
       args.push("-c", `model_reasoning_effort="${opts.effortLevel}"`);
     args.push("--json", "--dangerously-bypass-approvals-and-sandbox", "--skip-git-repo-check");
     if (opts.cliFlags?.length) args.push(...opts.cliFlags);
-    args.push(opts.resumeSessionId!);
+    if (!opts.resumeSessionId) throw new Error("Codex: resumeSessionId is required for resume");
+    args.push(opts.resumeSessionId);
     args.push(prompt);
     return args;
   }

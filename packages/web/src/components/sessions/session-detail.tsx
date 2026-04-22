@@ -128,7 +128,7 @@ export function SessionDetail({
               label="Parent Session"
               value={
                 <button
-                  onClick={() => onNavigate?.(session.parentSessionId!)}
+                  onClick={() => onNavigate?.(session.parentSessionId ?? "")}
                   className="font-[family-name:var(--font-mono)] text-[length:var(--text-caption1)] text-[var(--accent)] bg-none border-none cursor-pointer underline p-0"
                 >
                   {session.parentSessionId.slice(0, 12)}...

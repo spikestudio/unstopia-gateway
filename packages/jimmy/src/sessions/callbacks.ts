@@ -64,7 +64,9 @@ async function _sendNotification(
   childSession: Session,
   result: { result?: string | null; error?: string | null; cost?: number; durationMs?: number },
 ): Promise<void> {
-  const parent = getSession(childSession.parentSessionId!);
+  const parentSessionId = childSession.parentSessionId;
+  if (!parentSessionId) return;
+  const parent = getSession(parentSessionId);
   if (!parent) return; // Parent gone or expired
   if (parent.status === "error") return; // Parent already in error — skip
 
@@ -80,7 +82,7 @@ async function _sendNotification(
     message = `📩 Employee "${employeeName}" replied in session ${childId}.\nRead the latest messages: GET /api/sessions/${childId}?last=N\n\nPreview: ${preview}`;
   }
 
-  await _sendRaw(childSession.parentSessionId!, message);
+  await _sendRaw(parentSessionId, message);
 }
 
 /**
