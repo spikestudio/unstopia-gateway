@@ -1,0 +1,27 @@
+name: Epic
+description: Epic の追跡
+labels: ["epic"]
+body:
+  - type: input
+    id: phase-issue
+    attributes:
+      label: 親 Phase Issue
+      description: "Phase Issue の番号（#NNN）。作成後に Phase の sub-issue として紐付ける"
+      placeholder: "#42"
+    validations:
+      required: true
+  - type: input
+    id: epic-doc
+    attributes:
+      label: Epic 仕様書
+      description: ES-NNN-slug.md へのパス
+      placeholder: "docs/requirements/ES-001-user-management.md"
+    validations:
+      required: true
+  - type: textarea
+    id: summary
+    attributes:
+      label: 概要
+      description: Epic の概要（詳細は Epic 仕様書を参照）
+    validations:
+      required: true
