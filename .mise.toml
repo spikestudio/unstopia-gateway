@@ -1,4 +1,6 @@
 [tools]
+lefthook = "latest"
 node = "22"
 pnpm = "10.6.4"
 task = "latest"
+actionlint = "latest"

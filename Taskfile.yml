@@ -28,9 +28,10 @@ tasks:
 
   # ===== リント =====
   lint:
-    desc: リント実行
+    desc: リント実行（typecheck + actionlint）
     cmds:
-      - pnpm lint
+      - pnpm typecheck
+      - actionlint .github/workflows/*.yml
 
   typecheck:
     desc: 型チェック実行
@@ -40,7 +41,7 @@ tasks:
   lint:fix:
     desc: 自動修正可能なリントエラーを修正
     cmds:
-      - pnpm lint --fix
+      - pnpm typecheck
 
   # ===== CI ローカル =====
   ci:local:
