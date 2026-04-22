@@ -21,4 +21,4 @@ pre-push:
     - name: build
       run: pnpm build
     - name: unit-tests
-      run: mise exec -- pnpm --filter jinn-cli test
+      run: mise exec -- pnpm test

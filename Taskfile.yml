@@ -17,9 +17,9 @@ tasks:
 
   # ===== テスト =====
   test:
-    desc: ユニットテスト実行
+    desc: ユニットテスト実行（mise Node.js 22 を使用）
     cmds:
-      - pnpm test
+      - mise exec -- pnpm test
 
   test:e2e:
     desc: E2E テスト実行
