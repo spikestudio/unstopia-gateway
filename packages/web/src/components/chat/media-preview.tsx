@@ -1,4 +1,5 @@
 "use client";
+import Image from "next/image";
 import type { MediaAttachment } from "@/lib/conversations";
 
 interface MediaPreviewProps {
@@ -34,9 +35,12 @@ export function MediaPreview({ attachments, onRemove }: MediaPreviewProps) {
           }}
         >
           {att.type === "image" ? (
-            <img
+            <Image
               src={att.url}
               alt={att.name || "Preview"}
+              width={56}
+              height={56}
+              unoptimized
               style={{
                 width: "100%",
                 height: "100%",
@@ -110,6 +114,7 @@ export function MediaPreview({ attachments, onRemove }: MediaPreviewProps) {
           <button
             type="button"
             aria-label="Remove attachment"
+            onClick={() => onRemove(attachments.indexOf(att))}
             style={{
               position: "absolute",
               top: 2,

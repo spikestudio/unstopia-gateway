@@ -1,6 +1,7 @@
 "use client";
 
 import { Check, Loader2, RotateCcw, Save, Trash2 } from "lucide-react";
+import Image from "next/image";
 import { useCallback, useEffect, useState } from "react";
 import { useTheme } from "@/app/providers";
 import { useSettings } from "@/app/settings-provider";
@@ -1218,10 +1219,13 @@ export default function SettingsPage() {
                     <div className="text-[length:var(--text-caption1)] font-semibold text-[var(--text-secondary)]">
                       Scan with WhatsApp to connect
                     </div>
-                    <img
+                    <Image
                       src={waQr}
                       alt="WhatsApp QR Code"
-                      className="w-[200px] h-[200px] rounded-[var(--radius-md)] border border-[var(--separator)] bg-white p-[8px]"
+                      width={200}
+                      height={200}
+                      unoptimized
+                      className="rounded-[var(--radius-md)] border border-[var(--separator)] bg-white p-[8px]"
                     />
                     <div className="text-[length:var(--text-caption2)] text-[var(--text-tertiary)]">
                       Open WhatsApp → Linked Devices → Link a Device

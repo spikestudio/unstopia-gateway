@@ -58,12 +58,14 @@ function DeleteConfirmDialog({
         <DialogFooter>
           <button
             type="button"
+            onClick={onCancel}
             className="px-[var(--space-4)] py-[var(--space-2)] rounded-[var(--radius-md)] border border-[var(--separator)] bg-transparent text-[var(--text-secondary)] text-[length:var(--text-footnote)] font-semibold cursor-pointer"
           >
             Cancel
           </button>
           <button
             type="button"
+            onClick={onConfirm}
             className="px-[var(--space-4)] py-[var(--space-2)] rounded-[var(--radius-md)] border-none bg-[var(--system-red)] text-white text-[length:var(--text-footnote)] font-semibold cursor-pointer"
           >
             Delete
