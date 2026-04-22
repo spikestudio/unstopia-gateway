@@ -240,27 +240,6 @@ export async function startGateway(config: JinnConfig): Promise<GatewayCleanup> 
     } catch (err) {
       logger.error(`Failed to start Discord connector: ${err instanceof Error ? err.message : err}`);
     }
-    // biome-ignore lint/suspicious/noDuplicateElseIf: different sub-property (proxyVia vs botToken)
-  } else if (config.connectors?.discord?.proxyVia) {
-    try {
-      const discord = new RemoteDiscordConnector({ proxyVia: config.connectors.discord.proxyVia });
-      discord.onMessage((msg) => {
-        const routeOpts: RouteOptions = {};
-        if (config.connectors.discord?.employee) {
-          const emp = employeeRegistry.get(config.connectors.discord.employee);
-          if (emp) routeOpts.employee = emp;
-        }
-        sessionManager.route(msg, discord, routeOpts).catch((err) => {
-          logger.error(`Discord (remote) route error: ${err instanceof Error ? err.message : err}`);
-        });
-      });
-      await discord.start();
-      connectors.push(discord);
-      connectorMap.set("discord", discord);
-      logger.info(`Discord connector started in remote mode (via ${config.connectors.discord.proxyVia})`);
-    } catch (err) {
-      logger.error(`Failed to start remote Discord connector: ${err instanceof Error ? err.message : err}`);
-    }
   }
 
   if (config.connectors?.telegram?.botToken) {
