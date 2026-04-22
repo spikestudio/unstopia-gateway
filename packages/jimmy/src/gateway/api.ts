@@ -1957,8 +1957,12 @@ Handle this as a priority request from a colleague.`;
  * ```
  */
 function stripAnsi(str: string): string {
-  // biome-ignore lint/suspicious/noControlCharactersInRegex: intentional ANSI escape sequence
-  return str.replace(/\u001b\[[0-9;]*m/g, "");
+  // ESC char (0x1b) via split/join avoids control character in regex literal
+  return str.split("\u001b[").reduce((acc, part, i) => {
+    if (i === 0) return part;
+    const end = part.search(/[a-zA-Z]/);
+    return end === -1 ? acc + part : acc + part.slice(end + 1);
+  }, "");
 }
 
 function parseSkillsSearchOutput(
