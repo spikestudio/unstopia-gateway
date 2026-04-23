@@ -41,7 +41,7 @@ jinn v0.9.3 をベースにした unstopia-gateway は、独自拡張（Antigrav
 - S8: As a **開発者**, I want to `pnpm biome check` がゼロ警告でパスすることを CI で検証したい, so that 品質劣化を自動検知できる.（AI 補完: CI 統合がなければ品質維持の自動化ができないため追加）
 - S9: As a **開発者**, I want to CI でテストカバレッジ閾値（branch 60%）を強制したい, so that カバレッジ低下を自動的に防げる.（AI 補完: カバレッジ計測だけでは閾値強制がなければ形骸化するため追加。ユーザー確認: 既存状況によっては 50% スタートも可）
 - S10: As a **開発者**, I want to lefthook で pre-commit / commit-msg フックを整備・検証したい, so that コミット前に品質チェックが自動実行される.（AI 補完: lefthook 導入済みだが設定の網羅性確認が必要なため追加）
-- S12: As a **開発者**, I want to モジュール間の依存関係を箇条書きでドキュメント化したい, so that 今後の拡張時に影響範囲を把握しやすくなる.（AI 補完: 拡張前に依存グラフを明確化しておくことが Phase 2 以降のリスク低減に繋がるため追加）
+- S12: As a **開発者**, I want to `CONTRIBUTING.md` を新規作成してブランチ命名・PR フロー・コミット規約・aidd-fw スキルパイプラインを記載し、モジュール間の依存関係も箇条書きでドキュメント化したい, so that 今後の拡張時に開発フローと影響範囲を素早く把握できる.（AI 補完 + ユーザー要求: CONTRIBUTING.md は Step 1 で承認済みだが Epic 構造化時に欠落したため E5 に統合）
 
 > **注記:**
 > - **承認済みストーリー**: S1〜S10 + S12 の計 11 件（S11 は削除）
@@ -94,7 +94,7 @@ jinn v0.9.3 をベースにした unstopia-gateway は、独自拡張（Antigrav
 | E2 | テストカバレッジ基盤 | S6, S7 | — | MUST | Vitest にカバレッジ計測（@vitest/coverage-v8）を追加し、E2E テストとの整合を確認する | — |
 | E3 | CI 品質ゲート | S8, S9 | — | MUST | GitHub Actions ワークフローに biome check・カバレッジ閾値（branch 60%）・E2E テストを統合する | — |
 | E4 | lefthook 整備 | S10 | — | SHOULD | lefthook の pre-commit・commit-msg フック設定を確認・補完し、ローカルでの品質チェックを自動化する | — |
-| E5 | モジュール依存ドキュメント | S12 | — | COULD | src/ 配下のモジュール間依存関係を箇条書きでドキュメント化する（`docs/architecture/module-dependencies.md`）| — |
+| E5 | ドキュメント整備 | S12 | — | COULD | `CONTRIBUTING.md` 新規作成（ブランチ命名・PR フロー・コミット規約・aidd-fw パイプライン記載）+ src/ 配下のモジュール依存関係箇条書き（`docs/architecture/module-dependencies.md`）| — |
 
 ## 8. Epic 間依存関係
 
@@ -126,7 +126,7 @@ graph LR
 | カバレッジ 60% 達成 | 開発者 | 変更の安全性を定量的に把握でき、安心してリファクタできる | S6, S7 | E2 |
 | CI 品質ゲート通過 | 開発者 | コードベースの品質劣化が自動的に検知・阻止される | S8, S9 | E3 |
 | lefthook フック整備 | 開発者 | コミット前にローカルで品質チェックが実行され、CI 失敗を事前に防げる | S10 | E4 |
-| モジュール依存ドキュメント整備 | 開発者 | 拡張実装時に影響範囲を素早く把握できる | S12 | E5 |
+| ドキュメント整備（CONTRIBUTING.md + モジュール依存） | 開発者 | 拡張実装時に開発フローと影響範囲を素早く把握できる | S12 | E5 |
 
 ## 11. 非機能要件（6 分類詳細化）
 
