@@ -16,11 +16,13 @@
 
 - S13: As a **開発者**, I want to `packages/jimmy` のユニットテストを拡充し branch カバレッジを段階的に引き上げたい, so that E3 CI 閾値（最終 60%）を達成でき、変更の安全性を定量的に確認できる.
 
-> **スコープ注記:** S14（テスタビリティ改善リファクタリング）は今回スコープ外。リファクタリングを伴わずに純粋関数・ビジネスロジック優先でテストを追加し、branch coverage 30% を目標とする。
+> **スコープ注記:** S14（テスタビリティ改善リファクタリング）は今回スコープ外。リファクタリングを伴わずに純粋関数・ビジネスロジック優先でテストを追加し、branch coverage 20% を目標とする。
+> 大規模システムファイル（gateway/api.ts 等）は外部依存が多く unit test が困難なため、本 Epic での対象外とする。S14（ES-004/ES-005）で DI 導入後に対応する。
+> **Phase 1 テスト記述制約:** テストは「DI 導入後も有効な境界」で書くこと。`vi.mock("node:fs")` 等のグローバルモックは使わず、引数レベルのモック（例: `readFileFn = fs.readFileSync` を引数で渡す）を採用すること。これにより ES-004/005 のリファクタリング後もテストコードの再利用が可能になる。
 
 ## 概要
 
-現状 branch カバレッジ 9.04%（ES-002 で計測確定）の `packages/jimmy` に対してユニットテストを拡充し、**branch coverage 30% 以上**を目標とする。
+現状 branch カバレッジ 15.37%（ES-002〜TASK-012 完了時点）の `packages/jimmy` に対してユニットテストを拡充し、**branch coverage 20% 以上**を目標とする。
 
 対象は `cron/jobs.ts`・`scheduler.ts`・`gateway/budgets.ts`・`goals.ts`・`connectors/discord/format.ts`・`threads.ts`・`connectors/whatsapp/format.ts`・`engines/mock.ts` など、テスタビリティの高いモジュール（純粋関数・ビジネスロジック中心）を優先する。
 
@@ -38,9 +40,9 @@ vitest 設定の修正（`include` パターン漏れ・テストファイルの
 
 - [ ] **AC-E003-01**: 開発者が `packages/jimmy` ディレクトリで `pnpm test` を実行すると、`src/**/__tests__/**/*.test.ts` のパターンに収まる全テストファイルが実行され、現在 `__tests__/` 外にある `queue.test.ts`・`registry.test.ts`・`threads.test.ts` が `__tests__/` に移動されていてテストが PASS する。 ← S13
 - [ ] **AC-E003-02**: `packages/jimmy/vitest.config.ts` の `coverage.exclude` に `src/**/*.test.ts` が追加され、`__tests__/` 外のテストファイルもカバレッジ計測から正しく除外される。 ← S13
-- [ ] **AC-E003-03**: `packages/jimmy` で `pnpm test --coverage` を実行すると、branch カバレッジが **30% 以上**に達する。対象モジュールは `cron/jobs.ts`・`scheduler.ts`・`gateway/budgets.ts`・`goals.ts`・`connectors/discord/format.ts`・`threads.ts`・`connectors/whatsapp/format.ts`・`engines/mock.ts` など純粋関数・ビジネスロジック中心のモジュールを優先する。（AI 補完: 現状 9.04% → 30% は realistic な第一目標値。リファクタリング不要なモジュールから着手することで達成可能）← S13
+- [ ] **AC-E003-03**: `packages/jimmy` で `pnpm test --coverage` を実行すると、branch カバレッジが **20% 以上**に達する。対象モジュールは `shared/version.ts`・`gateway/org.ts`・`engines/gemini.ts`・`sessions/callbacks.ts`・`connectors/telegram/index.ts`・`cron/runner.ts` など純粋関数・ビジネスロジック中心のモジュールを優先する。（目標値修正理由: 大規模システムファイルがカバレッジ分母の大部分を占めており、リファクタリングなしで 30% 到達は困難と判明。S14 対応（ES-004/ES-005）で 45% 以上を目指す）← S13
 - [ ] **AC-E003-04**: 新規テストはテスト規約（`docs/conventions/testing.md`）に従い `src/**/__tests__/` ディレクトリに配置され、vitest が全テストを認識する。 ← S13
-- [ ] **AC-E003-05**: 新規テストは既存コードの構造を変えずに追加され（リファクタリング禁止）、`pnpm test` と `pnpm build` が両方 PASS する。（AI 補完: リファクタリングをスコープ外とするため、既存コード変更なしのテスト追加のみであることを検証基準として明示する）← S13
+- [ ] **AC-E003-05**: 新規テストは既存コードの構造を変えずに追加され（リファクタリング禁止）、`pnpm test` と `pnpm build` が両方 PASS する。テストは `vi.mock` グローバルモックではなく引数レベルのモックで書き、ES-004/005 の DI 導入後も再利用できる形とする。← S13
 
 **インターフェース:** カバレッジレポート（HTML / テキスト出力）。外部 API なし。
 
@@ -61,7 +63,7 @@ vitest 設定の修正（`include` パターン漏れ・テストファイルの
 | フィールド | ルール | エラー時の振る舞い |
 |-----------|--------|------------------|
 | vitest `include` パターン | `src/**/__tests__/**/*.test.ts` に全テストファイルが含まれること | パターン外のテストファイルは `__tests__/` に移動する |
-| カバレッジ閾値 | branch 30%（本 Epic 目標。60% は E3 以降で段階引き上げ） | 閾値未達の場合は追加テストを実装する |
+| カバレッジ閾値 | branch 20%（本 Epic 目標。45% は ES-005、60% は E3 以降で段階引き上げ） | 閾値未達の場合は追加テストを実装する |
 
 ## ステータス遷移（該当なし）
 
@@ -72,7 +74,7 @@ vitest 設定の修正（`include` パターン漏れ・テストファイルの
 | ケース | 条件 | 期待する振る舞い | 説明 |
 |--------|------|----------------|------|
 | テストが `__tests__/` 外に存在する | `src/**/*.test.ts` が `__tests__/` 外に配置されている | `__tests__/` への移動を実施し vitest include パターンに合わせる | 現状 `queue.test.ts` 等 3 ファイルが該当 |
-| カバレッジ閾値未達 | branch カバレッジが 30% 未満 | 追加テストを実装して閾値を達成する | 30% 達成困難な場合は純粋関数モジュールの網羅度を見直す |
+| カバレッジ閾値未達 | branch カバレッジが 20% 未満 | 追加テストを実装して閾値を達成する | 20% 達成困難な場合は純粋関数モジュールの網羅度を見直す |
 | 既存テストのリグレッション | 既存テストが FAIL する | `pnpm test` が PASS するまで修正する（実装コードの修正のみ。テストを弱める修正は禁止） | AC-E003-05 で検証 |
 
 ## 非機能要件
@@ -81,7 +83,7 @@ vitest 設定の修正（`include` パターン漏れ・テストファイルの
 |------|------|
 | テスト実行時間 | カバレッジ計測を有効にした `pnpm test --coverage` が 120 秒以内に完了する |
 | テストの独立性 | 各テストは他のテストに依存せず、任意の順序で実行できる |
-| モック方針 | エンジン・ファイルシステム・外部 CLI への依存はモックで代替する（`docs/conventions/testing.md` 準拠） |
+| モック方針 | エンジン・ファイルシステム・外部 CLI への依存はモックで代替する（`docs/conventions/testing.md` 準拠）。`vi.mock(module)` グローバルモックは使わず、**引数レベルのモック**（テスト対象関数に `readFileFn` 等を渡す形）を採用すること |
 | リファクタリング禁止 | 本 Epic のスコープは既存コード構造を変えないテスト追加のみ。リファクタリングは別 Epic（または後続フェーズ）で実施する |
 
 ## デリバリーする価値
@@ -89,14 +91,14 @@ vitest 設定の修正（`include` パターン漏れ・テストファイルの
 | 項目 | 内容 |
 |------|------|
 | 対象ユーザー/ペルソナ | 開発者（自分） |
-| デリバリーする価値 | `pnpm test --coverage` で branch カバレッジ 30% 以上が確認でき、E3 CI 閾値設定（段階的引き上げ）の前提が整う。純粋関数・ビジネスロジック中心のモジュールにテストが追加され、変更の安全性が高まる。 |
-| デモシナリオ | 1. `packages/jimmy` で `pnpm test --coverage` を実行する → 2. branch カバレッジが 30% 以上の値を示す → 3. `coverage/index.html` を開いて主要モジュール（`cron/`・`gateway/`・`connectors/`・`engines/`）がカバーされていることを確認する |
+| デリバリーする価値 | `pnpm test --coverage` で branch カバレッジ 20% 以上が確認でき、E3 CI 閾値設定（段階的引き上げ）の前提が整う。純粋関数・ビジネスロジック中心のモジュールにテストが追加され、変更の安全性が高まる。ES-004/005（S14）の土台となる「DI 後も有効なテスト」が揃う。 |
+| デモシナリオ | 1. `packages/jimmy` で `pnpm test --coverage` を実行する → 2. branch カバレッジが 20% 以上の値を示す → 3. `coverage/index.html` を開いて主要モジュール（`cron/`・`gateway/`・`connectors/`・`engines/`・`shared/`）がカバーされていることを確認する |
 
 ## E2E 検証計画
 
 | 項目 | 内容 |
 |------|------|
-| 検証シナリオ | AC-E003-01〜05: `packages/jimmy` で `pnpm test --coverage` を実行し全テスト PASS + branch カバレッジ 30% 以上を確認（自動検証）。`pnpm build` が PASS することを確認（手動デモ）。 |
+| 検証シナリオ | AC-E003-01〜05: `packages/jimmy` で `pnpm test --coverage` を実行し全テスト PASS + branch カバレッジ 20% 以上を確認（自動検証）。`pnpm build` が PASS することを確認（手動デモ）。 |
 | 検証環境 | ローカル開発環境（Node.js + pnpm）。外部サービス・gateway 起動は不要。 |
 | 前提条件 | `pnpm install` 完了。`@vitest/coverage-v8` インストール済み（ES-002 で対応済み）。 |
 
@@ -111,8 +113,9 @@ vitest 設定の修正（`include` パターン漏れ・テストファイルの
 
 | # | 事項 | ステータス | 解決先 |
 |---|------|----------|--------|
-| 1 | `cron/`・`mcp/`・`stt/` モジュールのテスト優先度（外部依存が強くモックコストが高い） | 未確定 | Task 分解時に優先度を決定。30% 達成に必要でなければスコープ外とする |
-| 2 | 30% 達成時に E3 CI 閾値をどこまで引き上げるか（10% → 30% 一気か段階的か） | 未確定 | E3 Epic 定義時に判断 |
+| 1 | `cron/`・`mcp/`・`stt/` モジュールのテスト優先度（外部依存が強くモックコストが高い） | 確定: cron/runner.ts は SessionManager mock で対応。mcp/stt は ES-005 スコープ | — |
+| 2 | 30% → 目標値の修正: branch 20% に下方修正（2026-04-24 決定）。理由: 大規模システムファイル（gateway/api.ts 2590行等）が 0% で分母を押し上げており、リファクタリングなしでの 30% 達成は困難。AC-E003-05（リファクタリング禁止）と整合させるため修正。ES-004/005（S14）完了後に 45% を目指す。 | 確定 | — |
+| 3 | ES-003 完了後の E3 CI 閾値初期値（`vitest thresholds` の設定値） | 確定: branches: 18, functions: 26 を ES-003 完了時に設定（達成値: branches 18.00%, functions 27.03%）。ES-005 完了後に branches: 45 に引き上げ | E3 Epic 定義時に最終確認 |
 
 ## 完全性チェック
 

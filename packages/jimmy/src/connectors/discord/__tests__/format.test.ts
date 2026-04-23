@@ -1,5 +1,8 @@
-import { describe, expect, it } from "vitest";
-import { formatResponse } from "../format.js";
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { downloadAttachment, formatResponse } from "../format.js";
 
 const DISCORD_MAX = 2000;
 
@@ -56,5 +59,46 @@ describe("AC-E003-04: formatResponse", () => {
   it("returns an empty array for empty input", () => {
     const result = formatResponse("");
     expect(result).toEqual([""]);
+  });
+});
+
+// ── AC-E003-03: downloadAttachment ───────────────────────────────────────────
+
+describe("AC-E003-03: downloadAttachment", () => {
+  const originalFetch = globalThis.fetch;
+  let tmpDir: string;
+
+  beforeEach(() => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "discord-dl-test-"));
+  });
+
+  afterEach(() => {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+    globalThis.fetch = originalFetch;
+  });
+
+  it("downloads and saves file when response is ok", async () => {
+    const content = Buffer.from("file content");
+    const mockFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      arrayBuffer: () => Promise.resolve(content.buffer),
+    });
+    globalThis.fetch = mockFetch as unknown as typeof fetch;
+
+    const destPath = await downloadAttachment("https://example.com/file.png", tmpDir, "test.png");
+    expect(destPath).toBe(path.join(tmpDir, "test.png"));
+    expect(fs.existsSync(destPath)).toBe(true);
+  });
+
+  it("throws when response is not ok", async () => {
+    const mockFetch = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 403,
+    });
+    globalThis.fetch = mockFetch as unknown as typeof fetch;
+
+    await expect(downloadAttachment("https://example.com/file.png", tmpDir, "test.png")).rejects.toThrow(
+      "Failed to download attachment: 403",
+    );
   });
 });

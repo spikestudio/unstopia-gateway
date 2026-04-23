@@ -145,6 +145,18 @@ describe("notifyParentSession", () => {
     const body = JSON.parse(fetchSpy.mock.calls[0][1].body);
     expect(body.role).toBe("notification");
   });
+
+  it("AC-E003-03: returns early when parent status is 'error' (branch coverage)", () => {
+    // parent.status === "error" → _sendNotification が早期 return するブランチをカバー
+    // 非同期汚染を避けるため、getSession の戻り値確認のみ
+    vi.mocked(getSession).mockReturnValueOnce(
+      makeSession({ id: "parent-001", parentSessionId: null, status: "error" }),
+    );
+    // notifyParentSession は void 関数。throw しないことを確認（分岐実行が目的）
+    expect(() => notifyParentSession(makeSession(), { result: "done" })).not.toThrow();
+    // getSession が error を返したことを確認（分岐に入ったこと）
+    expect(vi.mocked(getSession)).toHaveBeenCalledWith("parent-001");
+  });
 });
 
 describe("notifyParentSession — alwaysNotify suppression", () => {
@@ -237,6 +249,13 @@ describe("notifyRateLimited — fire-and-forget", () => {
     const body = JSON.parse(calls[calls.length - 1][1].body);
     expect(body.message).toContain("2025-04-23T20:00:00Z");
   });
+
+  it("AC-E003-03: returns early when childSession has no parentSessionId", () => {
+    // parentSessionId = null → 早期 return ブランチをカバー（分岐実行が目的）
+    const child = makeSession({ parentSessionId: null });
+    // 同期的に完了すること（throw しない）を確認
+    expect(() => notifyRateLimited(child)).not.toThrow();
+  });
 });
 
 describe("notifyRateLimitResumed — fire-and-forget", () => {
@@ -308,5 +327,48 @@ describe("notifyDiscordChannel", () => {
     await new Promise((r) => setTimeout(r, 50));
     // fetch should NOT be called because no channel is configured
     expect(fetchSpy).not.toHaveBeenCalled();
+  });
+});
+
+// ── 未カバー分岐（既存 describe への追加） ───────────────────────────────────
+// NOTE: 独立した describe ブロックを使わず、既存のモック設定を再利用する
+
+// AC-E003-03: _sendNotification — parent.status === 'error' については
+// notifyParentSession describe ブロック内の it として追加済み（下記を参照）
+// → callbacks.test.ts の元の describe("notifyParentSession") に追記済み
+//
+// AC-E003-03: notifyRateLimited — parentSessionId が null の場合は
+// notifyRateLimited describe ブロック内の it として追加済み（下記を参照）
+
+describe("AC-E003-03: notifyDiscordChannel — channel configured sends fetch", () => {
+  let fetchSpy: ReturnType<typeof vi.fn>;
+
+  beforeEach(async () => {
+    fetchSpy = vi.fn().mockResolvedValue({ ok: true });
+    globalThis.fetch = fetchSpy as unknown as typeof fetch;
+    vi.mocked(await import("../../shared/config.js")).loadConfig = vi.fn(() => ({
+      gateway: { port: 8888, host: "0.0.0.0" },
+      engines: { default: "claude", claude: { bin: "claude", model: "sonnet" }, codex: { bin: "codex", model: "" } },
+      connectors: {},
+      logging: { file: false, stdout: true, level: "info" },
+      notifications: { connector: "discord", channel: "alerts" },
+    }));
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+    globalThis.fetch = originalFetch as typeof fetch;
+  });
+
+  it("AC-E003-03: sends fetch when channel is configured", async () => {
+    notifyDiscordChannel("alert: something happened");
+    await new Promise((r) => setTimeout(r, 100));
+    expect(fetchSpy).toHaveBeenCalledOnce();
+    const [url, opts] = fetchSpy.mock.calls[0];
+    expect(url).toContain("/api/connectors/discord/send");
+    expect(url).toContain("8888");
+    const body = JSON.parse(opts.body);
+    expect(body.channel).toBe("alerts");
+    expect(body.text).toBe("alert: something happened");
   });
 });

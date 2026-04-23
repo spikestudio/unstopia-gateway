@@ -527,5 +527,103 @@ describe("GeminiEngine", () => {
         else delete process.env.CLAUDE_CODE_SOMETHING;
       }
     });
+
+    // ── parseJsonOutput 未カバー分岐 ────────────────────────────────────────
+
+    it("AC-E003-03: parseJsonOutput — Array with no resultEvent falls back to lastText", async () => {
+      const proc = createMockProcess();
+      mockSpawn.mockReturnValue(proc as unknown as ChildProcess);
+
+      const resultPromise = engine.run({ prompt: "q", cwd: "/tmp" });
+
+      // Array 形式だが type:"result" がない → lastText フォールバック
+      const output = JSON.stringify([
+        { type: "text", text: "fallback text answer" },
+        { type: "other_event", data: "x" },
+      ]);
+      proc.stdout.emit("data", Buffer.from(output));
+      proc.exitCode = 0;
+      proc.emit("close", 0);
+
+      const result = await resultPromise;
+      expect(result.result).toBe("fallback text answer");
+      expect(result.error).toBeUndefined();
+    });
+
+    it("AC-E003-03: parseJsonOutput — Array with no resultEvent and no lastText returns empty string", async () => {
+      const proc = createMockProcess();
+      mockSpawn.mockReturnValue(proc as unknown as ChildProcess);
+
+      const resultPromise = engine.run({ prompt: "q", cwd: "/tmp" });
+
+      // Array 形式で text/content.text イベントなし → result: ""
+      const output = JSON.stringify([{ type: "debug", msg: "starting" }]);
+      proc.stdout.emit("data", Buffer.from(output));
+      proc.exitCode = 0;
+      proc.emit("close", 0);
+
+      const result = await resultPromise;
+      expect(result.result).toBe("");
+    });
+
+    it("AC-E003-03: parseJsonOutput — primitive value falls back to String(parsed)", async () => {
+      const proc = createMockProcess();
+      mockSpawn.mockReturnValue(proc as unknown as ChildProcess);
+
+      const resultPromise = engine.run({ prompt: "q", cwd: "/tmp" });
+
+      // 数値のみの JSON → String(parsed) パス
+      const output = JSON.stringify(42);
+      proc.stdout.emit("data", Buffer.from(output));
+      proc.exitCode = 0;
+      proc.emit("close", 0);
+
+      const result = await resultPromise;
+      expect(result.result).toBe("42");
+    });
+
+    it("AC-E003-03: parseJsonOutput throws → error result with raw stdout", async () => {
+      const proc = createMockProcess();
+      mockSpawn.mockReturnValue(proc as unknown as ChildProcess);
+
+      const resultPromise = engine.run({ prompt: "q", cwd: "/tmp" });
+
+      // 不正な JSON → parseJsonOutput が throw → catch で error フィールドを持つ result
+      proc.stdout.emit("data", Buffer.from("not valid json at all"));
+      proc.exitCode = 0;
+      proc.emit("close", 0);
+
+      const result = await resultPromise;
+      expect(result.error).toContain("Failed to parse Gemini output");
+    });
+
+    it("AC-E003-03: streaming + non-zero exit but geminiSessionId is set → resolves with session", async () => {
+      const proc = createMockProcess();
+      mockSpawn.mockReturnValue(proc as unknown as ChildProcess);
+
+      const deltas: StreamDelta[] = [];
+      const resultPromise = engine.run({
+        prompt: "q",
+        cwd: "/tmp",
+        sessionId: "sess-x",
+        onStream: (d) => deltas.push(d),
+      });
+
+      // session.start を送信して geminiSessionId をキャプチャ
+      proc.stdout.emit(
+        "data",
+        Buffer.from(
+          JSON.stringify({ type: "session.start", session_id: "gem-captured" }) + "\n" +
+          JSON.stringify({ type: "text", text: "partial answer" }) + "\n",
+        ),
+      );
+      // 非ゼロ終了 → code !== 0 だが geminiSessionId があるので resolve
+      proc.exitCode = 1;
+      proc.emit("close", 1);
+
+      const result = await resultPromise;
+      expect(result.sessionId).toBe("gem-captured");
+      expect(result.result).toBe("partial answer");
+    });
   });
 });
