@@ -99,6 +99,17 @@
 | 検証環境 | ローカル開発環境（Node.js + pnpm）。E2E テスト（playwright）は gateway 起動が必要なため、起動した状態で実行する。 |
 | 前提条件 | `pnpm install` 完了。`@vitest/coverage-v8` インストール済み。gateway 起動（E2E テスト実行時のみ必要）。 |
 
+## smoke.spec.ts 現状記録（AC-E002-06〜08）
+
+| 項目 | 内容 |
+|------|------|
+| ファイルパス | `e2e/smoke.spec.ts` |
+| テストケース数 | 1 件 |
+| カバーするシナリオ | `dashboard loads and has correct title`: `http://localhost:7779/` に接続し、500エラーでないこと・ページタイトルが空でないことを確認 |
+| 前提条件 | gateway（jimmyデーモン）が `localhost:7779` で起動していること |
+| playwright 実行結果 | SKIP（gateway 未起動環境で `net::ERR_CONNECTION_REFUSED`。AC-E002-07） |
+| E2E 整備方針 | **現状維持**。CI での自動実行は gateway 起動が必要なため現実的でない。手動検証（demo 時）での利用を想定（AC-E002-08） |
+
 ## 他 Epic への依存・影響
 
 - **E1 に依存される**: E2 のカバレッジ計測基盤が整った後、E1（Biome 警告ゼロ化）で Biome 修正のリグレッションをテストで検知できる
@@ -110,9 +121,9 @@
 
 | # | 事項 | ステータス | 解決先 |
 |---|------|----------|--------|
-| 1 | branch カバレッジの現状値（60% 達成可能か 50% スタートか） | 未計測 | E2 Task 実装時に `pnpm test --coverage` で計測後確定 |
-| 2 | E2E テスト整備方針（現状維持 or 追加テストケース実装） | 未確定 | smoke.spec.ts 内容確認後にユーザーと合意 |
-| 3 | `coverage/` を `.gitignore` に追加するか、`.turbo` の ignore に追加するか | 未確定 | Task 実装時に既存 `.gitignore` の構成を確認して決定 |
+| 1 | branch カバレッジの現状値（60% 達成可能か 50% スタートか） | 確定済み | 計測結果: branch 9.04%。50% 未満のため目標閾値はユーザーと相談要 |
+| 2 | E2E テスト整備方針（現状維持 or 追加テストケース実装） | 確定済み | 現状維持。smoke.spec.ts は dashboard ロード確認 1 件。gateway 未起動環境では SKIP（net::ERR_CONNECTION_REFUSED）。CI での実行は現実的でないため現状維持とする |
+| 3 | `coverage/` を `.gitignore` に追加するか、`.turbo` の ignore に追加するか | 確定済み | ルート `.gitignore` に `coverage/` を追加（既存の `node_modules/`, `dist/` 等と統一したパターン） |
 
 ## 完全性チェック
 

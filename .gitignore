@@ -8,3 +8,5 @@ dist/
 .worktrees/
 .DS_Store
 .direnv/
+coverage/
+test-results/
