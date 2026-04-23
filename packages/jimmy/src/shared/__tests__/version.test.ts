@@ -18,7 +18,7 @@ vi.mock("../paths.js", () => ({
   },
 }));
 
-import { compareSemver, getInstanceVersion, getPendingMigrations, getPackageVersion } from "../version.js";
+import { compareSemver, getInstanceVersion, getPackageVersion, getPendingMigrations } from "../version.js";
 
 // ── compareSemver（純粋関数） ─────────────────────────────────────────────────
 

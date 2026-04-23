@@ -131,7 +131,10 @@ describe("AC-E003-03: CronConnector", () => {
       const connectors = makeConnectorMap("slack", {
         editMessage: mockEdit,
         getCapabilities: () => ({
-          threading: false, messageEdits: false, reactions: false, attachments: false,
+          threading: false,
+          messageEdits: false,
+          reactions: false,
+          attachments: false,
         }),
       });
       const c = new CronConnector(connectors, { connector: "slack", channel: "#g" });
@@ -144,7 +147,10 @@ describe("AC-E003-03: CronConnector", () => {
       const connectors = makeConnectorMap("slack", {
         editMessage: mockEdit,
         getCapabilities: () => ({
-          threading: false, messageEdits: true, reactions: false, attachments: false,
+          threading: false,
+          messageEdits: true,
+          reactions: false,
+          attachments: false,
         }),
       });
       const c = new CronConnector(connectors, { connector: "slack", channel: "#g" });

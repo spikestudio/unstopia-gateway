@@ -613,8 +613,10 @@ describe("GeminiEngine", () => {
       proc.stdout.emit(
         "data",
         Buffer.from(
-          JSON.stringify({ type: "session.start", session_id: "gem-captured" }) + "\n" +
-          JSON.stringify({ type: "text", text: "partial answer" }) + "\n",
+          JSON.stringify({ type: "session.start", session_id: "gem-captured" }) +
+            "\n" +
+            JSON.stringify({ type: "text", text: "partial answer" }) +
+            "\n",
         ),
       );
       // 非ゼロ終了 → code !== 0 だが geminiSessionId があるので resolve

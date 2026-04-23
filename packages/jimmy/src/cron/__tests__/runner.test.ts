@@ -27,8 +27,8 @@ vi.mock("../../shared/logger.js", () => ({
   },
 }));
 
-import { appendRunLog } from "../jobs.js";
 import { findEmployee, scanOrg } from "../../gateway/org.js";
+import { appendRunLog } from "../jobs.js";
 import { runCronJob } from "../runner.js";
 
 // SessionManager の最小限モック

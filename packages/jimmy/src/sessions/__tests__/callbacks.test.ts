@@ -19,7 +19,7 @@ vi.mock("../../shared/logger.js", () => ({
 }));
 
 import type { Session } from "../../shared/types.js";
-import { notifyDiscordChannel, notifyParentSession, notifyRateLimitResumed, notifyRateLimited } from "../callbacks.js";
+import { notifyDiscordChannel, notifyParentSession, notifyRateLimited, notifyRateLimitResumed } from "../callbacks.js";
 import { getSession } from "../registry.js";
 
 function makeSession(_overrides: Partial<Session> = {}): Session {
@@ -234,7 +234,7 @@ describe("notifyRateLimited — fire-and-forget", () => {
     await new Promise((r) => setTimeout(r, WAIT));
     // _sendRaw is called directly — it posts to the parent session endpoint
     const calls = fetchSpy.mock.calls.filter((args: unknown[]) =>
-      (args[0] as string).includes("/api/sessions/parent-001/message")
+      (args[0] as string).includes("/api/sessions/parent-001/message"),
     );
     expect(calls.length).toBeGreaterThanOrEqual(1);
     const body = JSON.parse(calls[calls.length - 1][1].body);
@@ -246,7 +246,7 @@ describe("notifyRateLimited — fire-and-forget", () => {
     notifyRateLimited(child, "2025-04-23T20:00:00Z");
     await new Promise((r) => setTimeout(r, WAIT));
     const calls = fetchSpy.mock.calls.filter((args: unknown[]) =>
-      (args[0] as string).includes("/api/sessions/parent-001/message")
+      (args[0] as string).includes("/api/sessions/parent-001/message"),
     );
     expect(calls.length).toBeGreaterThanOrEqual(1);
     const body = JSON.parse(calls[calls.length - 1][1].body);
@@ -284,7 +284,7 @@ describe("notifyRateLimitResumed — fire-and-forget", () => {
     notifyRateLimitResumed(child);
     await new Promise((r) => setTimeout(r, WAIT));
     const calls = fetchSpy.mock.calls.filter((args: unknown[]) =>
-      (args[0] as string).includes("/api/sessions/parent-001/message")
+      (args[0] as string).includes("/api/sessions/parent-001/message"),
     );
     expect(calls.length).toBeGreaterThanOrEqual(1);
     const body = JSON.parse(calls[calls.length - 1][1].body);
@@ -301,7 +301,7 @@ describe("notifyRateLimitResumed — fire-and-forget", () => {
     notifyRateLimitResumed(child);
     await new Promise((r) => setTimeout(r, WAIT));
     const calls = fetchSpy.mock.calls.filter((args: unknown[]) =>
-      (args[0] as string).includes("/api/sessions/parent-001/message")
+      (args[0] as string).includes("/api/sessions/parent-001/message"),
     );
     expect(calls.length).toBeGreaterThanOrEqual(1);
     const body = JSON.parse(calls[calls.length - 1][1].body);
