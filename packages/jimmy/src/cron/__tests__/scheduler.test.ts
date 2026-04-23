@@ -40,7 +40,8 @@ vi.mock("../../shared/logger.js", () => ({
 
 import type { CronJob, JinnConfig } from "../../shared/types.js";
 import { loadJobs, saveJobs } from "../jobs.js";
-import { reloadScheduler, setCronJobEnabled, startScheduler, stopScheduler } from "../scheduler.js";
+import { runCronJob } from "../runner.js";
+import { reloadScheduler, setCronJobEnabled, startScheduler, stopScheduler, triggerCronJob } from "../scheduler.js";
 
 function makeJob(overrides: Partial<CronJob> = {}): CronJob {
   return {
@@ -205,5 +206,48 @@ describe("AC-E003-04: setCronJobEnabled", () => {
 
     expect(result).toBeUndefined();
     expect(saveJobs).not.toHaveBeenCalled();
+  });
+});
+
+describe("AC-E003-04: triggerCronJob", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockValidate.mockReturnValue(true);
+    mockSchedule.mockReturnValue(mockTask);
+    startScheduler([], mockSessionManager, mockConfig, mockConnectors);
+  });
+
+  afterEach(() => {
+    stopScheduler();
+  });
+
+  it("runs the job and returns it when found by id", async () => {
+    const job = makeJob({ id: "job-trigger-1" });
+    vi.mocked(loadJobs).mockReturnValue([job]);
+    vi.mocked(runCronJob).mockResolvedValue(undefined);
+
+    const result = await triggerCronJob("job-trigger-1");
+
+    expect(result).toEqual(job);
+    expect(runCronJob).toHaveBeenCalledWith(job, expect.anything(), expect.anything(), expect.anything());
+  });
+
+  it("runs the job and returns it when found by name", async () => {
+    const job = makeJob({ id: "job-trigger-2", name: "My Trigger Job" });
+    vi.mocked(loadJobs).mockReturnValue([job]);
+    vi.mocked(runCronJob).mockResolvedValue(undefined);
+
+    const result = await triggerCronJob("my trigger job");
+
+    expect(result).toEqual(job);
+  });
+
+  it("returns undefined when job not found", async () => {
+    vi.mocked(loadJobs).mockReturnValue([]);
+
+    const result = await triggerCronJob("nonexistent");
+
+    expect(result).toBeUndefined();
+    expect(runCronJob).not.toHaveBeenCalled();
   });
 });

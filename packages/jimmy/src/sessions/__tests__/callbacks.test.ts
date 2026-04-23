@@ -19,7 +19,7 @@ vi.mock("../../shared/logger.js", () => ({
 }));
 
 import type { Session } from "../../shared/types.js";
-import { notifyParentSession } from "../callbacks.js";
+import { notifyDiscordChannel, notifyParentSession, notifyRateLimitResumed, notifyRateLimited } from "../callbacks.js";
 import { getSession } from "../registry.js";
 
 function makeSession(_overrides: Partial<Session> = {}): Session {
@@ -196,5 +196,117 @@ describe("notifyParentSession — alwaysNotify suppression", () => {
     await new Promise((r) => setTimeout(r, 50));
 
     expect(fetchSpy).toHaveBeenCalledOnce();
+  });
+});
+
+describe("notifyRateLimited — fire-and-forget", () => {
+  let fetchSpy: ReturnType<typeof vi.fn>;
+  const WAIT = 200; // longer wait to flush pending promises from prior describe blocks
+
+  beforeEach(() => {
+    fetchSpy = vi.fn().mockResolvedValue({ ok: true });
+    globalThis.fetch = fetchSpy as unknown as typeof fetch;
+  });
+
+  afterEach(() => {
+    vi.clearAllMocks();
+    globalThis.fetch = originalFetch as typeof fetch;
+  });
+
+  it("sends rate-limit notification to parent session", async () => {
+    const child = makeSession();
+    notifyRateLimited(child);
+    await new Promise((r) => setTimeout(r, WAIT));
+    // _sendRaw is called directly — it posts to the parent session endpoint
+    const calls = fetchSpy.mock.calls.filter((args: unknown[]) =>
+      (args[0] as string).includes("/api/sessions/parent-001/message")
+    );
+    expect(calls.length).toBeGreaterThanOrEqual(1);
+    const body = JSON.parse(calls[calls.length - 1][1].body);
+    expect(body.message).toContain("rate-limited");
+  });
+
+  it("includes estimated resume time when provided", async () => {
+    const child = makeSession();
+    notifyRateLimited(child, "2025-04-23T20:00:00Z");
+    await new Promise((r) => setTimeout(r, WAIT));
+    const calls = fetchSpy.mock.calls.filter((args: unknown[]) =>
+      (args[0] as string).includes("/api/sessions/parent-001/message")
+    );
+    expect(calls.length).toBeGreaterThanOrEqual(1);
+    const body = JSON.parse(calls[calls.length - 1][1].body);
+    expect(body.message).toContain("2025-04-23T20:00:00Z");
+  });
+});
+
+describe("notifyRateLimitResumed — fire-and-forget", () => {
+  let fetchSpy: ReturnType<typeof vi.fn>;
+  const WAIT = 200;
+
+  beforeEach(() => {
+    fetchSpy = vi.fn().mockResolvedValue({ ok: true });
+    globalThis.fetch = fetchSpy as unknown as typeof fetch;
+  });
+
+  afterEach(() => {
+    vi.clearAllMocks();
+    globalThis.fetch = originalFetch as typeof fetch;
+  });
+
+  it("sends resume notification to parent session", async () => {
+    const child = makeSession();
+    notifyRateLimitResumed(child);
+    await new Promise((r) => setTimeout(r, WAIT));
+    const calls = fetchSpy.mock.calls.filter((args: unknown[]) =>
+      (args[0] as string).includes("/api/sessions/parent-001/message")
+    );
+    expect(calls.length).toBeGreaterThanOrEqual(1);
+    const body = JSON.parse(calls[calls.length - 1][1].body);
+    expect(body.message).toContain("resumed");
+    expect(body.message).toContain("test-employee");
+  });
+
+  it("uses 'Unknown' when employee is not set", async () => {
+    // Build a session with employee explicitly as empty string (triggers the || fallback)
+    const child: Session = {
+      ...makeSession(),
+      employee: "",
+    };
+    notifyRateLimitResumed(child);
+    await new Promise((r) => setTimeout(r, WAIT));
+    const calls = fetchSpy.mock.calls.filter((args: unknown[]) =>
+      (args[0] as string).includes("/api/sessions/parent-001/message")
+    );
+    expect(calls.length).toBeGreaterThanOrEqual(1);
+    const body = JSON.parse(calls[calls.length - 1][1].body);
+    expect(body.message).toContain("Unknown");
+  });
+});
+
+describe("notifyDiscordChannel", () => {
+  let fetchSpy: ReturnType<typeof vi.fn>;
+
+  beforeEach(() => {
+    fetchSpy = vi.fn().mockResolvedValue({ ok: true });
+    globalThis.fetch = fetchSpy as unknown as typeof fetch;
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+    globalThis.fetch = originalFetch as typeof fetch;
+  });
+
+  it("skips sending when no channel is configured", async () => {
+    vi.mocked(await import("../../shared/config.js")).loadConfig = vi.fn(() => ({
+      gateway: { port: 7777, host: "0.0.0.0" },
+      engines: { default: "claude", claude: { bin: "claude", model: "sonnet" }, codex: { bin: "codex", model: "" } },
+      connectors: {},
+      logging: { file: false, stdout: true, level: "info" },
+      // notifications not configured → no channel
+    }));
+    notifyDiscordChannel("test message");
+    await new Promise((r) => setTimeout(r, 50));
+    // fetch should NOT be called because no channel is configured
+    expect(fetchSpy).not.toHaveBeenCalled();
   });
 });

@@ -21,7 +21,8 @@ vi.mock("../../shared/logger.js", () => ({
   },
 }));
 
-import { scanOrg } from "../org.js";
+import { extractMention, extractMentions, findEmployee, scanOrg } from "../org.js";
+import type { Employee } from "../../shared/types.js";
 
 function writeYaml(subdir: string, filename: string, content: string) {
   const dir = path.join(tmpDir, subdir);
@@ -99,5 +100,101 @@ alwaysNotify: "yes"
     const emp = registry.get("bad");
     expect(emp).toBeDefined();
     expect(emp?.alwaysNotify).toBe(true);
+  });
+});
+
+// Helper to create a minimal Employee for testing pure functions
+function makeEmployee(name: string, overrides: Partial<Employee> = {}): Employee {
+  return {
+    name,
+    displayName: name,
+    department: "test",
+    rank: "employee",
+    engine: "claude",
+    model: "sonnet",
+    persona: "A test employee",
+    ...overrides,
+  };
+}
+
+describe("findEmployee", () => {
+  it("returns the employee when found", () => {
+    const registry = new Map<string, Employee>();
+    const emp = makeEmployee("alice");
+    registry.set("alice", emp);
+    expect(findEmployee("alice", registry)).toBe(emp);
+  });
+
+  it("returns undefined when not found", () => {
+    const registry = new Map<string, Employee>();
+    expect(findEmployee("bob", registry)).toBeUndefined();
+  });
+
+  it("returns undefined for empty registry", () => {
+    expect(findEmployee("anyone", new Map())).toBeUndefined();
+  });
+});
+
+describe("extractMention", () => {
+  it("returns employee when text contains @name mention", () => {
+    const registry = new Map<string, Employee>();
+    const emp = makeEmployee("alice");
+    registry.set("alice", emp);
+    expect(extractMention("hey @alice can you help?", registry)).toBe(emp);
+  });
+
+  it("returns undefined when no mention matches", () => {
+    const registry = new Map<string, Employee>();
+    registry.set("alice", makeEmployee("alice"));
+    expect(extractMention("hey bob can you help?", registry)).toBeUndefined();
+  });
+
+  it("returns undefined for empty registry", () => {
+    expect(extractMention("@anyone hello", new Map())).toBeUndefined();
+  });
+
+  it("returns first matching employee when multiple could match", () => {
+    const registry = new Map<string, Employee>();
+    const alice = makeEmployee("alice");
+    const bob = makeEmployee("bob");
+    registry.set("alice", alice);
+    registry.set("bob", bob);
+    // Text only mentions alice
+    expect(extractMention("@alice please do this", registry)).toBe(alice);
+  });
+});
+
+describe("extractMentions", () => {
+  it("returns empty array when no mentions match", () => {
+    const registry = new Map<string, Employee>();
+    registry.set("alice", makeEmployee("alice"));
+    expect(extractMentions("no mentions here", registry)).toEqual([]);
+  });
+
+  it("returns all mentioned employees", () => {
+    const registry = new Map<string, Employee>();
+    const alice = makeEmployee("alice");
+    const bob = makeEmployee("bob");
+    registry.set("alice", alice);
+    registry.set("bob", bob);
+    const result = extractMentions("@alice and @bob please help", registry);
+    expect(result).toHaveLength(2);
+    expect(result).toContain(alice);
+    expect(result).toContain(bob);
+  });
+
+  it("returns single employee when only one is mentioned", () => {
+    const registry = new Map<string, Employee>();
+    const alice = makeEmployee("alice");
+    const bob = makeEmployee("bob");
+    registry.set("alice", alice);
+    registry.set("bob", bob);
+    const result = extractMentions("@alice only", registry);
+    expect(result).toHaveLength(1);
+    expect(result[0]).toBe(alice);
+  });
+
+  it("returns empty array for empty registry", () => {
+    expect(extractMentions("@anyone hello", new Map())).toEqual([]);
   });
 });
