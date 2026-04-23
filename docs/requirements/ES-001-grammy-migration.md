@@ -39,10 +39,10 @@
 
 ### AC-1: 依存関係の置き換え
 
-- `node-telegram-bot-api` が `packages/jimmy/package.json` の dependencies から除去されている
-- `grammy@^1.0.0` が dependencies に追加されている
-- `@types/node-telegram-bot-api` が devDependencies から除去されている
-- `pnpm install` 後に `request@2.88.2` が Telegram 経路で参照されていない
+- [x] `node-telegram-bot-api` が `packages/jimmy/package.json` の dependencies から除去されている
+- [x] `grammy@^1.0.0` が dependencies に追加されている
+- [x] `@types/node-telegram-bot-api` が devDependencies から除去されている
+- [x] `pnpm install` 後に `request@2.88.2` が Telegram 経路で参照されていない
 
 ### AC-2: 機能等価性
 
@@ -60,18 +60,18 @@ grammy 移行後も以下の動作が維持されている:
 
 ### AC-3: テスト通過
 
-- 既存テスト（connector.test.ts）が grammy mock で全 PASS している
-- `pnpm test` で 217 tests 以上が PASS している
+- [x] 既存テスト（connector.test.ts）が grammy mock で全 PASS している
+- [x] `pnpm test` で 217 tests 以上が PASS している
 
 ### AC-4: セキュリティ改善確認
 
-- `pnpm audit` の結果から `request`, `tough-cookie`, `uuid` (Telegram 経路) の advisory が消滅している
-- `docs/research/security-exceptions.md` の該当 3 件を削除している
+- [x] `pnpm audit` の結果から `request`, `tough-cookie`, `uuid` (Telegram 経路) の advisory が消滅している
+- [x] `docs/research/security-exceptions.md` の該当 3 件を削除している
 
 ### AC-5: 型チェック・静的解析
 
-- `pnpm typecheck` が clean
-- `pnpm biome check` が 0 errors
+- [x] `pnpm typecheck` が clean
+- [x] `pnpm biome check` が 0 errors
 
 ## 実装方針
 
