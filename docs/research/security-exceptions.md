@@ -1,11 +1,11 @@
 # セキュリティ例外記録
 
-最終更新: 2026-04-23（node-cron 4.x 更新後）  
+最終更新: 2026-04-23（grammy 移行後 — request chain 3 件を根本解消）  
 audit 実行時: `pnpm audit` (npm registry)
 
 ## 概要
 
-`pnpm.overrides` + `node-cron` 3→4 アップグレードにより 30 件 → 4 件に削減済み。  
+`pnpm.overrides` + `node-cron` 3→4 アップグレード + `grammy` 移行により 30 件 → 2 件に削減済み。  
 以下は技術的制約により現時点で修正不能な脆弱性の記録。
 
 ---
@@ -26,45 +26,17 @@ audit 実行時: `pnpm audit` (npm registry)
 
 ---
 
-### [moderate] request@2.88.2 — SSRF (Server-Side Request Forgery)
-
-| 項目 | 内容 |
-|------|------|
-| CVE | GHSA-p8p7-x288-28g6 |
-| 深刻度 | moderate |
-| 修正バージョン | なし（deprecated パッケージ） |
-| 依存パス | `packages/jimmy > node-telegram-bot-api@0.67.0 > request@2.88.2` |
-| 修正不能の理由 | `request` パッケージは deprecated で修正版が存在しない。`node-telegram-bot-api` が `request` に強依存しており、代替なしには除去できない。 |
-| 緩和策 | Telegram Bot API 通信は Telegram サーバーへの HTTPS リクエストのみ。任意 URL へのリクエストをアプリケーションコードから行っていない。 |
-| 解消条件 | `node-telegram-bot-api` を `node-telegram-bot-api` 後継または `grammy` / `telegraf` 等の request-free ライブラリに置き換える。 |
-
----
-
-### [moderate] tough-cookie@2.5.0 — Prototype Pollution
-
-| 項目 | 内容 |
-|------|------|
-| CVE | GHSA-72xf-g2v4-qvf3 |
-| 深刻度 | moderate |
-| 修正バージョン | >=4.1.3 |
-| 依存パス | `packages/jimmy > node-telegram-bot-api@0.67.0 > request@2.88.2 > tough-cookie@2.5.0` |
-| 修正不能の理由 | `request@2.88.2` が tough-cookie 2.x API に依存しており、4.x への上書きで request が破壊される。request 自体の修正版が存在しないため連鎖的に対処不能。 |
-| 緩和策 | `request` 経由上記同様。クッキー処理は Telegram サーバーとのセッション管理のみ。 |
-| 解消条件 | `node-telegram-bot-api` 置き換えにより request ごと除去。 |
-
----
-
-### [moderate] uuid@8.3.2 — Buffer Bounds Check 欠落
+### [moderate] uuid@11.1.0 — Buffer Bounds Check 欠落
 
 | 項目 | 内容 |
 |------|------|
 | CVE | GHSA-w5hq-g745-h8pq |
 | 深刻度 | moderate |
 | 修正バージョン | >=14.0.0 |
-| 依存パス | `packages/jimmy > node-telegram-bot-api@0.67.0 > @cypress/request@3.0.10 > uuid@8.3.2` |
-| 修正不能の理由 | 修正バージョンは uuid 14.x（メジャー番号 8→14、API 破壊的変更）。`@cypress/request@3.0.10` が uuid 8.x API に依存しており上書きで破壊される。node-cron 経由のパスは node-cron 4.x 更新で解消済み。 |
-| 緩和策 | uuid は HTTP リクエストの内部 boundary 生成に使用。外部からの `buf` パラメータ付き uuid 呼び出しは行っていない（CVE の攻撃条件に該当しない）。 |
-| 解消条件 | `node-telegram-bot-api` を `grammy` 等に置き換えることで `@cypress/request` ごと除去可能。 |
+| 依存パス | `packages/jimmy > uuid@11.1.0` |
+| 修正不能の理由 | 修正バージョンは uuid 14.x（メジャー番号、API 破壊的変更の可能性あり）。プロジェクト直接依存として uuid@11.x を使用中。node-telegram-bot-api 経由の旧パス（uuid@8.3.2）は grammy 移行で除去済み。 |
+| 緩和策 | uuid はセッション ID 生成に使用。外部からの `buf` パラメータ付き uuid 呼び出しは行っていない（CVE の攻撃条件に該当しない）。 |
+| 解消条件 | `uuid@14.x` に更新可能になった時点でアップグレードを検討。 |
 
 ---
 
@@ -84,3 +56,4 @@ audit 実行時: `pnpm audit` (npm registry)
 | request>form-data | 2.3.3 | ^2.5.4 | critical |
 | request>qs | 6.x古版 | ^6.14.1 | moderate |
 | node-cron | 3.0.3 | 4.2.1 | — (uuid 依存を完全除去) |
+| node-telegram-bot-api | 0.67.0 | 除去（grammy に移行） | — (request chain を完全除去) |

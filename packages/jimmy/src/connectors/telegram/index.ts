@@ -1,4 +1,4 @@
-import TelegramBot from "node-telegram-bot-api";
+import { Bot, type Context } from "grammy";
 import { logger } from "../../shared/logger.js";
 import type {
   Connector,
@@ -12,9 +12,12 @@ import type {
 import { formatResponse } from "./format.js";
 import { buildReplyContext, deriveSessionKey, isOldTelegramMessage } from "./threads.js";
 
+type SendMessageOpts = Parameters<Bot["api"]["sendMessage"]>[2];
+type EditMessageTextOpts = Parameters<Bot["api"]["editMessageText"]>[3];
+
 export class TelegramConnector implements Connector {
   name = "telegram";
-  private bot: TelegramBot;
+  private bot: Bot;
   private handler: ((msg: IncomingMessage) => void) | null = null;
   private readonly allowedUsers: Set<number> | null;
   private readonly ignoreOldMessagesOnBoot: boolean;
@@ -31,18 +34,15 @@ export class TelegramConnector implements Connector {
   };
 
   constructor(config: TelegramConnectorConfig) {
-    this.bot = new TelegramBot(config.botToken, { polling: false });
+    this.bot = new Bot(config.botToken);
     this.ignoreOldMessagesOnBoot = config.ignoreOldMessagesOnBoot !== false;
     this.allowedUsers = config.allowFrom && config.allowFrom.length > 0 ? new Set(config.allowFrom) : null;
   }
 
   async start(): Promise<void> {
     try {
-      const me = await this.bot.getMe();
+      const me = await this.bot.api.getMe();
       logger.info(`[telegram] Bot started: @${me.username} (id: ${me.id})`);
-      this.bot.startPolling();
-      this.started = true;
-      this.lastError = null;
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       this.lastError = msg;
@@ -50,7 +50,14 @@ export class TelegramConnector implements Connector {
       return;
     }
 
-    this.bot.on("message", async (telegramMsg) => {
+    this.bot.catch((err) => {
+      logger.error(`[telegram] Runtime error: ${err.message}`);
+    });
+
+    this.bot.on("message", async (ctx: Context) => {
+      const telegramMsg = ctx.message;
+      if (!telegramMsg) return;
+
       // Skip bot messages
       if (telegramMsg.from?.is_bot) {
         logger.debug("[telegram] Skipping bot message");
@@ -99,6 +106,10 @@ export class TelegramConnector implements Connector {
 
       this.handler(msg);
     });
+
+    this.bot.start();
+    this.started = true;
+    this.lastError = null;
   }
 
   async stop(): Promise<void> {
@@ -106,7 +117,7 @@ export class TelegramConnector implements Connector {
       clearInterval(interval);
     }
     this.typingIntervals.clear();
-    await this.bot.stopPolling();
+    await this.bot.stop();
     this.started = false;
     logger.info("[telegram] Connector stopped");
   }
@@ -131,13 +142,9 @@ export class TelegramConnector implements Connector {
     };
   }
 
-  private async safeSend(
-    chatId: string,
-    text: string,
-    opts: TelegramBot.SendMessageOptions = {},
-  ): Promise<string | undefined> {
+  private async safeSend(chatId: string, text: string, opts: SendMessageOpts = {}): Promise<string | undefined> {
     try {
-      const result = await this.bot.sendMessage(chatId, text, {
+      const result = await this.bot.api.sendMessage(chatId, text, {
         parse_mode: "Markdown",
         ...opts,
       });
@@ -146,7 +153,7 @@ export class TelegramConnector implements Connector {
       // On parse error, retry without Markdown formatting
       logger.warn(`[telegram] Send failed with Markdown, retrying as plain text: ${err}`);
       try {
-        const result = await this.bot.sendMessage(chatId, text, opts);
+        const result = await this.bot.api.sendMessage(chatId, text, opts);
         return String(result.message_id);
       } catch (retryErr) {
         logger.error(`[telegram] Send failed: ${retryErr}`);
@@ -170,9 +177,9 @@ export class TelegramConnector implements Connector {
   async replyMessage(target: Target, text: string): Promise<string | undefined> {
     if (!text?.trim()) return undefined;
     const replyToId = target.replyContext?.messageId != null ? Number(target.replyContext.messageId) : undefined;
-    const opts: TelegramBot.SendMessageOptions = {};
+    const opts: SendMessageOpts = {};
     if (replyToId) {
-      opts.reply_to_message_id = replyToId;
+      opts.reply_parameters = { message_id: replyToId };
     }
     const chunks = formatResponse(text);
     let lastMessageId: string | undefined;
@@ -192,11 +199,11 @@ export class TelegramConnector implements Connector {
     }
     if (!status) return;
     try {
-      await this.bot.sendChatAction(channelId, "typing");
+      await this.bot.api.sendChatAction(channelId, "typing");
       // Telegram typing expires after ~5s — refresh every 4s
       const interval = setInterval(async () => {
         try {
-          await this.bot.sendChatAction(channelId, "typing");
+          await this.bot.api.sendChatAction(channelId, "typing");
         } catch {
           /* non-fatal */
         }
@@ -218,11 +225,8 @@ export class TelegramConnector implements Connector {
   async editMessage(target: Target, text: string): Promise<void> {
     if (!target.messageTs) return;
     if (!text?.trim()) return;
-    await this.bot.editMessageText(text, {
-      chat_id: target.channel,
-      message_id: Number(target.messageTs),
-      parse_mode: "Markdown",
-    });
+    const opts: EditMessageTextOpts = { parse_mode: "Markdown" };
+    await this.bot.api.editMessageText(target.channel, Number(target.messageTs), text, opts);
   }
 
   onMessage(handler: (msg: IncomingMessage) => void): void {

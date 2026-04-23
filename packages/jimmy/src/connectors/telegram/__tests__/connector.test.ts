@@ -1,24 +1,29 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { IncomingMessage, Target } from "../../../shared/types.js";
 
-// Mock node-telegram-bot-api before importing connector
+// Mock grammy before importing connector
 const mockSendMessage = vi.fn().mockResolvedValue({ message_id: 1 });
 const mockEditMessageText = vi.fn().mockResolvedValue(true);
 const mockGetMe = vi.fn().mockResolvedValue({ id: 999, username: "test_bot" });
-const mockStartPolling = vi.fn();
-const mockStopPolling = vi.fn().mockResolvedValue(undefined);
+const mockStart = vi.fn().mockResolvedValue(undefined);
+const mockStop = vi.fn().mockResolvedValue(undefined);
 const mockOn = vi.fn();
+const mockSendChatAction = vi.fn().mockResolvedValue(true);
 
-vi.mock("node-telegram-bot-api", () => {
+vi.mock("grammy", () => {
   const MockBot = vi.fn(function (this: Record<string, unknown>) {
-    this.sendMessage = mockSendMessage;
-    this.editMessageText = mockEditMessageText;
-    this.getMe = mockGetMe;
-    this.startPolling = mockStartPolling;
-    this.stopPolling = mockStopPolling;
+    this.api = {
+      sendMessage: mockSendMessage,
+      editMessageText: mockEditMessageText,
+      getMe: mockGetMe,
+      sendChatAction: mockSendChatAction,
+    };
+    this.start = mockStart;
+    this.stop = mockStop;
     this.on = mockOn;
+    this.catch = vi.fn();
   });
-  return { default: MockBot };
+  return { Bot: MockBot };
 });
 
 vi.mock("../../../shared/logger.js", () => ({
@@ -38,6 +43,13 @@ describe("TelegramConnector", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    // Re-initialize mocks after clearAllMocks
+    mockSendMessage.mockResolvedValue({ message_id: 1 });
+    mockEditMessageText.mockResolvedValue(true);
+    mockGetMe.mockResolvedValue({ id: 999, username: "test_bot" });
+    mockStart.mockResolvedValue(undefined);
+    mockStop.mockResolvedValue(undefined);
+    mockSendChatAction.mockResolvedValue(true);
     connector = new TelegramConnector({
       botToken: "123456:ABC-DEF",
     });
@@ -73,7 +85,7 @@ describe("TelegramConnector", () => {
       const health = connector.getHealth();
       expect(health.status).toBe("running");
       expect(mockGetMe).toHaveBeenCalledOnce();
-      expect(mockStartPolling).toHaveBeenCalledOnce();
+      expect(mockStart).toHaveBeenCalledOnce();
       expect(mockOn).toHaveBeenCalledWith("message", expect.any(Function));
     });
 
@@ -83,7 +95,7 @@ describe("TelegramConnector", () => {
       const health = connector.getHealth();
       expect(health.status).toBe("error");
       expect(health.detail).toContain("Invalid token");
-      expect(mockStartPolling).not.toHaveBeenCalled();
+      expect(mockStart).not.toHaveBeenCalled();
     });
   });
 
@@ -91,7 +103,7 @@ describe("TelegramConnector", () => {
     it("stops polling and sets stopped state", async () => {
       await connector.start();
       await connector.stop();
-      expect(mockStopPolling).toHaveBeenCalledOnce();
+      expect(mockStop).toHaveBeenCalledOnce();
       expect(connector.getHealth().status).toBe("stopped");
     });
   });
@@ -106,7 +118,7 @@ describe("TelegramConnector", () => {
       const messageCallback = mockOn.mock.calls.find((call) => call[0] === "message")?.[1];
       expect(messageCallback).toBeDefined();
 
-      // Simulate incoming Telegram message
+      // Simulate incoming Telegram message via grammy ctx object
       const telegramMsg = {
         message_id: 42,
         chat: { id: 12345, type: "private" as const },
@@ -114,7 +126,7 @@ describe("TelegramConnector", () => {
         date: Math.floor(Date.now() / 1000) + 10,
         text: "Hello bot!",
       };
-      await messageCallback(telegramMsg);
+      await messageCallback({ message: telegramMsg });
 
       expect(handler).toHaveBeenCalledOnce();
       const msg: IncomingMessage = handler.mock.calls[0][0];
@@ -141,7 +153,7 @@ describe("TelegramConnector", () => {
         date: Math.floor(Date.now() / 1000) + 10,
         text: "Bot message",
       };
-      await messageCallback(botMsg);
+      await messageCallback({ message: botMsg });
 
       expect(handler).not.toHaveBeenCalled();
     });
@@ -165,7 +177,7 @@ describe("TelegramConnector", () => {
         date: Math.floor(Date.now() / 1000) + 10,
         text: "Hello",
       };
-      await messageCallback(msg);
+      await messageCallback({ message: msg });
       expect(handler).not.toHaveBeenCalled();
     });
 
@@ -187,7 +199,7 @@ describe("TelegramConnector", () => {
         date: Math.floor(Date.now() / 1000) + 10,
         text: "Channel post",
       };
-      await messageCallback(msg);
+      await messageCallback({ message: msg });
       expect(handler).not.toHaveBeenCalled();
     });
 
@@ -209,7 +221,7 @@ describe("TelegramConnector", () => {
         date: Math.floor(Date.now() / 1000) + 10,
         text: "Hello",
       };
-      await messageCallback(msg);
+      await messageCallback({ message: msg });
       expect(handler).toHaveBeenCalledOnce();
     });
   });
@@ -259,7 +271,7 @@ describe("TelegramConnector", () => {
       await connector.replyMessage(target, "Reply!");
       expect(mockSendMessage).toHaveBeenCalledWith("12345", "Reply!", {
         parse_mode: "Markdown",
-        reply_to_message_id: 42,
+        reply_parameters: { message_id: 42 },
       });
     });
   });
@@ -271,9 +283,7 @@ describe("TelegramConnector", () => {
         messageTs: "42",
       };
       await connector.editMessage(target, "Edited!");
-      expect(mockEditMessageText).toHaveBeenCalledWith("Edited!", {
-        chat_id: "12345",
-        message_id: 42,
+      expect(mockEditMessageText).toHaveBeenCalledWith("12345", 42, "Edited!", {
         parse_mode: "Markdown",
       });
     });
