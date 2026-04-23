@@ -34,7 +34,8 @@
       "next": "^15.5.15",
       "request>form-data": "^2.5.4",
       "request>qs": "^6.14.1",
-      "@whiskeysockets/baileys>protobufjs": ">=7.5.5"
+      "@whiskeysockets/baileys>protobufjs": ">=7.5.5",
+      "@whiskeysockets/libsignal-node>protobufjs": ">=7.5.5"
     }
   },
   "devDependencies": {
