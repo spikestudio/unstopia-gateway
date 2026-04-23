@@ -148,13 +148,16 @@ describe("notifyParentSession", () => {
 
   it("AC-E003-03: returns early when parent status is 'error' (branch coverage)", () => {
     // parent.status === "error" → _sendNotification が早期 return するブランチをカバー
-    // 非同期汚染を避けるため、getSession の戻り値確認のみ
+    //
+    // NOTE: 非同期 fire-and-forget 関数のテストで「fetch が呼ばれないこと」を検証しようとすると、
+    // 前の describe ブロックのペンディング async chain が後から globalThis.fetch を呼び出すことで
+    // テスト間汚染が発生することを確認済み（callbacks.test.ts 内のタイミング依存）。
+    // そのため、このテストは「分岐が実行されること（throw しない）」を同期的に確認する形式とする。
     vi.mocked(getSession).mockReturnValueOnce(
       makeSession({ id: "parent-001", parentSessionId: null, status: "error" }),
     );
-    // notifyParentSession は void 関数。throw しないことを確認（分岐実行が目的）
     expect(() => notifyParentSession(makeSession(), { result: "done" })).not.toThrow();
-    // getSession が error を返したことを確認（分岐に入ったこと）
+    // getSession が呼ばれた = status チェック分岐に到達したことの確認
     expect(vi.mocked(getSession)).toHaveBeenCalledWith("parent-001");
   });
 });
@@ -251,9 +254,13 @@ describe("notifyRateLimited — fire-and-forget", () => {
   });
 
   it("AC-E003-03: returns early when childSession has no parentSessionId", () => {
-    // parentSessionId = null → 早期 return ブランチをカバー（分岐実行が目的）
+    // parentSessionId = null → 早期 return ブランチをカバー
+    //
+    // NOTE: notifyRateLimited は fire-and-forget のため、「fetch が呼ばれないこと」を
+    // await + タイムアウトで検証すると前後テストの async chain と干渉する（テスト間汚染）。
+    // parentSessionId=null の場合は関数が即座に return するため、同期的に完了することで
+    // 分岐実行を確認する。
     const child = makeSession({ parentSessionId: null });
-    // 同期的に完了すること（throw しない）を確認
     expect(() => notifyRateLimited(child)).not.toThrow();
   });
 });

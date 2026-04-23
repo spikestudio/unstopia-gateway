@@ -39,6 +39,11 @@ function makeSessionManager(routeResult?: { sessionId: string }) {
 }
 
 // 最小限の JinnConfig
+// NOTE: `as unknown as JinnConfig` は JinnConfig の必須フィールドを全て列挙せずに
+// テスト用の部分的なオブジェクトを渡すための型キャスト。runCronJob が参照する
+// フィールド（gateway.port, cron, portal.portalName, engines.default 等）のみを
+// 定義し、テストに不要なフィールドは省略している。
+// overrides で特定フィールドを上書きする際も同じ理由でキャストが必要になる。
 function makeConfig(overrides: Partial<JinnConfig> = {}): JinnConfig {
   return {
     gateway: { port: 7777, host: "0.0.0.0" },
