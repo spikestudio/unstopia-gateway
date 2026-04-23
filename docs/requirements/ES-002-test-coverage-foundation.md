@@ -19,7 +19,7 @@
 
 ## 概要
 
-`packages/jimmy` に `@vitest/coverage-v8` を追加してカバレッジ計測を有効にする。`pnpm test --coverage` で branch カバレッジを計測し、現状値を把握した上で目標閾値（branch 60%、または計測結果次第で 50% スタート）を確定する。また `e2e/smoke.spec.ts` の現状把握と E2E テスト整備方針を確認し、必要に応じてスモークテストを補完する。
+`packages/jimmy` に `@vitest/coverage-v8` を追加してカバレッジ計測を有効にする。`pnpm test --coverage` で branch カバレッジを計測し、現状値（9.04%）を把握した。E3 CI 初期閾値は **10%** に確定済み（テスト拡充後に段階引き上げ予定）。また `e2e/smoke.spec.ts` の現状把握を実施し、E2E 整備方針は**現状維持**に確定した。
 
 ## ストーリーと受入基準
 
