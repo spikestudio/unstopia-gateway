@@ -300,4 +300,80 @@ describe("TelegramConnector", () => {
       expect(target.replyContext).toEqual({ chatId: 12345, messageId: 42 });
     });
   });
+
+  // ── 未カバー分岐 ─────────────────────────────────────────────────────────
+
+  describe("AC-E003-03: safeSend — both Markdown and plain retry fail", () => {
+    it("returns undefined when both Markdown and plain send fail", async () => {
+      mockSendMessage.mockRejectedValueOnce(new Error("Markdown parse error"));
+      mockSendMessage.mockRejectedValueOnce(new Error("Network error"));
+      const target: Target = { channel: "12345" };
+      const result = await connector.sendMessage(target, "some text");
+      expect(mockSendMessage).toHaveBeenCalledTimes(2);
+      expect(result).toBeUndefined();
+    });
+  });
+
+  describe("AC-E003-03: setTypingStatus — clears existing interval before setting new one", () => {
+    it("clears existing typing interval for the same channel", async () => {
+      // 最初の setTypingStatus でインターバルを登録
+      await connector.setTypingStatus("99999", undefined, "typing");
+      expect(mockSendChatAction).toHaveBeenCalledWith("99999", "typing");
+
+      // 同一チャンネルで再度 setTypingStatus → 既存インターバルをクリア
+      mockSendChatAction.mockClear();
+      await connector.setTypingStatus("99999", undefined, "typing");
+      // 既存の interval が clearInterval されてから新しい interval が設定される
+      // 2回目も sendChatAction が呼ばれることで正常動作を確認
+      expect(mockSendChatAction).toHaveBeenCalledWith("99999", "typing");
+    });
+
+    it("clears typing when status is empty string", async () => {
+      await connector.setTypingStatus("99999", undefined, "typing");
+      mockSendChatAction.mockClear();
+      // status が空文字列 → clearInterval だけして早期 return
+      await connector.setTypingStatus("99999", undefined, "");
+      expect(mockSendChatAction).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("AC-E003-03: editMessage — early returns", () => {
+    it("returns without calling editMessageText when messageTs is falsy", async () => {
+      const target: Target = { channel: "12345" }; // messageTs なし
+      await connector.editMessage(target, "some text");
+      expect(mockEditMessageText).not.toHaveBeenCalled();
+    });
+
+    it("returns without calling editMessageText when text is empty", async () => {
+      const target: Target = { channel: "12345", messageTs: "42" };
+      await connector.editMessage(target, "");
+      expect(mockEditMessageText).not.toHaveBeenCalled();
+    });
+
+    it("returns without calling editMessageText when text is whitespace only", async () => {
+      const target: Target = { channel: "12345", messageTs: "42" };
+      await connector.editMessage(target, "   ");
+      expect(mockEditMessageText).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("AC-E003-03: replyMessage — replyToId undefined when no replyContext", () => {
+    it("sends without reply_parameters when replyContext.messageId is null", async () => {
+      const target: Target = {
+        channel: "12345",
+        replyContext: { chatId: 12345, messageId: null },
+      };
+      await connector.replyMessage(target, "Reply without thread");
+      expect(mockSendMessage).toHaveBeenCalledOnce();
+      const opts = mockSendMessage.mock.calls[0][2];
+      expect(opts.reply_parameters).toBeUndefined();
+    });
+
+    it("returns undefined for whitespace-only text", async () => {
+      const target: Target = { channel: "12345" };
+      const result = await connector.replyMessage(target, "   ");
+      expect(result).toBeUndefined();
+      expect(mockSendMessage).not.toHaveBeenCalled();
+    });
+  });
 });

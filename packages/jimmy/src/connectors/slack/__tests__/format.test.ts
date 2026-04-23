@@ -141,4 +141,13 @@ describe("formatResponse", () => {
     expect(result.length).toBeGreaterThan(1);
     expect(result[0].startsWith("*Title*")).toBe(true);
   });
+
+  it("AC-E003-03: force-splits at hard limit when no newline or space found", () => {
+    // splitIndex <= 0 の 2 回分岐 → cutAt = SLACK_MAX_LENGTH (line 67)
+    const SLACK_MAX = 3000;
+    const text = "A".repeat(SLACK_MAX + 100);
+    const result = formatResponse(text);
+    expect(result.length).toBeGreaterThanOrEqual(2);
+    expect(result[0].length).toBe(SLACK_MAX);
+  });
 });
