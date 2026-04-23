@@ -79,7 +79,7 @@ audit 実行時: `pnpm audit` (npm registry)
 | undici | 6.21.3 | >=6.24.0 | high/moderate |
 | picomatch | 4.0.3 | >=4.0.4 | high/moderate |
 | vite | 8.0.0 | >=8.0.5 | high/moderate |
-| next | <15.5.15 | >=15.5.15 | high/moderate |
+| next | <15.5.15 | ^15.5.15 | high/moderate |
 | protobufjs (baileys chain) | 7.5.4 | >=7.5.5 | critical |
 | request>form-data | 2.3.3 | ^2.5.4 | critical |
 | request>qs | 6.x古版 | ^6.14.1 | moderate |
