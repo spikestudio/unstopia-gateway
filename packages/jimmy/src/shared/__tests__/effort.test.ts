@@ -39,64 +39,39 @@ describe("AC-E003-03: resolveEffort", () => {
 
   describe("child session — resolution chain", () => {
     it("prefers childEffortOverride over everything else", () => {
-      const result = resolveEffort(
-        { effortLevel: "high", childEffortOverride: "low" },
-        childSession("medium"),
-        { effortLevel: "high" },
-      );
+      const result = resolveEffort({ effortLevel: "high", childEffortOverride: "low" }, childSession("medium"), {
+        effortLevel: "high",
+      });
       expect(result).toBe("low");
     });
 
     it("ignores invalid childEffortOverride and falls back to session.effortLevel", () => {
-      const result = resolveEffort(
-        { childEffortOverride: "turbo" },
-        childSession("medium"),
-      );
+      const result = resolveEffort({ childEffortOverride: "turbo" }, childSession("medium"));
       expect(result).toBe("medium");
     });
 
     it("uses session.effortLevel when no childEffortOverride", () => {
-      const result = resolveEffort(
-        { effortLevel: "high" },
-        childSession("low"),
-        { effortLevel: "medium" },
-      );
+      const result = resolveEffort({ effortLevel: "high" }, childSession("low"), { effortLevel: "medium" });
       expect(result).toBe("low");
     });
 
     it("ignores invalid session.effortLevel and falls through to employee default", () => {
-      const result = resolveEffort(
-        {},
-        childSession("turbo"),
-        { effortLevel: "low" },
-      );
+      const result = resolveEffort({}, childSession("turbo"), { effortLevel: "low" });
       expect(result).toBe("low");
     });
 
     it("uses employee.effortLevel when session has no valid effortLevel", () => {
-      const result = resolveEffort(
-        { effortLevel: "high" },
-        childSession(null),
-        { effortLevel: "low" },
-      );
+      const result = resolveEffort({ effortLevel: "high" }, childSession(null), { effortLevel: "low" });
       expect(result).toBe("low");
     });
 
     it("ignores invalid employee.effortLevel and falls through to engine default", () => {
-      const result = resolveEffort(
-        { effortLevel: "medium" },
-        childSession(null),
-        { effortLevel: "super" },
-      );
+      const result = resolveEffort({ effortLevel: "medium" }, childSession(null), { effortLevel: "super" });
       expect(result).toBe("medium");
     });
 
     it("falls through all layers and returns engine effortLevel for child sessions", () => {
-      const result = resolveEffort(
-        { effortLevel: "low" },
-        childSession(null),
-        null,
-      );
+      const result = resolveEffort({ effortLevel: "low" }, childSession(null), null);
       expect(result).toBe("low");
     });
 

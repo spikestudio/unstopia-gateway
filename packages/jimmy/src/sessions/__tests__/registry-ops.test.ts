@@ -58,8 +58,8 @@ import {
   listSessions,
   markQueueItemCompleted,
   markQueueItemRunning,
-  recoverStaleSessions,
   recoverStaleQueueItems,
+  recoverStaleSessions,
   updateSession,
 } from "../registry.js";
 

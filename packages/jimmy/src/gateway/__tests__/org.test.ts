@@ -21,8 +21,8 @@ vi.mock("../../shared/logger.js", () => ({
   },
 }));
 
-import { extractMention, extractMentions, findEmployee, scanOrg, updateEmployeeYaml } from "../org.js";
 import type { Employee } from "../../shared/types.js";
+import { extractMention, extractMentions, findEmployee, scanOrg, updateEmployeeYaml } from "../org.js";
 
 function writeYaml(subdir: string, filename: string, content: string) {
   const dir = path.join(tmpDir, subdir);

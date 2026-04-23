@@ -94,7 +94,7 @@ describe("formatResponse", () => {
   it("splits text longer than 4000 chars into multiple chunks", () => {
     // Create text with newlines to allow splitting at word boundaries
     const line = "hello world ".repeat(40); // ~480 chars per line
-    const text = (line + "\n").repeat(10); // ~4810 chars
+    const text = `${line}\n`.repeat(10); // ~4810 chars
     const chunks = formatResponse(text);
     expect(chunks.length).toBeGreaterThan(1);
     // All characters should be preserved (accounting for trimStart)
@@ -105,7 +105,7 @@ describe("formatResponse", () => {
 
   it("splits at newline boundaries when possible", () => {
     // line is 50 chars, we need > 4000 chars total, so 90 lines
-    const line = "a".repeat(44) + " end";
+    const line = `${"a".repeat(44)} end`;
     const longText = Array.from({ length: 90 }, () => line).join("\n");
     const chunks = formatResponse(longText);
     expect(chunks.length).toBeGreaterThan(1);

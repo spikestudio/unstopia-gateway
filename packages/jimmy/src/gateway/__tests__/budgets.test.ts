@@ -8,13 +8,7 @@ const tmpHome = path.join(os.tmpdir(), `jinn-budgets-test-${process.pid}`);
 mkdirSync(path.join(tmpHome, "sessions"), { recursive: true });
 process.env.JINN_HOME = tmpHome;
 
-import {
-  checkBudget,
-  getBudgetEvents,
-  getBudgetStatus,
-  overrideBudget,
-  recordBudgetEvent,
-} from "../budgets.js";
+import { checkBudget, getBudgetEvents, getBudgetStatus, overrideBudget, recordBudgetEvent } from "../budgets.js";
 
 describe("AC-E003-04: getBudgetStatus", () => {
   it("returns ok with zero spend when employee has no budget config", () => {
