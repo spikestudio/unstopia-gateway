@@ -165,13 +165,17 @@ describe("AC-E003-03: CronConnector", () => {
     });
 
     it("addReaction is a no-op", async () => {
-      const c = new CronConnector(new Map());
-      await expect(c.addReaction()).resolves.toBeUndefined();
+      // CronConnector は send-only — addReaction は no-op
+      // Connector インターフェース経由で呼び出すことでインターフェース契約を検証する
+      const c: Connector = new CronConnector(new Map());
+      await expect(c.addReaction({ channel: "c" }, "👍")).resolves.toBeUndefined();
     });
 
     it("removeReaction is a no-op", async () => {
-      const c = new CronConnector(new Map());
-      await expect(c.removeReaction()).resolves.toBeUndefined();
+      // CronConnector は send-only — removeReaction は no-op
+      // Connector インターフェース経由で呼び出すことでインターフェース契約を検証する
+      const c: Connector = new CronConnector(new Map());
+      await expect(c.removeReaction({ channel: "c" }, "👍")).resolves.toBeUndefined();
     });
 
     it("onMessage is a no-op", () => {
