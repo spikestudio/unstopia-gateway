@@ -34,6 +34,8 @@ aidd-framework のスキルパイプライン（`/aidd-new-epic` → `/aidd-impl
 | バグ修正（Issue 起票あり） | `fix/ISSUE-NNN-slug` | `fix/ISSUE-012-login-error` |
 | 設計成果物 | `docs/PD-NNN-slug` | `docs/PD-001-mvp` |
 
+> `ISSUE-NNN` の `NNN` は GitHub Issue 番号（例: Issue #12 → `ISSUE-012`）。`slug` は内容を示す短い英語の説明です。
+
 ### パイプライン外の単発作業（`/aidd-adhoc`）
 
 バグ修正・雑務・ドキュメント等の単発作業では `<type>/<scope>` 形式を使用します:

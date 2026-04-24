@@ -14,20 +14,21 @@ unstopia-gateway/
 
 ## packages/jimmy/src — モジュール依存マップ
 
+凡例: `A → B` = A が B に依存（A が B を import する）。`⟷` = 相互依存（循環）。
+
 ```
-shared/
-  └─← engines/
-  └─← connectors/
-  └─← mcp/
-  └─← stt/
-  └─← cron/  ⟵⟶ sessions/
-       ↑              ↑
-       └── gateway/ ──┘  ← cli/
+shared/      (基盤層 — 依存なし)
+engines/   → shared/
+connectors/→ shared/
+mcp/       → shared/
+stt/       → shared/
+cron/      → shared/, connectors/, sessions/(type) ⟷, gateway/(org) ⟷
+sessions/  → shared/, engines/, cron/ ⟷, mcp/, gateway/(budgets) ⟷
+gateway/   → shared/, engines/, connectors/, sessions/ ⟷, cron/ ⟷
+cli/       → (全モジュール)
 ```
 
-凡例: `A ← B` = B が A に依存（A を import する）。`⟵⟶` = 相互依存。
-
-> **循環依存:** `cron/` ↔ `sessions/`、`cron/ → gateway/org`・`gateway/ → cron/`、`sessions/ → gateway/budgets`・`gateway/ → sessions/` の 3 箇所で相互依存が発生しています。TypeScript の型インポート（`import type`）を活用して循環を緩和しています。
+> **循環依存:** `cron/ ⟷ sessions/`、`cron/ ⟷ gateway/`、`sessions/ ⟷ gateway/` の 3 箇所で相互依存が発生しています。TypeScript の `import type`（型のみの import）を活用して循環を緩和しています。
 
 ---
 
