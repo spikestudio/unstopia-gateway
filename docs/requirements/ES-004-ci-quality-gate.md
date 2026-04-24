@@ -44,7 +44,7 @@
 
 **受入基準:**
 
-- [x] **AC-E004-02**: `.github/workflows/ci.yml` の `unit-tests` ジョブが `pnpm test --coverage --run` で実行され、`vitest.config.ts` の `thresholds`（branches: 18, functions: 26）を下回った場合に CI が FAIL する。 ← S9
+- [x] **AC-E004-02**: `.github/workflows/ci.yml` の `unit-tests` ジョブに `pnpm --filter jinn-cli exec vitest run --coverage` ステップが追加され、`vitest.config.ts` の `thresholds`（branches: 18, functions: 26）を下回った場合に CI が FAIL する。（注: turbo の `--coverage` パススルーが `@jinn/web` に適用されると `@vitest/coverage-v8` 未インストールで失敗するため、jimmy パッケージを直接指定する方式を採用）← S9
 - [x] **AC-E004-03**: `biome` ジョブ・coverage 付き `unit-tests` ジョブが Node.js 22・pnpm `action-setup`・`--frozen-lockfile` を使用し、既存ジョブと設定の一貫性を保つ。 ← S8, S9
 - [x] **AC-E004-04**: `biome` ジョブと coverage 付き `unit-tests` ジョブが実際の PR で PASS することをブランチの GitHub Actions 実行で確認する。 ← S8, S9
 
@@ -56,7 +56,7 @@
 
 | 成果物 | 配置先 | ステータス |
 |--------|--------|----------|
-| CI ワークフロー | `.github/workflows/ci.yml` | 実装予定 |
+| CI ワークフロー | `.github/workflows/ci.yml` | 完了 |
 | 集約モデル詳細 | — | 該当なし |
 | DB スキーマ骨格 | — | 該当なし |
 | API spec 骨格 | — | 該当なし |
