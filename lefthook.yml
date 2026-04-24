@@ -27,3 +27,16 @@ pre-push:
 
     - name: unit-tests
       run: pnpm test
+
+commit-msg:
+  jobs:
+    - name: conventional-commits
+      run: |
+        MSG=$(cat "{1}")
+        if ! echo "$MSG" | grep -qE "^(feat|fix|chore|docs|refactor|test|style|ci|perf|revert)(\(.+\))?: .+"; then
+          echo "Error: コミットメッセージが Conventional Commits 形式に準拠していません。"
+          echo "  正しい形式: <type>(<scope>): <subject>"
+          echo "  例: feat(engine): add Antigravity adapter"
+          echo "  使用可能な type: feat, fix, chore, docs, refactor, test, style, ci, perf, revert"
+          exit 1
+        fi
