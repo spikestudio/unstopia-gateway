@@ -20,12 +20,14 @@ shared/
   └─← connectors/
   └─← mcp/
   └─← stt/
-  └─← cron/
-         └─← sessions/  ⟵⟶ gateway/   ← cli/
-                                └─← mcp/
+  └─← cron/  ⟵⟶ sessions/
+       ↑              ↑
+       └── gateway/ ──┘  ← cli/
 ```
 
 凡例: `A ← B` = B が A に依存（A を import する）。`⟵⟶` = 相互依存。
+
+> **循環依存:** `cron/` ↔ `sessions/`、`cron/ → gateway/org`・`gateway/ → cron/`、`sessions/ → gateway/budgets`・`gateway/ → sessions/` の 3 箇所で相互依存が発生しています。TypeScript の型インポート（`import type`）を活用して循環を緩和しています。
 
 ---
 
@@ -99,7 +101,11 @@ shared/
 
 依存:
 - `shared/`（types, paths, logger）
-- `connectors/cron`（Cron コネクター）
+- `connectors/cron`（Cron コネクター）— `runner.ts`
+- `gateway/org`（`findEmployee`, `scanOrg`）— `runner.ts`
+- `sessions/manager`（`SessionManager` type）— `runner.ts`, `scheduler.ts`
+
+> `sessions/` も `cron/` を import するため相互依存があります。
 
 ---
 
