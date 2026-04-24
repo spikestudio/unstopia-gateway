@@ -124,10 +124,10 @@ graph LR
 
 ## 9. 成功基準
 
-- [ ] `pnpm biome check` がゼロ警告・ゼロエラーで完了する（期限: Phase 1 完了時点）
-- [ ] `pnpm test --coverage` で branch カバレッジが 60% 以上（初期状況により 50% スタートも可）を達成する（期限: Phase 1 完了時点）
-- [ ] CI ワークフロー（GitHub Actions）で biome check・カバレッジ閾値・E2E テストが PASS する（期限: Phase 1 完了時点）
-- [ ] lefthook pre-commit フックが `pnpm lint` + `pnpm typecheck` を実行し、違反時にコミットを阻止する（期限: Phase 1 完了時点）
+- [x] `pnpm biome check` がゼロ警告・ゼロエラーで完了する（期限: Phase 1 完了時点）
+- [x] `pnpm test --coverage` で branch カバレッジが **18% 以上**（ES-003 で合意変更: リファクタリングなしで 60% 達成は困難と判明、18% を Phase 1 目標として確定）を達成する（期限: Phase 1 完了時点）
+- [x] CI ワークフロー（GitHub Actions）で biome check・カバレッジ閾値（18%）が PASS する（E2E テストは ES-002 調査でスコープ外確定）（期限: Phase 1 完了時点）
+- [x] lefthook pre-commit フックが `pnpm lint` + `pnpm typecheck` を実行し、違反時にコミットを阻止する（期限: Phase 1 完了時点）
 
 ## 10. Impact Mapping
 
