@@ -12,6 +12,31 @@
 - トレーサビリティ: `aidd-framework/process/story-to-epic.md` / gitflow: `aidd-framework/guides/gitflow.md`
 - ロール: `aidd-framework/roles/roles.md`
 
+## コアメンタルモデル
+
+> 詳細は `aidd-framework/FRAMEWORK.md` の「コアメンタルモデル」セクションを参照。以下はクイックリファレンス。
+
+**「AI が計画し、人間が承認し、AI が実装する」** — すべてのアクティビティにこのループが適用される。
+
+### Phase と Epic の責務分担
+
+| 単位 | 責務 | 内容 |
+|------|------|------|
+| **Phase** | 「このマイルストーンで何を作るか」 | 機能意図一覧 + Epic マッピング（薄い・30分以内） |
+| **Epic** | 「その機能をどう定義するか」 | ストーリー詳細化 + AC 導出 + 設計（重い） |
+
+### 永続的コンテキスト設計（AI-DLC: Kiro Steering Files 相当）
+
+CLAUDE.md・AGENTS.md は AI-DLC の「Kiro Steering Files」に相当する。AI がセッションをまたいで文脈を引き継ぐための構造化された指示ファイル群。
+
+| ファイル | 役割 |
+|---------|------|
+| `CLAUDE.md` | プロジェクト固有のルール・コンテキスト |
+| `aidd-framework/CLAUDE-base.md`（本ファイル） | フレームワーク共通ルール |
+| `docs/requirements/` | Phase/Epic の仕様（永続的コンテキスト） |
+| `docs/tasks/` | Task 定義（実装の指示） |
+| `docs/architecture/adr/` | 設計判断の記録 |
+
 ## 意思決定基準
 
 **最上位原則: 全ての問題は必ず解決する。** AI は後回しを選択肢に含めない。
@@ -111,13 +136,14 @@ Gate ラベル（`gate:reviewed`）付与が前提:
 
 ### Phase N 実装パイプライン（繰り返し）
 
-```
-/aidd-new-phase → G1
-  → /aidd-new-epic → G2 + G3（AC 定義 + 詳細設計を統合）
-    → /aidd-decompose-epic → G4
-    → /aidd-impl（Task ごとにコミット）→ /aidd-epic-review → G5
-  → /aidd-phase-review → G6
-```
+| 位置付け | スキル → ゲート |
+|---------|----------------|
+| **Project Init** | `setup` + `skeleton` → G0（一回限り） |
+| **Release Planning** | `new-phase` → G1（Phase ごと） |
+| **Inception** | `new-epic`（ストーリー+AC+設計） → G2 + G3（Epic ごと） |
+| **Construction** | `decompose-epic` → G4 → `impl` × N（Epic ごと） |
+| **Operations** | `epic-review` → G5（Epic ごと） |
+| **Release** | `phase-review` → G6（Phase ごと・G1 の対） |
 
 ### 横断スキル（いつでも使用可）
 
@@ -136,6 +162,10 @@ Gate ラベル（`gate:reviewed`）付与が前提:
 | `/aidd-doc-drift` | git 履歴起点のドキュメント乖離検出・修正（事後一括回収） |
 | `/aidd-adr` | ADR の対話的作成・採番・保存・既存 ADR との矛盾チェック（設計判断が必要な場面） |
 | `/aidd-impl-review` | 実装中の任意タイミングでコードレビューを単体実行（`--comment` で PR コメント投稿） |
+| `/aidd-screen-plan` | AC・ドメインモデルから画面を洗い出し・種別分類し、画面一覧を生成（画面系 Epic G3 Section 2） |
+| `/aidd-screen-spec` | 画面仕様書・遷移図を生成（画面系 Epic G3 Section 2） |
+| `/aidd-screen-ui` | UIKit コンポーネント選定・アノテーション・G3 Section 2 ゲート（画面系 Epic G3 Section 2） |
+| `/aidd-screen-catalog` | Phase 横断の全画面カタログを生成（Phase 末尾・/aidd-phase-review 前） |
 
 > 画面系ステップは画面系プロジェクトのみ。全ステップを踏む義務はなくプロジェクト特性に応じてスキップ可能。
 
