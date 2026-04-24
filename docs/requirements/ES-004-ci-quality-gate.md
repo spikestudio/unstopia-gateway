@@ -36,7 +36,7 @@
 
 <!-- AC-ID 形式: AC-E004-NN -->
 
-- [ ] **AC-E004-01**: `.github/workflows/ci.yml` に `biome` ジョブが追加され、PR に対して `pnpm biome check` がゼロエラー・ゼロ警告で PASS する。Node.js 22・pnpm キャッシュ設定は既存ジョブと同一。 ← S8
+- [x] **AC-E004-01**: `.github/workflows/ci.yml` に `biome` ジョブが追加され、PR に対して `pnpm biome check` がゼロエラー・ゼロ警告で PASS する。Node.js 22・pnpm キャッシュ設定は既存ジョブと同一。 ← S8
 
 ### Story 9: coverage 閾値 CI 強制
 
@@ -44,9 +44,9 @@
 
 **受入基準:**
 
-- [ ] **AC-E004-02**: `.github/workflows/ci.yml` の `unit-tests` ジョブが `pnpm test --coverage --run` で実行され、`vitest.config.ts` の `thresholds`（branches: 18, functions: 26）を下回った場合に CI が FAIL する。 ← S9
-- [ ] **AC-E004-03**: `biome` ジョブ・coverage 付き `unit-tests` ジョブが Node.js 22・pnpm `action-setup`・`--frozen-lockfile` を使用し、既存ジョブと設定の一貫性を保つ。 ← S8, S9
-- [ ] **AC-E004-04**: `biome` ジョブと coverage 付き `unit-tests` ジョブが実際の PR で PASS することをブランチの GitHub Actions 実行で確認する。 ← S8, S9
+- [x] **AC-E004-02**: `.github/workflows/ci.yml` の `unit-tests` ジョブが `pnpm test --coverage --run` で実行され、`vitest.config.ts` の `thresholds`（branches: 18, functions: 26）を下回った場合に CI が FAIL する。 ← S9
+- [x] **AC-E004-03**: `biome` ジョブ・coverage 付き `unit-tests` ジョブが Node.js 22・pnpm `action-setup`・`--frozen-lockfile` を使用し、既存ジョブと設定の一貫性を保つ。 ← S8, S9
+- [x] **AC-E004-04**: `biome` ジョブと coverage 付き `unit-tests` ジョブが実際の PR で PASS することをブランチの GitHub Actions 実行で確認する。 ← S8, S9
 
 **インターフェース:** `.github/workflows/ci.yml`。外部 API なし。
 
