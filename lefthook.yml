@@ -7,12 +7,12 @@ pre-commit:
   parallel: true
   jobs:
     - name: lint
-      glob: "*.{ts,tsx,js,jsx,json}"
+      glob: "**/*.{ts,tsx,js,jsx,json}"
       run: pnpm lint
       stage_fixed: false
 
     - name: typecheck
-      glob: "*.ts"
+      glob: "**/*.ts"
       run: pnpm typecheck
       stage_fixed: false
 
