@@ -98,7 +98,7 @@ jinn v0.9.3 をベースにした unstopia-gateway は、独自拡張（Antigrav
 | E2.5 | テストカバレッジ拡充 | S13, S14 | — | MUST | `packages/jimmy` のユニットテストを拡充し branch カバレッジを段階的に引き上げる。必要に応じてテスタビリティ改善リファクタリングを実施 | docs/requirements/ES-003-test-coverage-improvement.md |
 | E3 | CI 品質ゲート | S8, S9 | — | MUST | GitHub Actions ワークフローに biome check・カバレッジ閾値（branch 60%）・E2E テストを統合する | — |
 | E4 | lefthook 整備 | S10 | — | SHOULD | lefthook の pre-commit・commit-msg フック設定を確認・補完し、ローカルでの品質チェックを自動化する | docs/requirements/ES-005-lefthook-setup.md |
-| E5 | ドキュメント整備 | S12 | — | COULD | `CONTRIBUTING.md` 新規作成（ブランチ命名・PR フロー・コミット規約・aidd-fw パイプライン記載）+ src/ 配下のモジュール依存関係箇条書き（`docs/architecture/module-dependencies.md`）| — |
+| E5 | ドキュメント整備 | S12 | — | COULD | `CONTRIBUTING.md` 新規作成（ブランチ命名・PR フロー・コミット規約・aidd-fw パイプライン記載）+ src/ 配下のモジュール依存関係箇条書き（`docs/architecture/module-dependencies.md`）| docs/requirements/ES-006-documentation.md |
 
 ## 8. Epic 間依存関係
 
