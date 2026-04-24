@@ -79,6 +79,7 @@
 - **Issue なしの作業開始禁止。** ブランチ作成・コード変更を開始する前に対応 Issue が必ず存在すること。Issue がない場合は先に Issue を作成してから作業を開始する
 - **Issue 参照なしの PR 作成禁止。** PR description には必ず `Closes #N`（または `Related #N`）を含む Issue 参照を記載すること。参照なしの PR は作成してはならない
 - **Phase/Epic パイプライン外の単発作業（バグ修正・雑務等）は `/aidd-adhoc` スキルを経由せずに直接実装・PR 作成・マージしてはならない**
+- **IaC+GitOps プロジェクトでは `kubectl apply/delete/patch` 等の直接操作を提案してはならない。** k8s リソースの変更は Helm Chart / GitOps マニフェストの変更として提案すること。詳細は `aidd-framework/guides/iac-conventions.md` を参照
 - **リンター・型チェッカー・静的解析の警告やエラーを suppress 指示で回避してはならない**
   - 禁止対象: `eslint-disable`, `@ts-ignore`, `@ts-expect-error`, `#[allow(...)]`, `// nolint`, `# noqa`, `# type: ignore` 等
   - 根本原因を修正すること。正当な理由がある場合は `suppress-approved: [理由]` マーカー付きでのみ許容

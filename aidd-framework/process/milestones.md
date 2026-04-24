@@ -34,6 +34,8 @@
 
 ### G0: プロジェクト初期化完了
 
+> **位置付け:** Project Init（一回限り）。プロジェクト基盤を整備し、技術的に着手可能な状態を確認するゲート。Release Planning（G1）の前提となる。
+
 | 項目 | 内容 |
 |------|------|
 | 旧ゲート | G0 + G0.1 + G0.2 + G0.5 + G0.6 |
@@ -62,23 +64,24 @@
 
 ### G1: Phase 定義完了
 
+> **位置付け:** Release Planning。「このマイルストーンで何を作るか」を合意するゲート。G6（phase-review）と対になる。
+
 | 項目 | 内容 |
 |------|------|
 | 旧ゲート | G1 |
 | タイミング | Phase 定義完了時 |
 | 判断者 | PO + TL |
-| 問い | **何を作るかの合意があるか?** |
+| 問い | **このマイルストーンで実現する機能一覧と Epic マッピングの合意があるか？** |
+
+> **Phase 12 で変更（ADR-013）:** Phase 定義書は「機能意図一覧 + Epic マッピング + Won't Have」の3セクション構成に軽量化。ストーリー定義・ドメイン分析は Epic（G2）で行う。
 
 **確認事項:**
 
 | カテゴリ | 項目 | チェックリスト |
 |---------|------|--------------|
-| スコープ | ストーリー一覧が Epic として構造化され、優先度（MUST/WON'T）が合意済み | [g1](../checklists/g1-phase-definition.md) |
-| 成功基準 | ビジネス成果指標として定義（計測可能・期限付き・合意済み）。Impact Mapping で Epic との関係を整理 | [g1](../checklists/g1-phase-definition.md) |
-| 非機能要件 | 目標値が記載されている | [g1](../checklists/g1-phase-definition.md) |
-| ドメイン分析 | BC 識別・コンテキストマップ・サブドメイン分類が完了。Epic が BC 内に閉じている | [g1](../checklists/g1-phase-definition.md) |
-| スコープ外 | Won't Have が明示されている | [g1](../checklists/g1-phase-definition.md) |
-| 依存関係 | Epic 間の依存関係が図示されている | [g1](../checklists/g1-phase-definition.md) |
+| 機能意図 | 実現したい機能の一覧が記述されている | [g1](../checklists/g1-phase-definition.md) |
+| Epic マッピング | 全機能意図が Epic に割り付けられ、優先度（MUST/WON'T）が合意済み | [g1](../checklists/g1-phase-definition.md) |
+| スコープ外 | Won't Have（このPhaseでやらないこと）が明示されている | [g1](../checklists/g1-phase-definition.md) |
 | 前 Phase | ADR・feedback Issue・振り返り改善 Issue を確認し、本 Phase への影響を評価済み | [g1](../checklists/g1-phase-definition.md) |
 
 **通過後アクション:**
@@ -90,17 +93,22 @@
 
 ### G2: Epic 仕様承認
 
+> **位置付け:** Inception（Epic ごと）。機能意図からストーリーを詳細化し AC として承認するゲート。
+
 | 項目 | 内容 |
 |------|------|
 | 旧ゲート | G2 |
 | タイミング | Epic 仕様完了時 |
 | 判断者 | PO + TL |
-| 問い | **AC が完全で、検証可能な形式で定義されているか?** |
+| 問い | **ストーリーと AC が定義・承認されているか？** |
+
+> **Phase 12 で変更（E3: ES-059）:** Phase 定義書にストーリーが含まれなくなったため、Epic 内でストーリーを詳細化する。G2 はストーリー定義 + AC 定義 の承認ゲートになった。
 
 **確認事項:**
 
 | カテゴリ | 項目 | チェックリスト |
 |---------|------|--------------|
+| ストーリー | ユーザーストーリー一覧が Epic 内で定義されている（Phase 機能意図から詳細化済み） | [g2](../checklists/g2-epic-approval.md) |
 | Epic 仕様 | 全 AC が検証可能な形式（AC-ID 付き）。バリデーション・エラーケース・状態遷移が網羅。デモシナリオ記載 | [g2](../checklists/g2-epic-approval.md) |
 
 **通過後アクション:**
@@ -111,6 +119,8 @@
 ---
 
 ### G3: 設計承認
+
+> **位置付け:** Inception 完了（Epic ごと）。設計が完了し Construction に入れる状態かを確認するゲート。
 
 | 項目 | 内容 |
 |------|------|
@@ -137,6 +147,8 @@
 
 ### G4: Epic 分解承認（Task 定義）
 
+> **位置付け:** Construction（Epic ごと）。AC を実装単位（Task = Bolt）に分解し着手可能な状態かを確認するゲート。
+
 | 項目 | 内容 |
 |------|------|
 | 旧ゲート | G3（Task 定義承認） |
@@ -161,6 +173,8 @@
 ---
 
 ### G5: Epic 総合レビュー
+
+> **位置付け:** Operations（Epic ごと）。Epic の全 Task（Bolt）が完了し AC をすべて満たしているかを確認するゲート。
 
 | 項目 | 内容 |
 |------|------|
@@ -191,6 +205,8 @@
 ---
 
 ### G6: Phase 完了
+
+> **位置付け:** Release（Phase ごと・G1 の対）。全 Epic の Operations 完了後にビジネス成果基準を確認するゲート。
 
 | 項目 | 内容 |
 |------|------|
@@ -238,7 +254,7 @@
 | マイルストーン | 追加スキル |
 |-------------|-----------|
 | **G0** | `/aidd-setup mocks`, `/aidd-ui-skeleton` |
-| **G3** | `/aidd-mock`, `/aidd-screen-design` |
+| **G3** | `/aidd-screen-plan`, `/aidd-screen-spec`, `/aidd-screen-ui` |
 
 ---
 
