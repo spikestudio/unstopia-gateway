@@ -18,6 +18,18 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm typecheck
 
+  biome:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm biome check
+
   unit-tests:
     runs-on: ubuntu-latest
     steps:
@@ -30,6 +42,8 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
       - run: pnpm test
+      - name: Coverage check (packages/jimmy)
+        run: pnpm --filter jinn-cli exec vitest run --coverage
 
   build:
     runs-on: ubuntu-latest
