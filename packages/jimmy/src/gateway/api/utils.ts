@@ -50,7 +50,7 @@ export function resolveAttachmentPaths(fileIds: unknown): string[] {
       logger.warn(`Attachment file not found: ${id}`);
       continue;
     }
-    const filePath = path.join(FILES_DIR, meta.id, meta.filename);
+    const filePath = path.join(FILES_DIR, meta.id, path.basename(meta.filename));
     if (fs.existsSync(filePath)) {
       paths.push(filePath);
     } else if (meta.path && fs.existsSync(meta.path)) {

@@ -69,11 +69,17 @@ describe("deepMerge", () => {
     expect((result.instances as { botToken: string; name: string }[])[0].name).toBe("new");
   });
 
-  it("配列内で id が一致しないアイテムはそのまま使う", () => {
+  it("配列内で id が一致しないアイテムはソース側をそのまま使い、target の元アイテムは除去される", () => {
     const target = { instances: [{ id: "a", token: "secret" }] };
     const source = { instances: [{ id: "b", token: "***" }] };
     const result = deepMerge(target, source);
-    expect((result.instances as { token: string }[])[0].token).toBe("***");
+    const instances = result.instances as { id: string; token: string }[];
+    // ソース配列でそのまま置き換えられるため要素は 1 件
+    expect(instances).toHaveLength(1);
+    // id が "b" のソースアイテムが使われる（target の "a" は除去）
+    expect(instances[0].id).toBe("b");
+    // id 不一致のためシークレット保護が発動せず "***" がそのまま入る
+    expect(instances[0].token).toBe("***");
   });
 });
 
