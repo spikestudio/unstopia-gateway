@@ -60,19 +60,16 @@ export class SessionManager {
   private engines: Map<string, Engine>;
   private queue = new SessionQueue();
   private connectorProvider: () => Map<string, Connector> = () => new Map();
-  private sessionRepo: ISessionRepository;
-  private repos: Repositories | undefined;
+  private repos: Repositories;
 
   constructor(
     config: JinnConfig,
     engines: Map<string, Engine>,
     _connectorNames: string[] = [],
-    sessionRepo: ISessionRepository,
-    repos?: Repositories,
+    repos: Repositories,
   ) {
     this.config = config;
     this.engines = engines;
-    this.sessionRepo = sessionRepo;
     this.repos = repos;
   }
 
@@ -95,9 +92,9 @@ export class SessionManager {
   ): Promise<{ sessionId: string } | undefined> {
     if (await this.handleCommand(msg, connector)) return;
 
-    let session = this.sessionRepo.getSessionBySessionKey(msg.sessionKey);
+    let session = this.repos.sessions.getSessionBySessionKey(msg.sessionKey);
     if (!session) {
-      session = this.sessionRepo.createSession({
+      session = this.repos.sessions.createSession({
         engine: opts.engine ?? opts.employee?.engine ?? this.config.engines.default,
         source: msg.source,
         sourceRef: msg.sessionKey,
@@ -119,7 +116,7 @@ export class SessionManager {
     } else {
       const mergedMeta = mergeTransportMeta(session.transportMeta, msg.transportMeta);
       session =
-        this.sessionRepo.updateSession(session.id, {
+        this.repos.sessions.updateSession(session.id, {
           replyContext: msg.replyContext,
           messageId: msg.messageId ?? null,
           transportMeta: mergedMeta,
@@ -127,7 +124,7 @@ export class SessionManager {
         }) ?? session;
     }
 
-    session = maybeRevertEngineOverride(session, this.sessionRepo);
+    session = maybeRevertEngineOverride(session, this.repos.sessions);
 
     const target = connector.reconstructTarget(msg.replyContext);
     target.messageTs ??= msg.messageId;
@@ -192,7 +189,7 @@ export class SessionManager {
     }
 
     if (text === "/status" || text.startsWith("/status ")) {
-      const session = this.sessionRepo.getSessionBySessionKey(msg.sessionKey);
+      const session = this.repos.sessions.getSessionBySessionKey(msg.sessionKey);
       if (!session) {
         await connector.replyMessage(target, "No active session for this conversation.");
         return true;
@@ -225,13 +222,13 @@ export class SessionManager {
         return true;
       }
 
-      const session = this.sessionRepo.getSessionBySessionKey(msg.sessionKey);
+      const session = this.repos.sessions.getSessionBySessionKey(msg.sessionKey);
       if (!session) {
         await connector.replyMessage(target, "No active session for this conversation.");
         return true;
       }
 
-      this.sessionRepo.updateSession(session.id, {
+      this.repos.sessions.updateSession(session.id, {
         model: nextModel,
         lastActivity: new Date().toISOString(),
       });
@@ -268,9 +265,9 @@ export class SessionManager {
   }
 
   resetSession(sessionKey: string): void {
-    const session = this.sessionRepo.getSessionBySessionKey(sessionKey);
+    const session = this.repos.sessions.getSessionBySessionKey(sessionKey);
     if (session) {
-      this.sessionRepo.deleteSession(session.id);
+      this.repos.sessions.deleteSession(session.id);
       logger.info(`Deleted session ${session.id}`);
     }
   }

@@ -1,5 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Connector, Engine, JinnConfig } from "../../shared/types.js";
+import type { Repositories } from "../repositories/index.js";
+import { InMemoryFileRepository } from "../repositories/InMemoryFileRepository.js";
+import { InMemoryMessageRepository } from "../repositories/InMemoryMessageRepository.js";
+import { InMemoryQueueRepository } from "../repositories/InMemoryQueueRepository.js";
 import { InMemorySessionRepository } from "../repositories/InMemorySessionRepository.js";
 
 vi.mock("../engine-runner.js", () => ({
@@ -58,6 +62,15 @@ const baseMsg = {
   transportMeta: undefined,
 };
 
+function makeRepos(sessionRepo: InMemorySessionRepository): Repositories {
+  return {
+    sessions: sessionRepo,
+    messages: new InMemoryMessageRepository(),
+    queue: new InMemoryQueueRepository(),
+    files: new InMemoryFileRepository(),
+  };
+}
+
 describe("SessionManager", () => {
   let manager: SessionManager;
   let sessionRepo: InMemorySessionRepository;
@@ -66,7 +79,7 @@ describe("SessionManager", () => {
     vi.clearAllMocks();
     sessionRepo = new InMemorySessionRepository();
     const engines = new Map<string, Engine>([["claude", makeEngine()]]);
-    manager = new SessionManager(makeConfig(), engines, [], sessionRepo);
+    manager = new SessionManager(makeConfig(), engines, [], makeRepos(sessionRepo));
   });
 
   describe("getEngine", () => {

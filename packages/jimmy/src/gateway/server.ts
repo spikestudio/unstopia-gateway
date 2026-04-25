@@ -138,7 +138,7 @@ export async function startGateway(config: JinnConfig): Promise<GatewayCleanup> 
   const engines = buildEngines();
   const connectorNames = buildConnectorNames(config);
   const repositories = buildRepositories(db);
-  const sessionManager = new SessionManager(config, engines, connectorNames, repositories.sessions, repositories);
+  const sessionManager = new SessionManager(config, engines, connectorNames, repositories);
 
   // Build employee registry
   let employeeRegistry = scanOrg();
