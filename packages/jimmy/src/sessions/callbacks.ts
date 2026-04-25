@@ -1,7 +1,7 @@
 import { loadConfig } from "../shared/config.js";
 import { logger } from "../shared/logger.js";
 import type { Session } from "../shared/types.js";
-import { getSession } from "./registry.js";
+import type { ISessionRepository } from "./repositories/index.js";
 
 /**
  * Notify the parent session that a child session has replied.
@@ -12,12 +12,13 @@ export function notifyParentSession(
   childSession: Session,
   result: { result?: string | null; error?: string | null; cost?: number; durationMs?: number },
   options?: { alwaysNotify?: boolean },
+  sessionRepo?: ISessionRepository,
 ): void {
   if (!childSession.parentSessionId) return;
   if (options?.alwaysNotify === false) return;
 
   // Run asynchronously — do not await in the caller
-  _sendNotification(childSession, result).catch((err) => {
+  _sendNotification(childSession, result, sessionRepo).catch((err) => {
     logger.warn(
       `[callbacks] Failed to notify parent session ${childSession.parentSessionId}: ${err instanceof Error ? err.message : String(err)}`,
     );
@@ -34,10 +35,10 @@ export function notifyRateLimited(
 ): void {
   if (!childSession.parentSessionId) return;
 
-  _sendNotification(childSession, {
-    error: null,
-    result: `⏳ Session is rate-limited and will auto-resume${estimatedResumeTime ? ` around ${estimatedResumeTime}` : " when the limit resets"}. No action needed.`,
-  }).catch((err) => {
+  _sendRaw(
+    childSession.parentSessionId,
+    `⏳ Session is rate-limited and will auto-resume${estimatedResumeTime ? ` around ${estimatedResumeTime}` : " when the limit resets"}. No action needed.`,
+  ).catch((err) => {
     logger.warn(
       `[callbacks] Failed to send rate-limit notification: ${err instanceof Error ? err.message : String(err)}`,
     );
@@ -63,10 +64,11 @@ export function notifyRateLimitResumed(childSession: Session): void {
 async function _sendNotification(
   childSession: Session,
   result: { result?: string | null; error?: string | null; cost?: number; durationMs?: number },
+  sessionRepo?: ISessionRepository,
 ): Promise<void> {
   const parentSessionId = childSession.parentSessionId;
   if (!parentSessionId) return;
-  const parent = getSession(parentSessionId);
+  const parent = sessionRepo?.getSession(parentSessionId);
   if (!parent) return; // Parent gone or expired
   if (parent.status === "error") return; // Parent already in error — skip
 

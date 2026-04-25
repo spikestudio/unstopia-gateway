@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import { checkBudget } from "../gateway/budgets.js";
+import type { Repositories } from "./repositories/index.js";
 import { scanOrg } from "../gateway/org.js";
 import { resolveOrgHierarchy } from "../gateway/org-hierarchy.js";
 import { cleanupMcpConfigFile, resolveMcpServers, writeMcpConfigFile } from "../mcp/resolver.js";
@@ -29,13 +30,6 @@ import {
 } from "../shared/usageAwareness.js";
 import { notifyDiscordChannel, notifyParentSession, notifyRateLimited, notifyRateLimitResumed } from "./callbacks.js";
 import { buildContext } from "./context.js";
-import {
-  accumulateSessionCost,
-  getMessages,
-  getSessionBySessionKey,
-  insertMessage,
-  updateSession,
-} from "./registry.js";
 
 export function mergeTransportMeta(
   existing: Session["transportMeta"],
@@ -66,6 +60,7 @@ export async function runSession(
   config: JinnConfig,
   getConnectors: () => Map<string, Connector>,
   employee?: Employee,
+  repos?: Repositories,
 ): Promise<void> {
   const engine = engines.get(session.engine);
   if (!engine) {
@@ -74,7 +69,7 @@ export async function runSession(
     return;
   }
 
-  insertMessage(session.id, "user", msg.text);
+  repos?.messages.insertMessage(session.id, "user", msg.text);
 
   const capabilities = connector.getCapabilities();
   const decorateMessages = session.source !== "cron";
@@ -89,7 +84,7 @@ export async function runSession(
     await connector.setTypingStatus(target.channel, threadTs, "is thinking...").catch(() => {});
   }
 
-  updateSession(session.id, {
+  repos?.sessions.updateSession(session.id, {
     status: "running",
     replyContext: msg.replyContext,
     messageId: msg.messageId ?? null,
@@ -145,7 +140,7 @@ export async function runSession(
     const syncRequested =
       session.engine === "claude" && typeof syncSinceIso === "string" && Number.isFinite(syncSinceMs);
     if (syncRequested) {
-      const sinceMessages = getMessages(session.id)
+      const sinceMessages = (repos?.messages.getMessages(session.id) ?? [])
         .filter((m) => (m.role === "user" || m.role === "assistant") && m.timestamp >= syncSinceMs)
         .map((m) => `${m.role.toUpperCase()}: ${m.content}`);
       const transcript = sinceMessages.slice(-20).join("\n\n");
@@ -164,7 +159,7 @@ export async function runSession(
         if (budgetStatus === "paused") {
           logger.warn(`Session ${session.id} blocked: employee "${session.employee}" has exceeded their budget`);
           const pausedMsg = `Budget limit exceeded for employee "${session.employee}". Session blocked.`;
-          updateSession(session.id, {
+          repos?.sessions.updateSession(session.id, {
             status: "error",
             lastActivity: new Date().toISOString(),
             lastError: pausedMsg,
@@ -234,7 +229,7 @@ export async function runSession(
       const meta = { ...(session.transportMeta || {}) } as Record<string, unknown>;
       delete meta.engineSessions;
       delete meta.engineOverride;
-      updateSession(session.id, {
+      repos?.sessions.updateSession(session.id, {
         engineSessionId: null,
         transportMeta: meta as JsonObject,
       });
@@ -296,7 +291,7 @@ export async function runSession(
             syncSince,
           };
 
-          updateSession(session.id, {
+          repos?.sessions.updateSession(session.id, {
             engine: fallbackName,
             // Keep Claude engine_session_id intact for later restore; Codex will return its own thread id.
             transportMeta: nextMeta as JsonObject,
@@ -310,7 +305,7 @@ export async function runSession(
           const fallbackConfig = config.engines.codex;
           const fallbackEffort = resolveEffort(fallbackConfig, session, employee);
           const codexResume = typeof engineSessions.codex === "string" ? (engineSessions.codex as string) : undefined;
-          const history = getMessages(session.id)
+          const history = (repos?.messages.getMessages(session.id) ?? [])
             .filter((m) => m.role === "user" || m.role === "assistant")
             .map((m) => `${m.role.toUpperCase()}: ${m.content}`);
           const historyText = history.slice(-12).join("\n\n");
@@ -334,9 +329,9 @@ export async function runSession(
             ? fallbackResult.result
             : fallbackResult.error || "(No response from engine)";
 
-          insertMessage(session.id, "assistant", fallbackText);
+          repos?.messages.insertMessage(session.id, "assistant", fallbackText);
           if (fallbackResult.cost || fallbackResult.numTurns) {
-            accumulateSessionCost(session.id, fallbackResult.cost ?? 0, fallbackResult.numTurns ?? 1);
+            repos?.sessions.accumulateSessionCost(session.id, fallbackResult.cost ?? 0, fallbackResult.numTurns ?? 1);
           }
 
           // Persist Codex thread id so future fallbacks can resume it
@@ -344,12 +339,11 @@ export async function runSession(
           if (fallbackResult.sessionId) {
             nextEngineSessions.codex = fallbackResult.sessionId;
           }
-          const metaAfter = { ...(getSessionBySessionKey(msg.sessionKey)?.transportMeta || nextMeta) } as Record<
-            string,
-            unknown
-          >;
+          const metaAfter = {
+            ...(repos?.sessions.getSessionBySessionKey(msg.sessionKey)?.transportMeta || nextMeta),
+          } as Record<string, unknown>;
           metaAfter.engineSessions = nextEngineSessions;
-          updateSession(session.id, { transportMeta: metaAfter as JsonObject });
+          repos?.sessions.updateSession(session.id, { transportMeta: metaAfter as JsonObject });
 
           if (decorateMessages && connector.setTypingStatus) {
             await connector.setTypingStatus(target.channel, threadTs, "").catch(() => {});
@@ -359,13 +353,13 @@ export async function runSession(
             await connector.removeReaction(target, "eyes").catch(() => {});
           }
 
-          const updated = updateSession(session.id, {
+          const updated = repos?.sessions.updateSession(session.id, {
             engineSessionId: fallbackResult.sessionId,
             status: fallbackResult.error ? "error" : "idle",
             replyContext: msg.replyContext,
             messageId: msg.messageId ?? null,
             transportMeta: mergeTransportMeta(
-              getSessionBySessionKey(msg.sessionKey)?.transportMeta ?? session.transportMeta,
+              repos?.sessions.getSessionBySessionKey(msg.sessionKey)?.transportMeta ?? session.transportMeta,
               msg.transportMeta,
             ),
             lastActivity: new Date().toISOString(),
@@ -381,6 +375,7 @@ export async function runSession(
                 durationMs: fallbackResult.durationMs,
               },
               { alwaysNotify: employee?.alwaysNotify },
+              repos?.sessions,
             );
           }
           return;
@@ -424,7 +419,7 @@ export async function runSession(
       }
 
       const waitingSession =
-        updateSession(session.id, {
+        repos?.sessions.updateSession(session.id, {
           ...(result.sessionId?.trim() ? { engineSessionId: result.sessionId } : {}),
           status: "waiting",
           lastActivity: new Date().toISOString(),
@@ -447,7 +442,7 @@ export async function runSession(
 
       // Keep lastActivity fresh while waiting (UI / status endpoints)
       const heartbeat = setInterval(() => {
-        updateSession(session.id, { status: "waiting", lastActivity: new Date().toISOString() });
+        repos?.sessions.updateSession(session.id, { status: "waiting", lastActivity: new Date().toISOString() });
       }, 60_000);
 
       try {
@@ -459,7 +454,7 @@ export async function runSession(
           attempt++;
 
           // Check if session was stopped while waiting
-          const currentSession = getSessionBySessionKey(msg.sessionKey);
+          const currentSession = repos?.sessions.getSessionBySessionKey(msg.sessionKey);
           if (!currentSession || currentSession.status === "error") {
             logger.info(`Session ${session.id} stopped while waiting for usage reset`);
             return;
@@ -507,7 +502,7 @@ export async function runSession(
               await connector.addReaction(target, waitEmoji).catch(() => {});
             }
 
-            updateSession(session.id, {
+            repos?.sessions.updateSession(session.id, {
               ...(retryResult.sessionId?.trim() ? { engineSessionId: retryResult.sessionId } : {}),
               status: "waiting",
               lastActivity: new Date().toISOString(),
@@ -524,9 +519,9 @@ export async function runSession(
             ? retryResult.result
             : retryResult.error || "(No response from engine)";
 
-          insertMessage(session.id, "assistant", retryText);
+          repos?.messages.insertMessage(session.id, "assistant", retryText);
           if (retryResult.cost || retryResult.numTurns) {
-            accumulateSessionCost(session.id, retryResult.cost ?? 0, retryResult.numTurns ?? 1);
+            repos?.sessions.accumulateSessionCost(session.id, retryResult.cost ?? 0, retryResult.numTurns ?? 1);
           }
 
           // Clear typing indicator & reactions
@@ -539,7 +534,7 @@ export async function runSession(
           }
 
           await connector.replyMessage(target, retryText).catch(() => {});
-          const retryUpdated = updateSession(session.id, {
+          const retryUpdated = repos?.sessions.updateSession(session.id, {
             ...(retryResult.sessionId?.trim() ? { engineSessionId: retryResult.sessionId } : {}),
             status: retryResult.error ? "error" : "idle",
             replyContext: msg.replyContext,
@@ -562,6 +557,7 @@ export async function runSession(
                 durationMs: retryResult.durationMs,
               },
               { alwaysNotify: employee?.alwaysNotify },
+              repos?.sessions,
             );
           }
           logger.info(`Session ${session.id} resumed after usage reset`);
@@ -575,7 +571,7 @@ export async function runSession(
         await connector
           .replyMessage(target, "Usage limit didn't reset in time. Please try again later.")
           .catch(() => {});
-        updateSession(session.id, {
+        repos?.sessions.updateSession(session.id, {
           status: "error",
           lastActivity: new Date().toISOString(),
           lastError: "Claude usage limit did not clear in time",
@@ -594,9 +590,9 @@ export async function runSession(
 
     const responseText = result.result?.trim() ? result.result : result.error || "(No response from engine)";
 
-    insertMessage(session.id, "assistant", responseText);
+    repos?.messages.insertMessage(session.id, "assistant", responseText);
     if (result.cost || result.numTurns) {
-      accumulateSessionCost(session.id, result.cost ?? 0, result.numTurns ?? 1);
+      repos?.sessions.accumulateSessionCost(session.id, result.cost ?? 0, result.numTurns ?? 1);
     }
     if (decorateMessages && connector.setTypingStatus) {
       await connector.setTypingStatus(target.channel, threadTs, "").catch(() => {});
@@ -607,14 +603,14 @@ export async function runSession(
     if (decorateMessages && capabilities.reactions) {
       await connector.removeReaction(target, "eyes").catch(() => {});
     }
-    const updatedSession = updateSession(session.id, {
+    const updatedSession = repos?.sessions.updateSession(session.id, {
       ...(result.sessionId?.trim() ? { engineSessionId: result.sessionId } : {}),
       status: wasInterrupted ? "idle" : result.error ? "error" : "idle",
       replyContext: msg.replyContext,
       messageId: msg.messageId ?? null,
       transportMeta: (() => {
         const merged = mergeTransportMeta(
-          getSessionBySessionKey(msg.sessionKey)?.transportMeta ?? session.transportMeta,
+          repos?.sessions.getSessionBySessionKey(msg.sessionKey)?.transportMeta ?? session.transportMeta,
           msg.transportMeta,
         ) as Record<string, unknown>;
         if (syncRequested && !rateLimit.limited && !wasInterrupted) {
@@ -635,6 +631,7 @@ export async function runSession(
           durationMs: result.durationMs,
         },
         { alwaysNotify: employee?.alwaysNotify },
+        repos?.sessions,
       );
     }
 
@@ -646,13 +643,13 @@ export async function runSession(
     const errMsg = err instanceof Error ? err.message : String(err);
     logger.error(`Session ${session.id} error: ${errMsg}`);
 
-    const erroredSession = updateSession(session.id, {
+    const erroredSession = repos?.sessions.updateSession(session.id, {
       status: "error",
       lastActivity: new Date().toISOString(),
       lastError: errMsg,
     });
     if (erroredSession) {
-      notifyParentSession(erroredSession, { error: errMsg }, { alwaysNotify: employee?.alwaysNotify });
+      notifyParentSession(erroredSession, { error: errMsg }, { alwaysNotify: employee?.alwaysNotify }, repos?.sessions);
     }
 
     // Clear typing indicator on error

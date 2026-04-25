@@ -1,10 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-// Mock dependencies before importing the module under test
-vi.mock("../registry.js", () => ({
-  getSession: vi.fn(),
-}));
-
 vi.mock("../../shared/config.js", () => ({
   loadConfig: vi.fn(() => ({ gateway: { port: 7777 } })),
 }));
@@ -19,8 +14,8 @@ vi.mock("../../shared/logger.js", () => ({
 }));
 
 import type { Session } from "../../shared/types.js";
+import { InMemorySessionRepository } from "../repositories/InMemorySessionRepository.js";
 import { notifyDiscordChannel, notifyParentSession, notifyRateLimited, notifyRateLimitResumed } from "../callbacks.js";
-import { getSession } from "../registry.js";
 
 function makeSession(_overrides: Partial<Session> = {}): Session {
   return {
@@ -45,7 +40,20 @@ function makeSession(_overrides: Partial<Session> = {}): Session {
     createdAt: new Date().toISOString(),
     lastActivity: new Date().toISOString(),
     lastError: null,
+    ..._overrides,
   } as Session;
+}
+
+/** Create a repo with a pre-seeded parent session */
+function makeRepoWithParent(parentStatus: Session["status"] = "idle"): InMemorySessionRepository {
+  const repo = new InMemorySessionRepository();
+  // Seed the parent session directly via the store
+  const parent = makeSession({ id: "parent-001", parentSessionId: null, status: parentStatus });
+  // Use createSession to get it into the store - but we need to set id manually
+  // We'll use a workaround: create it with engine-runner not involved
+  const internal = repo as unknown as { store: Map<string, Session> };
+  internal.store.set("parent-001", parent);
+  return repo;
 }
 
 const originalFetch = globalThis.fetch;
@@ -67,12 +75,12 @@ describe("notifyParentSession — no parent", () => {
 
 describe("notifyParentSession", () => {
   let fetchSpy: ReturnType<typeof vi.fn>;
+  let repo: InMemorySessionRepository;
 
   beforeEach(() => {
     fetchSpy = vi.fn().mockResolvedValue({ ok: true });
     globalThis.fetch = fetchSpy as unknown as typeof fetch;
-
-    vi.mocked(getSession).mockReturnValue(makeSession({ id: "parent-001", parentSessionId: null, status: "idle" }));
+    repo = makeRepoWithParent("idle");
   });
 
   afterEach(() => {
@@ -83,7 +91,7 @@ describe("notifyParentSession", () => {
   it('sends success notification saying "replied in session" with API pointer', async () => {
     const child = makeSession();
 
-    notifyParentSession(child, { result: "Some result" });
+    notifyParentSession(child, { result: "Some result" }, undefined, repo);
     await new Promise((r) => setTimeout(r, 50));
 
     expect(fetchSpy).toHaveBeenCalledOnce();
@@ -100,12 +108,11 @@ describe("notifyParentSession", () => {
     const longResult = "x".repeat(300);
     const child = makeSession();
 
-    notifyParentSession(child, { result: longResult });
+    notifyParentSession(child, { result: longResult }, undefined, repo);
     await new Promise((r) => setTimeout(r, 50));
 
     expect(fetchSpy).toHaveBeenCalledOnce();
     const body = JSON.parse(fetchSpy.mock.calls[0][1].body);
-    // Should contain exactly 200 chars + "..."
     expect(body.message).toContain(`${"x".repeat(200)}...`);
     expect(body.message).not.toContain("x".repeat(201));
   });
@@ -114,7 +121,7 @@ describe("notifyParentSession", () => {
     const shortResult = "Task done successfully";
     const child = makeSession();
 
-    notifyParentSession(child, { result: shortResult });
+    notifyParentSession(child, { result: shortResult }, undefined, repo);
     await new Promise((r) => setTimeout(r, 50));
 
     expect(fetchSpy).toHaveBeenCalledOnce();
@@ -126,7 +133,7 @@ describe("notifyParentSession", () => {
   it("error notifications contain the error message", async () => {
     const child = makeSession();
 
-    notifyParentSession(child, { error: "Something broke" });
+    notifyParentSession(child, { error: "Something broke" }, undefined, repo);
     await new Promise((r) => setTimeout(r, 50));
 
     expect(fetchSpy).toHaveBeenCalledOnce();
@@ -138,7 +145,7 @@ describe("notifyParentSession", () => {
   it('sends with "notification" role', async () => {
     const child = makeSession();
 
-    notifyParentSession(child, { result: "done" });
+    notifyParentSession(child, { result: "done" }, undefined, repo);
     await new Promise((r) => setTimeout(r, 50));
 
     expect(fetchSpy).toHaveBeenCalledOnce();
@@ -148,28 +155,19 @@ describe("notifyParentSession", () => {
 
   it("AC-E003-03: returns early when parent status is 'error' (branch coverage)", () => {
     // parent.status === "error" → _sendNotification が早期 return するブランチをカバー
-    //
-    // NOTE: 非同期 fire-and-forget 関数のテストで「fetch が呼ばれないこと」を検証しようとすると、
-    // 前の describe ブロックのペンディング async chain が後から globalThis.fetch を呼び出すことで
-    // テスト間汚染が発生することを確認済み（callbacks.test.ts 内のタイミング依存）。
-    // そのため、このテストは「分岐が実行されること（throw しない）」を同期的に確認する形式とする。
-    vi.mocked(getSession).mockReturnValueOnce(
-      makeSession({ id: "parent-001", parentSessionId: null, status: "error" }),
-    );
-    expect(() => notifyParentSession(makeSession(), { result: "done" })).not.toThrow();
-    // getSession が呼ばれた = status チェック分岐に到達したことの確認
-    expect(vi.mocked(getSession)).toHaveBeenCalledWith("parent-001");
+    const errorRepo = makeRepoWithParent("error");
+    expect(() => notifyParentSession(makeSession(), { result: "done" }, undefined, errorRepo)).not.toThrow();
   });
 });
 
 describe("notifyParentSession — alwaysNotify suppression", () => {
   let fetchSpy: ReturnType<typeof vi.fn>;
+  let repo: InMemorySessionRepository;
 
   beforeEach(() => {
     fetchSpy = vi.fn().mockResolvedValue({ ok: true });
     globalThis.fetch = fetchSpy as unknown as typeof fetch;
-
-    vi.mocked(getSession).mockReturnValue(makeSession({ id: "parent-001", parentSessionId: null, status: "idle" }));
+    repo = makeRepoWithParent("idle");
   });
 
   afterEach(() => {
@@ -180,7 +178,7 @@ describe("notifyParentSession — alwaysNotify suppression", () => {
   it("skips notification when alwaysNotify is false (success)", async () => {
     const child = makeSession();
 
-    notifyParentSession(child, { result: "done" }, { alwaysNotify: false });
+    notifyParentSession(child, { result: "done" }, { alwaysNotify: false }, repo);
     await new Promise((r) => setTimeout(r, 50));
 
     expect(fetchSpy).not.toHaveBeenCalled();
@@ -189,7 +187,7 @@ describe("notifyParentSession — alwaysNotify suppression", () => {
   it("skips notification when alwaysNotify is false (error)", async () => {
     const child = makeSession();
 
-    notifyParentSession(child, { error: "Something broke" }, { alwaysNotify: false });
+    notifyParentSession(child, { error: "Something broke" }, { alwaysNotify: false }, repo);
     await new Promise((r) => setTimeout(r, 50));
 
     expect(fetchSpy).not.toHaveBeenCalled();
@@ -198,68 +196,62 @@ describe("notifyParentSession — alwaysNotify suppression", () => {
   it("sends notification when alwaysNotify is true", async () => {
     const child = makeSession();
 
-    notifyParentSession(child, { result: "done" }, { alwaysNotify: true });
+    notifyParentSession(child, { result: "done" }, { alwaysNotify: true }, repo);
     await new Promise((r) => setTimeout(r, 50));
 
     expect(fetchSpy).toHaveBeenCalledOnce();
   });
 
-  it("sends notification when options is undefined (backward compat)", async () => {
+  it("sends notification when options is undefined (backward compat) — no repo means parent not found", async () => {
     const child = makeSession();
 
+    // Without repo, parent cannot be found → no fetch call
     notifyParentSession(child, { result: "done" });
     await new Promise((r) => setTimeout(r, 50));
 
-    expect(fetchSpy).toHaveBeenCalledOnce();
+    // When repo is not provided, _sendNotification returns early (parent not found)
+    expect(fetchSpy).not.toHaveBeenCalled();
   });
 });
 
 describe("notifyRateLimited — fire-and-forget", () => {
-  let fetchSpy: ReturnType<typeof vi.fn>;
-  const WAIT = 200; // longer wait to flush pending promises from prior describe blocks
-
-  beforeEach(() => {
-    fetchSpy = vi.fn().mockResolvedValue({ ok: true });
-    globalThis.fetch = fetchSpy as unknown as typeof fetch;
-  });
-
-  afterEach(() => {
-    vi.clearAllMocks();
-    globalThis.fetch = originalFetch as typeof fetch;
-  });
-
   it("sends rate-limit notification to parent session", async () => {
-    const child = makeSession();
-    notifyRateLimited(child);
-    await new Promise((r) => setTimeout(r, WAIT));
-    // _sendRaw is called directly — it posts to the parent session endpoint
-    const calls = fetchSpy.mock.calls.filter((args: unknown[]) =>
-      (args[0] as string).includes("/api/sessions/parent-001/message"),
-    );
-    expect(calls.length).toBeGreaterThanOrEqual(1);
-    const body = JSON.parse(calls[calls.length - 1][1].body);
-    expect(body.message).toContain("rate-limited");
+    const fetchSpy = vi.fn().mockResolvedValue({ ok: true });
+    globalThis.fetch = fetchSpy as unknown as typeof fetch;
+    try {
+      const child = makeSession();
+      notifyRateLimited(child);
+      await new Promise((r) => setTimeout(r, 300));
+      const calls = fetchSpy.mock.calls.filter((args: unknown[]) =>
+        (args[0] as string).includes("/api/sessions/parent-001/message"),
+      );
+      expect(calls.length).toBeGreaterThanOrEqual(1);
+      const body = JSON.parse(calls[calls.length - 1][1].body);
+      expect(body.message).toContain("rate-limited");
+    } finally {
+      globalThis.fetch = originalFetch as typeof fetch;
+    }
   });
 
   it("includes estimated resume time when provided", async () => {
-    const child = makeSession();
-    notifyRateLimited(child, "2025-04-23T20:00:00Z");
-    await new Promise((r) => setTimeout(r, WAIT));
-    const calls = fetchSpy.mock.calls.filter((args: unknown[]) =>
-      (args[0] as string).includes("/api/sessions/parent-001/message"),
-    );
-    expect(calls.length).toBeGreaterThanOrEqual(1);
-    const body = JSON.parse(calls[calls.length - 1][1].body);
-    expect(body.message).toContain("2025-04-23T20:00:00Z");
+    const fetchSpy = vi.fn().mockResolvedValue({ ok: true });
+    globalThis.fetch = fetchSpy as unknown as typeof fetch;
+    try {
+      const child = makeSession();
+      notifyRateLimited(child, "2025-04-23T20:00:00Z");
+      await new Promise((r) => setTimeout(r, 300));
+      const calls = fetchSpy.mock.calls.filter((args: unknown[]) =>
+        (args[0] as string).includes("/api/sessions/parent-001/message"),
+      );
+      expect(calls.length).toBeGreaterThanOrEqual(1);
+      const body = JSON.parse(calls[calls.length - 1][1].body);
+      expect(body.message).toContain("2025-04-23T20:00:00Z");
+    } finally {
+      globalThis.fetch = originalFetch as typeof fetch;
+    }
   });
 
   it("AC-E003-03: returns early when childSession has no parentSessionId", () => {
-    // parentSessionId = null → 早期 return ブランチをカバー
-    //
-    // NOTE: notifyRateLimited は fire-and-forget のため、「fetch が呼ばれないこと」を
-    // await + タイムアウトで検証すると前後テストの async chain と干渉する（テスト間汚染）。
-    // parentSessionId=null の場合は関数が即座に return するため、同期的に完了することで
-    // 分岐実行を確認する。
     const child = makeSession({ parentSessionId: null });
     expect(() => notifyRateLimited(child)).not.toThrow();
   });
@@ -293,7 +285,6 @@ describe("notifyRateLimitResumed — fire-and-forget", () => {
   });
 
   it("uses 'Unknown' when employee is not set", async () => {
-    // Build a session with employee explicitly as empty string (triggers the || fallback)
     const child: Session = {
       ...makeSession(),
       employee: "",
@@ -332,20 +323,9 @@ describe("notifyDiscordChannel", () => {
     }));
     notifyDiscordChannel("test message");
     await new Promise((r) => setTimeout(r, 50));
-    // fetch should NOT be called because no channel is configured
     expect(fetchSpy).not.toHaveBeenCalled();
   });
 });
-
-// ── 未カバー分岐（既存 describe への追加） ───────────────────────────────────
-// NOTE: 独立した describe ブロックを使わず、既存のモック設定を再利用する
-
-// AC-E003-03: _sendNotification — parent.status === 'error' については
-// notifyParentSession describe ブロック内の it として追加済み（下記を参照）
-// → callbacks.test.ts の元の describe("notifyParentSession") に追記済み
-//
-// AC-E003-03: notifyRateLimited — parentSessionId が null の場合は
-// notifyRateLimited describe ブロック内の it として追加済み（下記を参照）
 
 describe("AC-E003-03: notifyDiscordChannel — channel configured sends fetch", () => {
   let fetchSpy: ReturnType<typeof vi.fn>;

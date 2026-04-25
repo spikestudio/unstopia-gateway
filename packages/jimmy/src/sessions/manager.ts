@@ -1,14 +1,15 @@
+import type { Repositories } from "./repositories/index.js";
 import { logger } from "../shared/logger.js";
 import type { Connector, Engine, IncomingMessage, JinnConfig, RouteOptions, Session } from "../shared/types.js";
 import { getClaudeExpectedResetAt } from "../shared/usageAwareness.js";
 import { handleCronCommand } from "./cron-command-handler.js";
 import { mergeTransportMeta, runSession } from "./engine-runner.js";
 import { SessionQueue } from "./queue.js";
-import { createSession, deleteSession, getSessionBySessionKey, updateSession } from "./registry.js";
+import type { ISessionRepository } from "./repositories/index.js";
 
 export type { RouteOptions } from "../shared/types.js";
 
-function maybeRevertEngineOverride(session: Session): Session {
+function maybeRevertEngineOverride(session: Session, sessionRepo: ISessionRepository): Session {
   const meta = (session.transportMeta || {}) as Record<string, unknown>;
   const override = meta.engineOverride as Record<string, unknown> | undefined;
   if (!override) return session;
@@ -45,7 +46,7 @@ function maybeRevertEngineOverride(session: Session): Session {
   }
   delete (nextMeta as Record<string, unknown>).engineOverride;
   return (
-    updateSession(session.id, {
+    sessionRepo.updateSession(session.id, {
       engine: originalEngine,
       engineSessionId: restoredSessionId,
       transportMeta: nextMeta as import("../shared/types.js").JsonObject,
@@ -59,10 +60,17 @@ export class SessionManager {
   private engines: Map<string, Engine>;
   private queue = new SessionQueue();
   private connectorProvider: () => Map<string, Connector> = () => new Map();
+  private repos: Repositories;
 
-  constructor(config: JinnConfig, engines: Map<string, Engine>, _connectorNames: string[] = []) {
+  constructor(
+    config: JinnConfig,
+    engines: Map<string, Engine>,
+    _connectorNames: string[] = [],
+    repos: Repositories,
+  ) {
     this.config = config;
     this.engines = engines;
+    this.repos = repos;
   }
 
   setConnectorProvider(provider: () => Map<string, Connector>): void {
@@ -84,9 +92,9 @@ export class SessionManager {
   ): Promise<{ sessionId: string } | undefined> {
     if (await this.handleCommand(msg, connector)) return;
 
-    let session = getSessionBySessionKey(msg.sessionKey);
+    let session = this.repos.sessions.getSessionBySessionKey(msg.sessionKey);
     if (!session) {
-      session = createSession({
+      session = this.repos.sessions.createSession({
         engine: opts.engine ?? opts.employee?.engine ?? this.config.engines.default,
         source: msg.source,
         sourceRef: msg.sessionKey,
@@ -108,7 +116,7 @@ export class SessionManager {
     } else {
       const mergedMeta = mergeTransportMeta(session.transportMeta, msg.transportMeta);
       session =
-        updateSession(session.id, {
+        this.repos.sessions.updateSession(session.id, {
           replyContext: msg.replyContext,
           messageId: msg.messageId ?? null,
           transportMeta: mergedMeta,
@@ -116,7 +124,7 @@ export class SessionManager {
         }) ?? session;
     }
 
-    session = maybeRevertEngineOverride(session);
+    session = maybeRevertEngineOverride(session, this.repos.sessions);
 
     const target = connector.reconstructTarget(msg.replyContext);
     target.messageTs ??= msg.messageId;
@@ -161,6 +169,7 @@ export class SessionManager {
         this.config,
         this.connectorProvider,
         opts.employee,
+        this.repos,
       ),
     );
 
@@ -180,7 +189,7 @@ export class SessionManager {
     }
 
     if (text === "/status" || text.startsWith("/status ")) {
-      const session = getSessionBySessionKey(msg.sessionKey);
+      const session = this.repos.sessions.getSessionBySessionKey(msg.sessionKey);
       if (!session) {
         await connector.replyMessage(target, "No active session for this conversation.");
         return true;
@@ -213,13 +222,13 @@ export class SessionManager {
         return true;
       }
 
-      const session = getSessionBySessionKey(msg.sessionKey);
+      const session = this.repos.sessions.getSessionBySessionKey(msg.sessionKey);
       if (!session) {
         await connector.replyMessage(target, "No active session for this conversation.");
         return true;
       }
 
-      updateSession(session.id, {
+      this.repos.sessions.updateSession(session.id, {
         model: nextModel,
         lastActivity: new Date().toISOString(),
       });
@@ -256,9 +265,9 @@ export class SessionManager {
   }
 
   resetSession(sessionKey: string): void {
-    const session = getSessionBySessionKey(sessionKey);
+    const session = this.repos.sessions.getSessionBySessionKey(sessionKey);
     if (session) {
-      deleteSession(session.id);
+      this.repos.sessions.deleteSession(session.id);
       logger.info(`Deleted session ${session.id}`);
     }
   }
