@@ -14,7 +14,7 @@ unstopia-gateway/
 
 ## packages/jimmy/src — モジュール依存マップ
 
-凡例: `A → B` = A が B に依存（A が B を import する）。`⟷` = 相互依存（循環）。
+凡例: `A → B` = A が B に依存（A が B を import する）。
 
 ```
 shared/      (基盤層 — 依存なし)
@@ -22,13 +22,17 @@ engines/   → shared/
 connectors/→ shared/
 mcp/       → shared/
 stt/       → shared/
-cron/      → shared/, connectors/, sessions/(type) ⟷, gateway/(org) ⟷
-sessions/  → shared/, engines/, cron/ ⟷, mcp/, gateway/(budgets) ⟷
-gateway/   → shared/, engines/, connectors/, sessions/ ⟷, cron/ ⟷
+cron/      → shared/, connectors/, gateway/(org)
+sessions/  → shared/, engines/, cron/, mcp/, gateway/(budgets)
+gateway/   → shared/, engines/, connectors/, sessions/, cron/
+gateway/types → sessions/(type), shared/
 cli/       → (全モジュール)
 ```
 
-> **循環依存:** `cron/ ⟷ sessions/`、`cron/ ⟷ gateway/`、`sessions/ ⟷ gateway/` の 3 箇所で相互依存が発生しています。TypeScript の `import type`（型のみの import）を活用して循環を緩和しています。
+> **ES-011（2026-04-25）にて循環依存をゼロ化済み。**
+> - `gateway/api ⟷ gateway/files` サイクル: `ApiContext` を `gateway/types.ts` に分離して解消
+> - `cron ⟷ sessions` サイクル: `SessionRouter` インターフェースを `shared/types.ts` に追加し、`cron/` が `sessions/manager.ts` に直接依存しないよう変更して解消
+> - 現在 `npx madge --circular packages/jimmy/src` はゼロ件を報告
 
 ---
 
@@ -101,12 +105,11 @@ cli/       → (全モジュール)
 | `runner.ts` | ジョブの実行ロジック |
 
 依存:
-- `shared/`（types, paths, logger）
+- `shared/`（types, paths, logger）— `SessionRouter` インターフェースも `shared/types` に定義
 - `connectors/cron`（Cron コネクター）— `runner.ts`
 - `gateway/org`（`findEmployee`, `scanOrg`）— `runner.ts`
-- `sessions/manager`（`SessionManager` type）— `runner.ts`, `scheduler.ts`
 
-> `sessions/` も `cron/` を import するため相互依存があります。
+> `runner.ts`・`scheduler.ts` は `SessionRouter`（`shared/types.ts` 定義）を使用。`sessions/manager.ts` への直接依存を除去済み（ES-011）。
 
 ---
 
@@ -157,7 +160,7 @@ cli/       → (全モジュール)
 - `cron/`（Cron ジョブの制御）
 - `mcp/resolver`（MCP 設定の解決）
 
-> **注意:** `sessions/` と `gateway/` には相互依存があります（`sessions/manager` → `gateway/budgets`、`gateway/server` → `sessions/manager`）。
+> `sessions/manager` → `gateway/budgets` の依存は静的 import として残存しています（ES-011 では type-level サイクルのみ解消）。`gateway/server` → `sessions/manager` と組み合わせて一方向性が保たれており、madge ではサイクルなしと判定されます。
 
 ---
 
@@ -168,6 +171,7 @@ cli/       → (全モジュール)
 | ファイル | 主な機能 |
 |---------|---------|
 | `server.ts` | Fastify HTTP サーバー・全 API エンドポイント |
+| `types.ts` | `ApiContext` インターフェース定義（ES-011 で `api.ts` から分離） |
 | `api.ts` | API ルート定義 |
 | `org.ts` / `org-hierarchy.ts` | 組織・従業員・部署の管理 |
 | `lifecycle.ts` | daemon の起動・停止フロー |
