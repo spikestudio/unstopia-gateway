@@ -12,10 +12,8 @@ import { TelegramConnector } from "../connectors/telegram/index.js";
 import { WhatsAppConnector } from "../connectors/whatsapp/index.js";
 import { loadJobs } from "../cron/jobs.js";
 import { reloadScheduler, startScheduler, stopScheduler } from "../cron/scheduler.js";
-import { ClaudeEngine } from "../engines/claude.js";
-import { CodexEngine } from "../engines/codex.js";
-import { GeminiEngine } from "../engines/gemini.js";
 import { type RouteOptions, SessionManager } from "../sessions/manager.js";
+import { buildConnectorNames, buildEngines } from "./container.js";
 import {
   getInterruptedSessions,
   initDb,
@@ -135,34 +133,9 @@ export async function startGateway(config: JinnConfig): Promise<GatewayCleanup> 
     logger.info(`Recovered ${recoveredQueue} in-flight queue item(s) from previous run — reset to pending`);
   }
 
-  // Set up engines
-  const claudeEngine = new ClaudeEngine();
-  const codexEngine = new CodexEngine();
-  const geminiEngine = new GeminiEngine();
-  const engines = new Map<
-    string,
-    InstanceType<typeof ClaudeEngine> | InstanceType<typeof CodexEngine> | InstanceType<typeof GeminiEngine>
-  >();
-  engines.set("claude", claudeEngine);
-  engines.set("codex", codexEngine);
-  engines.set("gemini", geminiEngine);
-
-  // Derive connector names from config
-  const connectorNames: string[] = [];
-  if (config.connectors?.slack?.appToken && config.connectors?.slack?.botToken) {
-    connectorNames.push("slack");
-  }
-  if (config.connectors?.discord?.botToken || config.connectors?.discord?.proxyVia) {
-    connectorNames.push("discord");
-  }
-  if (config.connectors?.telegram?.botToken) {
-    connectorNames.push("telegram");
-  }
-  if (config.connectors?.whatsapp) {
-    connectorNames.push("whatsapp");
-  }
-
-  // Session manager
+  // Assemble dependencies via Composition Root factories
+  const engines = buildEngines(config);
+  const connectorNames = buildConnectorNames(config);
   const sessionManager = new SessionManager(config, engines, connectorNames);
 
   // Build employee registry
@@ -742,8 +715,9 @@ export async function startGateway(config: JinnConfig): Promise<GatewayCleanup> 
     }
 
     // Terminate live engine subprocesses after marking sessions.
-    claudeEngine.killAll();
-    codexEngine.killAll();
+    for (const engine of engines.values()) {
+      if ("killAll" in engine && typeof engine.killAll === "function") engine.killAll();
+    }
 
     // Stop cron scheduler
     stopScheduler();
