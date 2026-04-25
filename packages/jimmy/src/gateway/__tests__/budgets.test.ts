@@ -4,7 +4,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 // Point initDb to a temp directory so tests don't touch the real database
-const tmpHome = path.join(os.tmpdir(), `jinn-budgets-test-${process.pid}`);
+const tmpHome = path.join(os.tmpdir(), `jinn-budgets-test-${process.pid}-${Date.now()}`);
 mkdirSync(path.join(tmpHome, "sessions"), { recursive: true });
 process.env.JINN_HOME = tmpHome;
 
@@ -87,10 +87,14 @@ describe("AC-E003-04: recordBudgetEvent and getBudgetEvents", () => {
   });
 
   it("recordBudgetEvent inserts an event retrievable by getBudgetEvents", () => {
-    const beforeCount = getBudgetEvents(1000).length;
+    const beforeIds = new Set((getBudgetEvents(10000) as { id: string }[]).map((e) => e.id));
     recordBudgetEvent("ivy", "alert", 50, 100);
-    const afterCount = getBudgetEvents(1000).length;
-    expect(afterCount).toBe(beforeCount + 1);
+    const allEvents = getBudgetEvents(10000) as { id: string; employee: string; event_type: string; amount: number }[];
+    const newEvent = allEvents.find((e) => !beforeIds.has(e.id));
+    expect(newEvent).toBeDefined();
+    expect(newEvent?.employee).toBe("ivy");
+    expect(newEvent?.event_type).toBe("alert");
+    expect(newEvent?.amount).toBe(50);
   });
 
   it("getBudgetEvents uses default limit of 50", () => {
@@ -107,10 +111,13 @@ describe("AC-E003-04: overrideBudget", () => {
   });
 
   it("records an override event in budget_events", () => {
-    const beforeCount = getBudgetEvents(1000).length;
+    const beforeIds = new Set((getBudgetEvents(10000) as { id: string }[]).map((e) => e.id));
     overrideBudget("kate", { kate: 200 });
-    const afterCount = getBudgetEvents(1000).length;
-    expect(afterCount).toBe(beforeCount + 1);
+    const allEvents = getBudgetEvents(10000) as { id: string; employee: string; event_type: string }[];
+    const newEvent = allEvents.find((e) => !beforeIds.has(e.id));
+    expect(newEvent).toBeDefined();
+    expect(newEvent?.employee).toBe("kate");
+    expect(newEvent?.event_type).toBe("override");
   });
 
   it("uses limit 0 when employee not in budgetConfig", () => {
