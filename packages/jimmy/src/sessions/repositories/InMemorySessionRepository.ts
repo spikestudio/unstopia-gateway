@@ -7,6 +7,7 @@ import type {
   UpdateSessionFields,
 } from "./ISessionRepository.js";
 
+// SQLite 実装の COUNT(*)+1 と同じ挙動: 削除後に番号が重複しうるがタイトル生成のみに使用
 function getNextSessionNumber(store: Map<string, Session>): number {
   return store.size + 1;
 }

@@ -11,7 +11,7 @@ import {
 import type { Repositories } from "../sessions/repositories/index.js";
 import type { Engine, JinnConfig } from "../shared/types.js";
 
-export type { Repositories } from "../sessions/repositories/index.js";
+export type { Repositories };
 
 export function buildRepositories(db: Database.Database): Repositories {
   return {
