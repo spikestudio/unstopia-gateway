@@ -10,6 +10,19 @@ process.env.JINN_HOME = tmpHome;
 
 import { checkBudget, getBudgetEvents, getBudgetStatus, overrideBudget, recordBudgetEvent } from "../budgets.js";
 
+interface BudgetEvent {
+  id: string;
+  employee: string;
+  event_type: string;
+  amount: number;
+  limit_amount: number;
+  created_at: string;
+}
+
+function allBudgetEvents(): BudgetEvent[] {
+  return getBudgetEvents(10_000) as BudgetEvent[];
+}
+
 describe("AC-E003-04: getBudgetStatus", () => {
   it("returns ok with zero spend when employee has no budget config", () => {
     const result = getBudgetStatus("unknown-employee", {});
@@ -87,10 +100,9 @@ describe("AC-E003-04: recordBudgetEvent and getBudgetEvents", () => {
   });
 
   it("recordBudgetEvent inserts an event retrievable by getBudgetEvents", () => {
-    const beforeIds = new Set((getBudgetEvents(10000) as { id: string }[]).map((e) => e.id));
+    const beforeIds = new Set(allBudgetEvents().map((e) => e.id));
     recordBudgetEvent("ivy", "alert", 50, 100);
-    const allEvents = getBudgetEvents(10000) as { id: string; employee: string; event_type: string; amount: number }[];
-    const newEvent = allEvents.find((e) => !beforeIds.has(e.id));
+    const newEvent = allBudgetEvents().find((e) => !beforeIds.has(e.id));
     expect(newEvent).toBeDefined();
     expect(newEvent?.employee).toBe("ivy");
     expect(newEvent?.event_type).toBe("alert");
@@ -111,10 +123,9 @@ describe("AC-E003-04: overrideBudget", () => {
   });
 
   it("records an override event in budget_events", () => {
-    const beforeIds = new Set((getBudgetEvents(10000) as { id: string }[]).map((e) => e.id));
+    const beforeIds = new Set(allBudgetEvents().map((e) => e.id));
     overrideBudget("kate", { kate: 200 });
-    const allEvents = getBudgetEvents(10000) as { id: string; employee: string; event_type: string }[];
-    const newEvent = allEvents.find((e) => !beforeIds.has(e.id));
+    const newEvent = allBudgetEvents().find((e) => !beforeIds.has(e.id));
     expect(newEvent).toBeDefined();
     expect(newEvent?.employee).toBe("kate");
     expect(newEvent?.event_type).toBe("override");
