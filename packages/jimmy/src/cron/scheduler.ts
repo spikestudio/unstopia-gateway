@@ -1,22 +1,21 @@
 import cron, { type ScheduledTask } from "node-cron";
-import type { SessionManager } from "../sessions/manager.js";
 import { logger } from "../shared/logger.js";
-import type { Connector, CronJob, JinnConfig } from "../shared/types.js";
+import type { Connector, CronJob, JinnConfig, SessionRouter } from "../shared/types.js";
 import { loadJobs, saveJobs } from "./jobs.js";
 import { runCronJob } from "./runner.js";
 
 let tasks: ScheduledTask[] = [];
-let currentSessionManager: SessionManager;
+let currentSessionRouter: SessionRouter;
 let currentConfig: JinnConfig;
 let currentConnectors: Map<string, Connector>;
 
 export function startScheduler(
   jobs: CronJob[],
-  sessionManager: SessionManager,
+  sessionManager: SessionRouter,
   config: JinnConfig,
   connectors: Map<string, Connector>,
 ): void {
-  currentSessionManager = sessionManager;
+  currentSessionRouter = sessionManager;
   currentConfig = config;
   currentConnectors = connectors;
   scheduleJobs(jobs);
@@ -44,7 +43,7 @@ function scheduleJobs(jobs: CronJob[]): void {
     const task = cron.schedule(
       job.schedule,
       () => {
-        runCronJob(job, currentSessionManager, currentConfig, currentConnectors);
+        runCronJob(job, currentSessionRouter, currentConfig, currentConnectors);
       },
       { timezone: job.timezone },
     );
@@ -56,7 +55,7 @@ function scheduleJobs(jobs: CronJob[]): void {
 export async function triggerCronJob(idOrName: string): Promise<CronJob | undefined> {
   const job = findJob(idOrName);
   if (!job) return undefined;
-  await runCronJob(job, currentSessionManager, currentConfig, currentConnectors);
+  await runCronJob(job, currentSessionRouter, currentConfig, currentConnectors);
   return job;
 }
 

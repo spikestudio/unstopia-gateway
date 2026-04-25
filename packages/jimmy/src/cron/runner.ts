@@ -1,13 +1,12 @@
 import { CronConnector } from "../connectors/cron/index.js";
 import { findEmployee, scanOrg } from "../gateway/org.js";
-import type { SessionManager } from "../sessions/manager.js";
 import { logger } from "../shared/logger.js";
-import type { Connector, CronJob, Employee, JinnConfig } from "../shared/types.js";
+import type { Connector, CronJob, Employee, JinnConfig, SessionRouter } from "../shared/types.js";
 import { appendRunLog } from "./jobs.js";
 
 export async function runCronJob(
   job: CronJob,
-  sessionManager: SessionManager,
+  sessionManager: SessionRouter,
   config: JinnConfig,
   connectors: Map<string, Connector>,
 ): Promise<void> {

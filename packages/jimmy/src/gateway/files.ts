@@ -7,7 +7,7 @@ import Busboy from "busboy";
 import { deleteFile, type FileMeta, getFile, insertFile, listFiles } from "../sessions/registry.js";
 import { logger } from "../shared/logger.js";
 import { FILES_DIR } from "../shared/paths.js";
-import type { ApiContext } from "./api.js";
+import type { ApiContext } from "./types.js";
 
 // Ensure managed files directory exists
 export function ensureFilesDir(): void {
