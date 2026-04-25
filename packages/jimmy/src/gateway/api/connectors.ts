@@ -1,10 +1,10 @@
 import type { IncomingMessage as HttpRequest, ServerResponse } from "node:http";
+import QRCode from "qrcode";
 import type { WhatsAppConnector } from "../../connectors/whatsapp/index.js";
 import { TMP_DIR } from "../../shared/paths.js";
 import type { IncomingMessage, JsonObject, Target } from "../../shared/types.js";
 import type { ApiContext } from "../types.js";
 import { badRequest, json, matchRoute, notFound, readJsonBody } from "./utils.js";
-import QRCode from "qrcode";
 
 export async function handleConnectorsRequest(
   req: HttpRequest,
@@ -65,8 +65,7 @@ export async function handleConnectorsRequest(
   if (method === "POST" && params && params.id) {
     // Try the exact instance id first, then fall back to "discord" for the legacy path
     const connector =
-      context.connectors.get(params.id) ??
-      (params.id === "discord" ? context.connectors.get("discord") : undefined);
+      context.connectors.get(params.id) ?? (params.id === "discord" ? context.connectors.get("discord") : undefined);
     if (!connector) {
       notFound(res);
       return true;
@@ -125,8 +124,7 @@ export async function handleConnectorsRequest(
   params = matchRoute("/api/connectors/:id/proxy", pathname);
   if (method === "POST" && params && params.id) {
     const connector =
-      context.connectors.get(params.id) ??
-      (params.id === "discord" ? context.connectors.get("discord") : undefined);
+      context.connectors.get(params.id) ?? (params.id === "discord" ? context.connectors.get("discord") : undefined);
     if (!connector) {
       notFound(res);
       return true;

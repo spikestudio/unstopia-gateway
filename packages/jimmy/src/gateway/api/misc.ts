@@ -3,25 +3,12 @@ import type { IncomingMessage as HttpRequest, ServerResponse } from "node:http";
 import path from "node:path";
 import yaml from "js-yaml";
 import { loadInstances } from "../../cli/instances.js";
-import { listSessions, initDb } from "../../sessions/registry.js";
+import { initDb, listSessions } from "../../sessions/registry.js";
 import { logger } from "../../shared/logger.js";
-import {
-  CONFIG_PATH,
-  JINN_HOME,
-  LOGS_DIR,
-  ORG_DIR,
-} from "../../shared/paths.js";
+import { CONFIG_PATH, JINN_HOME, LOGS_DIR, ORG_DIR } from "../../shared/paths.js";
 import { handleFilesRequest } from "../files.js";
 import type { ApiContext } from "../types.js";
-import {
-  badRequest,
-  checkInstanceHealth,
-  deepMerge,
-  json,
-  matchRoute,
-  notFound,
-  readJsonBody,
-} from "./utils.js";
+import { badRequest, checkInstanceHealth, deepMerge, json, matchRoute, notFound, readJsonBody } from "./utils.js";
 
 export async function handleMiscRequest(
   req: HttpRequest,
@@ -203,9 +190,7 @@ export async function handleMiscRequest(
     const events: Array<{ event: string; payload: unknown; ts: number }> = [];
     for (const s of sessions) {
       const ts = new Date(s.lastActivity || s.createdAt).getTime();
-      const transportState = context.sessionManager
-        .getQueue()
-        .getTransportState(s.sessionKey || s.sourceRef, s.status);
+      const transportState = context.sessionManager.getQueue().getTransportState(s.sessionKey || s.sourceRef, s.status);
       if (transportState === "running") {
         events.push({
           event: "session:started",

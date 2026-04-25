@@ -88,14 +88,8 @@ export async function handleSkillsRequest(
       return true;
     }
     try {
-      const {
-        snapshotDirs,
-        diffSnapshots,
-        copySkillToInstance,
-        upsertManifest,
-        extractSkillName,
-        findExistingSkill,
-      } = await import("../../cli/skills.js");
+      const { snapshotDirs, diffSnapshots, copySkillToInstance, upsertManifest, extractSkillName, findExistingSkill } =
+        await import("../../cli/skills.js");
       const { execFileSync } = await import("node:child_process");
 
       const before = snapshotDirs();

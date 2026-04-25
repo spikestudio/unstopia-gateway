@@ -136,9 +136,7 @@ Handle this as a priority request from a colleague.`;
       title: `Cross-request: ${fromEmployee} → ${service}`,
     });
     insertMessage(session.id, "user", crossBrief);
-    logger.info(
-      `Cross-request session created: ${session.id} (${fromEmployee} → ${service} → ${entry.provider.name})`,
-    );
+    logger.info(`Cross-request session created: ${session.id} (${fromEmployee} → ${service} → ${entry.provider.name})`);
 
     json(
       res,
