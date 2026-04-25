@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { Connector, CronJob, Employee, JinnConfig } from "../../shared/types.js";
+import type { Connector, CronJob, Employee, JinnConfig, SessionRouter } from "../../shared/types.js";
 
 // モックを import より前に宣言
 vi.mock("../jobs.js", () => ({
@@ -31,8 +31,8 @@ import { findEmployee, scanOrg } from "../../gateway/org.js";
 import { appendRunLog } from "../jobs.js";
 import { runCronJob } from "../runner.js";
 
-// SessionManager の最小限モック
-function makeSessionManager(routeResult?: { sessionId: string }) {
+// SessionRouter の最小限モック（ES-011: cron は SessionManager ではなく SessionRouter インターフェースに依存）
+function makeSessionRouter(routeResult?: { sessionId: string }): SessionRouter {
   return {
     route: vi.fn().mockResolvedValue(routeResult ?? { sessionId: "sess-001" }),
   };
@@ -79,7 +79,7 @@ describe("AC-E003-03: runCronJob", () => {
   describe("成功パス", () => {
     it("route が成功したとき appendRunLog に status:success を記録する", async () => {
       const job = makeJob();
-      const sessionManager = makeSessionManager({ sessionId: "sess-xyz" });
+      const sessionManager = makeSessionRouter({ sessionId: "sess-xyz" });
       const config = makeConfig();
       const connectors = new Map<string, Connector>();
 
@@ -97,7 +97,7 @@ describe("AC-E003-03: runCronJob", () => {
       const job = makeJob({
         delivery: { connector: "slack", channel: "#results" },
       });
-      const sessionManager = makeSessionManager();
+      const sessionManager = makeSessionRouter();
       const config = makeConfig({
         cron: { defaultDelivery: undefined },
       } as never);
@@ -123,7 +123,7 @@ describe("AC-E003-03: runCronJob", () => {
       vi.mocked(findEmployee).mockReturnValueOnce(employee);
 
       const job = makeJob({ employee: "alice" });
-      const sessionManager = makeSessionManager();
+      const sessionManager = makeSessionRouter();
       const config = makeConfig();
       const connectors = new Map<string, Connector>();
 
@@ -135,7 +135,7 @@ describe("AC-E003-03: runCronJob", () => {
 
     it("delivery なし・employee なし の場合も正常に動作する", async () => {
       const job = makeJob(); // delivery なし、employee なし
-      const sessionManager = makeSessionManager();
+      const sessionManager = makeSessionRouter();
       const config = makeConfig();
       const connectors = new Map<string, Connector>();
 
@@ -263,7 +263,7 @@ describe("AC-E003-03: runCronJob", () => {
         delivery: { connector: "slack", channel: "#results" },
         employee: "alice",
       });
-      const sessionManager = makeSessionManager();
+      const sessionManager = makeSessionRouter();
       // portal なしの config → cooSlug = "jinn"、alice !== "jinn" なので debug ログ分岐に入る
       const config = makeConfig({ portal: undefined } as never);
       const connectors = new Map<string, Connector>();
