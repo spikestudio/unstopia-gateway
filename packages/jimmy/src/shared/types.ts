@@ -431,3 +431,20 @@ export interface JinnConfig {
   };
   remotes?: Record<string, { url: string; label?: string }>;
 }
+
+/** Options passed to SessionRouter.route() — kept in shared to avoid cron→sessions circular dep. */
+export interface RouteOptions {
+  employee?: Employee;
+  engine?: string;
+  model?: string;
+  title?: string;
+}
+
+/** Minimal interface for routing incoming messages to sessions. Used by cron/ to avoid depending on sessions/manager.ts directly. */
+export interface SessionRouter {
+  route(
+    msg: IncomingMessage,
+    connector: Connector,
+    opts?: RouteOptions,
+  ): Promise<{ sessionId: string } | undefined>;
+}

@@ -19,6 +19,7 @@ import type {
   IncomingMessage,
   JinnConfig,
   JsonObject,
+  RouteOptions,
   Session,
   Target,
 } from "../shared/types.js";
@@ -40,12 +41,7 @@ import {
   updateSession,
 } from "./registry.js";
 
-export interface RouteOptions {
-  employee?: Employee;
-  engine?: string;
-  model?: string;
-  title?: string;
-}
+export type { RouteOptions } from "../shared/types.js";
 
 function maybeRevertEngineOverride(session: Session): Session {
   const meta = (session.transportMeta || {}) as Record<string, unknown>;
