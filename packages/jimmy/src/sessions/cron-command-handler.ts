@@ -2,12 +2,8 @@ import { loadJobs } from "../cron/jobs.js";
 import { setCronJobEnabled, triggerCronJob } from "../cron/scheduler.js";
 import type { Connector, Target } from "../shared/types.js";
 
-export async function handleCronCommand(
-  text: string,
-  connector: Connector,
-  target: Target,
-): Promise<boolean> {
-  const [_, subcommand = "", ...rest] = text.split(/\s+/);
+export async function handleCronCommand(text: string, connector: Connector, target: Target): Promise<boolean> {
+  const [_cmd, subcommand = "", ...rest] = text.split(/\s+/);
   const arg = rest.join(" ").trim();
 
   if (!subcommand || subcommand === "list") {
