@@ -18,7 +18,6 @@ import {
 } from "../sessions/callbacks.js";
 import { buildContext } from "../sessions/context.js";
 import { forkEngineSession } from "../sessions/fork.js";
-import type { SessionManager } from "../sessions/manager.js";
 import {
   cancelAllPendingQueueItems,
   cancelQueueItem,
@@ -63,15 +62,8 @@ import {
 } from "../stt/stt.js";
 import { handleFilesRequest } from "./files.js";
 
-export interface ApiContext {
-  config: JinnConfig;
-  sessionManager: SessionManager;
-  startTime: number;
-  getConfig: () => JinnConfig;
-  emit: (event: string, payload: unknown) => void;
-  connectors: Map<string, import("../shared/types.js").Connector>;
-  reloadConnectorInstances?: () => Promise<{ started: string[]; stopped: string[]; errors: string[] }>;
-}
+export type { ApiContext } from "./types.js";
+import type { ApiContext } from "./types.js";
 
 export function resumePendingWebQueueItems(context: ApiContext): void {
   const pending = listAllPendingQueueItems();
