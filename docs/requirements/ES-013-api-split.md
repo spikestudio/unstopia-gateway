@@ -31,7 +31,8 @@
 ## 設計判断
 
 - `session-runner.ts`（787行）は `runWebSession` を含む。この関数はレート制限フォールバック・リトライ・待機ループを含む不可分な非同期ロジックであり、さらなる分割は凝集度を下げるため現状維持
-- 各ドメインハンドラは `(req, res, context, method, pathname): Promise<boolean>` を返すシグネチャで統一（`true` = 処理済み、`false` = 次ハンドラへ）
+- 各ドメインハンドラは `(req, res, context, method, pathname[, url]): Promise<boolean>` を返すシグネチャで統一（`true` = 処理済み、`false` = 次ハンドラへ）
+- `skills.ts` の `_context: ApiContext` はシグネチャ統一のため保持（skills ハンドラ内で context を参照しないが、dispatcher 側でシグネチャを分岐させるコストを避けるため `_` プレフィックスで未使用を明示）
 
 ## Acceptance Criteria
 
