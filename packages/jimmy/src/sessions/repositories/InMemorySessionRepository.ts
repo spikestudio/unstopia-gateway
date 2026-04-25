@@ -178,6 +178,9 @@ export class InMemorySessionRepository implements ISessionRepository {
     };
 
     this.store.set(newId, session);
+    // messageCount は常に 0: メッセージは IMessageRepository が別管理するため
+    // InMemory 実装はセッション本体のみを複製する。messageCount に依存するテストは
+    // InMemoryMessageRepository と組み合わせて上位層で検証すること。
     return { session, messageCount: 0 };
   }
 }

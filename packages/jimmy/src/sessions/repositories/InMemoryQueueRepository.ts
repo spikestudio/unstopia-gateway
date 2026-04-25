@@ -10,7 +10,7 @@ export class InMemoryQueueRepository implements IQueueRepository {
       (item) => item.sessionKey === sessionKey && item.status === "pending",
     );
     const maxPosition = pendingForKey.reduce((max, item) => Math.max(max, item.position), 0);
-    const position = pendingForKey.length === 0 ? 1 : maxPosition + 1;
+    const position = maxPosition + 1;
 
     const item: QueueItem = {
       id,
