@@ -1,5 +1,7 @@
 import fs from "node:fs";
 import { checkBudget } from "../gateway/budgets.js";
+import { scanOrg } from "../gateway/org.js";
+import { resolveOrgHierarchy } from "../gateway/org-hierarchy.js";
 import { cleanupMcpConfigFile, resolveMcpServers, writeMcpConfigFile } from "../mcp/resolver.js";
 import { resolveEffort } from "../shared/effort.js";
 import { logger } from "../shared/logger.js";
@@ -100,8 +102,6 @@ export async function runSession(
 
   let hierarchy: import("../shared/types.js").OrgHierarchy | undefined;
   try {
-    const { scanOrg } = await import("../gateway/org.js");
-    const { resolveOrgHierarchy } = await import("../gateway/org-hierarchy.js");
     hierarchy = resolveOrgHierarchy(scanOrg());
   } catch {
     /* fallback to filesystem scan in context builder */
