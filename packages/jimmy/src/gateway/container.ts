@@ -3,8 +3,8 @@ import { CodexEngine } from "../engines/codex.js";
 import { GeminiEngine } from "../engines/gemini.js";
 import type { Engine, JinnConfig } from "../shared/types.js";
 
-/** Build the engine map from config. Each engine key matches JinnConfig.engines keys. */
-export function buildEngines(_config: JinnConfig): Map<string, Engine> {
+/** Build the engine map. Each key matches JinnConfig.engines keys. */
+export function buildEngines(): Map<string, Engine> {
   const engines = new Map<string, Engine>();
   engines.set("claude", new ClaudeEngine());
   engines.set("codex", new CodexEngine());

@@ -134,7 +134,7 @@ export async function startGateway(config: JinnConfig): Promise<GatewayCleanup> 
   }
 
   // Assemble dependencies via Composition Root factories
-  const engines = buildEngines(config);
+  const engines = buildEngines();
   const connectorNames = buildConnectorNames(config);
   const sessionManager = new SessionManager(config, engines, connectorNames);
 
