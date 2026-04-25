@@ -13,7 +13,7 @@ import { WhatsAppConnector } from "../connectors/whatsapp/index.js";
 import { loadJobs } from "../cron/jobs.js";
 import { reloadScheduler, startScheduler, stopScheduler } from "../cron/scheduler.js";
 import { type RouteOptions, SessionManager } from "../sessions/manager.js";
-import { buildConnectorNames, buildEngines } from "./container.js";
+import { buildConnectorNames, buildEngines, buildRepositories } from "./container.js";
 import {
   getInterruptedSessions,
   initDb,
@@ -112,7 +112,7 @@ export async function startGateway(config: JinnConfig): Promise<GatewayCleanup> 
   logger.info(`Starting ${gatewayName} gateway (boot ${bootId}, pid ${process.pid})...`);
 
   // Initialize database and recover any sessions stuck from a previous run
-  initDb();
+  const db = initDb();
   ensureFilesDir();
   const recovered = recoverStaleSessions();
   if (recovered > 0) {
@@ -137,7 +137,8 @@ export async function startGateway(config: JinnConfig): Promise<GatewayCleanup> 
   // Assemble dependencies via Composition Root factories
   const engines = buildEngines();
   const connectorNames = buildConnectorNames(config);
-  const sessionManager = new SessionManager(config, engines, connectorNames);
+  const repositories = buildRepositories(db);
+  const sessionManager = new SessionManager(config, engines, connectorNames, repositories.sessions, repositories);
 
   // Build employee registry
   let employeeRegistry = scanOrg();

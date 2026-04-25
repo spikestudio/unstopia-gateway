@@ -1,12 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Connector, Engine, JinnConfig } from "../../shared/types.js";
-
-vi.mock("../registry.js", () => ({
-  createSession: vi.fn(),
-  deleteSession: vi.fn(),
-  getSessionBySessionKey: vi.fn(),
-  updateSession: vi.fn(),
-}));
+import { InMemorySessionRepository } from "../repositories/InMemorySessionRepository.js";
 
 vi.mock("../engine-runner.js", () => ({
   mergeTransportMeta: vi.fn((e: unknown, i: unknown) => ({ ...((e as object) || {}), ...((i as object) || {}) })),
@@ -25,7 +19,6 @@ vi.mock("../../shared/logger.js", () => ({
   logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() },
 }));
 
-import { deleteSession, getSessionBySessionKey, updateSession } from "../registry.js";
 import { handleCronCommand } from "../cron-command-handler.js";
 import { runSession } from "../engine-runner.js";
 import { SessionManager } from "../manager.js";
@@ -57,20 +50,6 @@ function makeConnector(overrides: Partial<Connector> = {}): Connector {
   } as unknown as Connector;
 }
 
-function makeSession(overrides: Record<string, unknown> = {}) {
-  return {
-    id: "s1", sessionKey: "k1", status: "idle", engine: "claude",
-    source: "telegram", sourceRef: "k1", connector: "telegram",
-    replyContext: { channel: "ch", messageTs: undefined },
-    messageId: undefined, channel: "ch", thread: undefined,
-    employee: undefined, model: undefined, title: undefined, prompt: "hi",
-    createdAt: new Date().toISOString(), lastActivity: new Date().toISOString(),
-    lastError: undefined, engineSessionId: undefined, cost: 0, numTurns: 0,
-    portalName: undefined, transportMeta: undefined,
-    ...overrides,
-  };
-}
-
 const baseMsg = {
   connector: "telegram", source: "telegram", sessionKey: "k1",
   replyContext: { channel: "ch", messageTs: undefined },
@@ -81,11 +60,13 @@ const baseMsg = {
 
 describe("SessionManager", () => {
   let manager: SessionManager;
+  let sessionRepo: InMemorySessionRepository;
 
   beforeEach(() => {
     vi.clearAllMocks();
+    sessionRepo = new InMemorySessionRepository();
     const engines = new Map<string, Engine>([["claude", makeEngine()]]);
-    manager = new SessionManager(makeConfig(), engines);
+    manager = new SessionManager(makeConfig(), engines, [], sessionRepo);
   });
 
   describe("getEngine", () => {
@@ -109,46 +90,36 @@ describe("SessionManager", () => {
 
   describe("resetSession", () => {
     it("セッションキーに対応するセッションを削除する", () => {
-      const mockSession = { id: "sess-1", sessionKey: "key-1" };
-      vi.mocked(getSessionBySessionKey).mockReturnValue(mockSession as never);
+      sessionRepo.createSession({ engine: "claude", source: "telegram", sourceRef: "key-1", sessionKey: "key-1" });
 
       manager.resetSession("key-1");
 
-      expect(getSessionBySessionKey).toHaveBeenCalledWith("key-1");
+      expect(sessionRepo.getSessionBySessionKey("key-1")).toBeUndefined();
     });
 
     it("セッションが存在しない場合は何もしない", () => {
-      vi.mocked(getSessionBySessionKey).mockReturnValue(undefined);
-
       expect(() => manager.resetSession("not-found")).not.toThrow();
     });
   });
 
   describe("route", () => {
     it("既存セッションがない場合は新規セッションを作成して runSession を呼ぶ", async () => {
-      const { createSession } = await import("../registry.js");
-      vi.mocked(getSessionBySessionKey).mockReturnValue(undefined);
-      vi.mocked(createSession).mockReturnValue(makeSession() as never);
-      vi.mocked(updateSession).mockReturnValue(makeSession() as never);
-
       await manager.route(baseMsg as never, makeConnector());
 
       expect(vi.mocked(runSession)).toHaveBeenCalledOnce();
     });
 
-    it("既存セッションがある場合は updateSession を呼んで runSession を呼ぶ", async () => {
-      vi.mocked(getSessionBySessionKey).mockReturnValue(makeSession() as never);
-      vi.mocked(updateSession).mockReturnValue(makeSession() as never);
+    it("既存セッションがある場合は runSession を呼ぶ", async () => {
+      sessionRepo.createSession({ engine: "claude", source: "telegram", sourceRef: "k1", sessionKey: "k1" });
 
       await manager.route(baseMsg as never, makeConnector());
 
-      expect(vi.mocked(updateSession)).toHaveBeenCalled();
       expect(vi.mocked(runSession)).toHaveBeenCalledOnce();
     });
 
     it("status が waiting のときはキュー待ちメッセージを返信する", async () => {
-      vi.mocked(getSessionBySessionKey).mockReturnValue(makeSession({ status: "waiting" }) as never);
-      vi.mocked(updateSession).mockReturnValue(makeSession({ status: "waiting" }) as never);
+      const session = sessionRepo.createSession({ engine: "claude", source: "telegram", sourceRef: "k1", sessionKey: "k1" });
+      sessionRepo.updateSession(session.id, { status: "waiting" });
       const connector = makeConnector();
 
       await manager.route(baseMsg as never, connector);
@@ -160,32 +131,26 @@ describe("SessionManager", () => {
     });
 
     it("result に sessionId を含む", async () => {
-      const { createSession } = await import("../registry.js");
-      vi.mocked(getSessionBySessionKey).mockReturnValue(undefined);
-      vi.mocked(createSession).mockReturnValue(makeSession({ id: "sess-abc" }) as never);
-      vi.mocked(updateSession).mockReturnValue(makeSession({ id: "sess-abc" }) as never);
-
       const result = await manager.route(baseMsg as never, makeConnector());
 
-      expect(result?.sessionId).toBe("sess-abc");
+      expect(result?.sessionId).toBeDefined();
     });
   });
 
   describe("handleCommand", () => {
     it("/new でセッションをリセットして true を返す", async () => {
-      const session = makeSession();
-      vi.mocked(getSessionBySessionKey).mockReturnValue(session as never);
+      sessionRepo.createSession({ engine: "claude", source: "telegram", sourceRef: "k1", sessionKey: "k1" });
       const connector = makeConnector();
 
       const handled = await manager.handleCommand({ ...baseMsg, text: "/new" } as never, connector);
 
       expect(handled).toBe(true);
-      expect(vi.mocked(deleteSession)).toHaveBeenCalledWith(session.id);
+      expect(sessionRepo.getSessionBySessionKey("k1")).toBeUndefined();
       expect(vi.mocked(connector.replyMessage)).toHaveBeenCalled();
     });
 
     it("/status でセッション情報を返して true を返す", async () => {
-      vi.mocked(getSessionBySessionKey).mockReturnValue(makeSession() as never);
+      sessionRepo.createSession({ engine: "claude", source: "telegram", sourceRef: "k1", sessionKey: "k1" });
       const connector = makeConnector();
 
       const handled = await manager.handleCommand({ ...baseMsg, text: "/status" } as never, connector);
@@ -195,7 +160,6 @@ describe("SessionManager", () => {
     });
 
     it("/status でセッションがない場合もメッセージを返して true を返す", async () => {
-      vi.mocked(getSessionBySessionKey).mockReturnValue(undefined);
       const connector = makeConnector();
 
       const handled = await manager.handleCommand({ ...baseMsg, text: "/status" } as never, connector);
@@ -204,13 +168,13 @@ describe("SessionManager", () => {
     });
 
     it("/model でモデルを更新して true を返す", async () => {
-      vi.mocked(getSessionBySessionKey).mockReturnValue(makeSession() as never);
+      const session = sessionRepo.createSession({ engine: "claude", source: "telegram", sourceRef: "k1", sessionKey: "k1" });
       const connector = makeConnector();
 
       const handled = await manager.handleCommand({ ...baseMsg, text: "/model claude-opus-4" } as never, connector);
 
       expect(handled).toBe(true);
-      expect(vi.mocked(updateSession)).toHaveBeenCalledWith("s1", expect.objectContaining({ model: "claude-opus-4" }));
+      expect(sessionRepo.getSession(session.id)?.model).toBe("claude-opus-4");
       const [, reply] = vi.mocked(connector.replyMessage).mock.calls[0];
       expect(String(reply)).toContain("claude-opus-4");
     });
@@ -226,8 +190,6 @@ describe("SessionManager", () => {
     });
 
     it("/model でセッションがない場合もメッセージを返して true を返す", async () => {
-      vi.mocked(getSessionBySessionKey).mockReturnValue(undefined);
-
       const handled = await manager.handleCommand({ ...baseMsg, text: "/model gpt-4" } as never, makeConnector());
 
       expect(handled).toBe(true);

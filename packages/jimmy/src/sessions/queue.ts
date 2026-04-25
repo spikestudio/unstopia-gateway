@@ -1,4 +1,4 @@
-import { markQueueItemCompleted, markQueueItemRunning } from "./registry.js";
+import type { IQueueRepository } from "./repositories/index.js";
 
 export class SessionQueue {
   private queues = new Map<string, Promise<void>>();
@@ -66,7 +66,12 @@ export class SessionQueue {
   /**
    * Enqueue a task for a session. Tasks are serialized per session key.
    */
-  async enqueue(sessionKey: string, fn: () => Promise<void>, queueItemId?: string): Promise<void> {
+  async enqueue(
+    sessionKey: string,
+    fn: () => Promise<void>,
+    queueItemId?: string,
+    queueRepo?: IQueueRepository,
+  ): Promise<void> {
     this.pending.set(sessionKey, (this.pending.get(sessionKey) || 0) + 1);
     const prev = this.queues.get(sessionKey) || Promise.resolve();
     const runTask = async () => {
@@ -76,11 +81,11 @@ export class SessionQueue {
         while (this.paused.has(sessionKey)) {
           await new Promise((resolve) => setTimeout(resolve, 500));
         }
-        if (queueItemId) markQueueItemRunning(queueItemId);
+        if (queueItemId && queueRepo) queueRepo.markQueueItemRunning(queueItemId);
         if (!this.cancelled.has(sessionKey)) {
           await fn();
         }
-        if (queueItemId) markQueueItemCompleted(queueItemId);
+        if (queueItemId && queueRepo) queueRepo.markQueueItemCompleted(queueItemId);
       } finally {
         this.running.delete(sessionKey);
         this.decrementPending(sessionKey);
