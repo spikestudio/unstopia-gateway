@@ -1,4 +1,4 @@
-import type { Repositories } from "../gateway/container.js";
+import type { Repositories } from "./repositories/index.js";
 import { logger } from "../shared/logger.js";
 import type { Connector, Engine, IncomingMessage, JinnConfig, RouteOptions, Session } from "../shared/types.js";
 import { getClaudeExpectedResetAt } from "../shared/usageAwareness.js";

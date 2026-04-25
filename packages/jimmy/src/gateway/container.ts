@@ -2,26 +2,16 @@ import type Database from "better-sqlite3";
 import { ClaudeEngine } from "../engines/claude.js";
 import { CodexEngine } from "../engines/codex.js";
 import { GeminiEngine } from "../engines/gemini.js";
-import type {
-  IFileRepository,
-  IMessageRepository,
-  IQueueRepository,
-  ISessionRepository,
-} from "../sessions/repositories/index.js";
 import {
   SqliteFileRepository,
   SqliteMessageRepository,
   SqliteQueueRepository,
   SqliteSessionRepository,
 } from "../sessions/repositories/index.js";
+import type { Repositories } from "../sessions/repositories/index.js";
 import type { Engine, JinnConfig } from "../shared/types.js";
 
-export interface Repositories {
-  sessions: ISessionRepository;
-  messages: IMessageRepository;
-  queue: IQueueRepository;
-  files: IFileRepository;
-}
+export type { Repositories } from "../sessions/repositories/index.js";
 
 export function buildRepositories(db: Database.Database): Repositories {
   return {
