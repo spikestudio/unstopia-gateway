@@ -170,20 +170,25 @@ export function migrateSessionsSchema(database: Database.Database): void {
 
 // ── Lazy singleton repository instances ──────────────────────────────
 
+let _sessionRepo: SqliteSessionRepository | undefined;
+let _messageRepo: SqliteMessageRepository | undefined;
+let _queueRepo: SqliteQueueRepository | undefined;
+let _fileRepo: SqliteFileRepository | undefined;
+
 function getSessionRepo(): SqliteSessionRepository {
-  return new SqliteSessionRepository(initDb());
+  return (_sessionRepo ??= new SqliteSessionRepository(initDb()));
 }
 
 function getMessageRepo(): SqliteMessageRepository {
-  return new SqliteMessageRepository(initDb());
+  return (_messageRepo ??= new SqliteMessageRepository(initDb()));
 }
 
 function getQueueRepo(): SqliteQueueRepository {
-  return new SqliteQueueRepository(initDb());
+  return (_queueRepo ??= new SqliteQueueRepository(initDb()));
 }
 
 function getFileRepo(): SqliteFileRepository {
-  return new SqliteFileRepository(initDb());
+  return (_fileRepo ??= new SqliteFileRepository(initDb()));
 }
 
 // ── Session façade ────────────────────────────────────────────────────
