@@ -203,6 +203,46 @@ describe("SessionManager", () => {
       expect(handled).toBe(true);
     });
 
+    it("/model でモデルを更新して true を返す", async () => {
+      vi.mocked(getSessionBySessionKey).mockReturnValue(makeSession() as never);
+      const connector = makeConnector();
+
+      const handled = await manager.handleCommand({ ...baseMsg, text: "/model claude-opus-4" } as never, connector);
+
+      expect(handled).toBe(true);
+      expect(vi.mocked(updateSession)).toHaveBeenCalledWith("s1", expect.objectContaining({ model: "claude-opus-4" }));
+      const [, reply] = vi.mocked(connector.replyMessage).mock.calls[0];
+      expect(String(reply)).toContain("claude-opus-4");
+    });
+
+    it("/model で引数なしのとき使用方法を返して true を返す", async () => {
+      const connector = makeConnector();
+
+      const handled = await manager.handleCommand({ ...baseMsg, text: "/model" } as never, connector);
+
+      expect(handled).toBe(true);
+      const [, reply] = vi.mocked(connector.replyMessage).mock.calls[0];
+      expect(String(reply)).toContain("Usage:");
+    });
+
+    it("/model でセッションがない場合もメッセージを返して true を返す", async () => {
+      vi.mocked(getSessionBySessionKey).mockReturnValue(undefined);
+
+      const handled = await manager.handleCommand({ ...baseMsg, text: "/model gpt-4" } as never, makeConnector());
+
+      expect(handled).toBe(true);
+    });
+
+    it("/doctor でエンジン・コネクター情報を返して true を返す", async () => {
+      const connector = makeConnector();
+
+      const handled = await manager.handleCommand({ ...baseMsg, text: "/doctor" } as never, connector);
+
+      expect(handled).toBe(true);
+      const [, reply] = vi.mocked(connector.replyMessage).mock.calls[0];
+      expect(String(reply)).toContain("claude");
+    });
+
     it("/cron は handleCronCommand に委譲する", async () => {
       vi.mocked(handleCronCommand).mockResolvedValue(true);
       const connector = makeConnector();
