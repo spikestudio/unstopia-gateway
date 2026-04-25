@@ -1,7 +1,4 @@
-import { EventEmitter } from "node:events";
-import type { IncomingMessage as HttpRequest, ServerResponse } from "node:http";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { ApiContext } from "../types.js";
 
 vi.mock("node:fs", () => ({
   default: {
@@ -35,39 +32,7 @@ vi.mock("../../shared/paths.js", () => ({
 
 import fs from "node:fs";
 import { handleOrgRequest } from "../api/org.js";
-
-function makeReq(body = ""): HttpRequest {
-  const emitter = new EventEmitter() as HttpRequest;
-  setImmediate(() => {
-    emitter.emit("data", Buffer.from(body));
-    emitter.emit("end");
-  });
-  return emitter;
-}
-
-function makeRes(): { res: ServerResponse; written: () => { status: number; body: unknown } } {
-  let status = 200;
-  let rawBody = "";
-  const res = {
-    writeHead: vi.fn((s: number) => { status = s; }),
-    end: vi.fn((b: string) => { rawBody = b; }),
-  } as unknown as ServerResponse;
-  return { res, written: () => ({ status, body: JSON.parse(rawBody || "null") }) };
-}
-
-function makeContext(): ApiContext {
-  return {
-    config: {} as never,
-    sessionManager: {
-      route: vi.fn(),
-      getQueue: vi.fn().mockReturnValue({ enqueue: vi.fn() }),
-    } as never,
-    startTime: Date.now(),
-    getConfig: vi.fn().mockReturnValue({ engines: { default: "claude" } }),
-    emit: vi.fn(),
-    connectors: new Map(),
-  };
-}
+import { makeContext, makeReq, makeRes } from "./http-test-helpers.js";
 
 describe("handleOrgRequest", () => {
   beforeEach(() => { vi.clearAllMocks(); });

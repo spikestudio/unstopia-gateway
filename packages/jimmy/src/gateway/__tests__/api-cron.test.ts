@@ -1,7 +1,4 @@
-import { EventEmitter } from "node:events";
-import type { IncomingMessage as HttpRequest, ServerResponse } from "node:http";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { ApiContext } from "../types.js";
 
 vi.mock("../../cron/jobs.js", () => ({
   loadJobs: vi.fn(),
@@ -37,46 +34,12 @@ import { loadJobs, saveJobs } from "../../cron/jobs.js";
 import { runCronJob } from "../../cron/runner.js";
 import { reloadScheduler } from "../../cron/scheduler.js";
 import { handleCronRequest } from "../api/cron.js";
-
-function makeReq(body = ""): HttpRequest {
-  const emitter = new EventEmitter() as HttpRequest;
-  emitter.method = "GET";
-  // Emit body asynchronously so readBody can collect chunks
-  setImmediate(() => {
-    emitter.emit("data", Buffer.from(body));
-    emitter.emit("end");
-  });
-  return emitter;
-}
-
-function makeRes(): { res: ServerResponse; written: () => { status: number; body: unknown } } {
-  let status = 200;
-  let rawBody = "";
-  const res = {
-    writeHead: vi.fn((s: number) => { status = s; }),
-    end: vi.fn((b: string) => { rawBody = b; }),
-  } as unknown as ServerResponse;
-  return {
-    res,
-    written: () => ({ status, body: JSON.parse(rawBody || "null") }),
-  };
-}
+import { makeContext, makeReq, makeRes } from "./http-test-helpers.js";
 
 const sampleJob = {
   id: "job-1", name: "Test Job", enabled: true,
   schedule: "0 * * * *", prompt: "Do work",
 };
-
-function makeContext(): ApiContext {
-  return {
-    config: {} as never,
-    sessionManager: {} as never,
-    startTime: Date.now(),
-    getConfig: vi.fn().mockReturnValue({}),
-    emit: vi.fn(),
-    connectors: new Map(),
-  };
-}
 
 describe("handleCronRequest", () => {
   beforeEach(() => { vi.clearAllMocks(); });
@@ -137,8 +100,24 @@ describe("handleCronRequest", () => {
 
       expect(handled).toBe(true);
       expect(written().status).toBe(201);
+      const created = written().body as { name: string; schedule: string; enabled: boolean };
+      expect(created.name).toBe("New Job");
+      expect(created.schedule).toBe("0 0 * * *");
+      expect(created.enabled).toBe(true);
       expect(vi.mocked(saveJobs)).toHaveBeenCalledOnce();
       expect(vi.mocked(reloadScheduler)).toHaveBeenCalledOnce();
+    });
+
+    it("name 省略時は 'untitled' がデフォルト値になる", async () => {
+      vi.mocked(loadJobs).mockReturnValue([]);
+      const req = makeReq(JSON.stringify({ prompt: "hi" }));
+      const { res, written } = makeRes();
+
+      await handleCronRequest(req, res, makeContext(), "POST", "/api/cron");
+
+      const created = written().body as { name: string; id: string };
+      expect(created.name).toBe("untitled");
+      expect(created.id).toBeTruthy();
     });
   });
 
@@ -153,6 +132,7 @@ describe("handleCronRequest", () => {
       expect(handled).toBe(true);
       expect((written().body as { name: string }).name).toBe("Updated");
       expect(vi.mocked(saveJobs)).toHaveBeenCalledOnce();
+      expect(vi.mocked(reloadScheduler)).toHaveBeenCalledOnce();
     });
 
     it("ジョブが存在しない場合は 404 を返す", async () => {
