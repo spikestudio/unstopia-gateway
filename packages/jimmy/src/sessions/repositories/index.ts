@@ -12,3 +12,8 @@ export { SqliteSessionRepository } from "./SqliteSessionRepository.js";
 export { SqliteMessageRepository } from "./SqliteMessageRepository.js";
 export { SqliteQueueRepository } from "./SqliteQueueRepository.js";
 export { SqliteFileRepository } from "./SqliteFileRepository.js";
+
+export { InMemorySessionRepository } from "./InMemorySessionRepository.js";
+export { InMemoryMessageRepository } from "./InMemoryMessageRepository.js";
+export { InMemoryQueueRepository } from "./InMemoryQueueRepository.js";
+export { InMemoryFileRepository } from "./InMemoryFileRepository.js";

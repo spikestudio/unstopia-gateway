@@ -1,0 +1,98 @@
+import { beforeEach, describe, expect, it } from "vitest";
+import { InMemorySessionRepository } from "../InMemorySessionRepository.js";
+
+describe("AC-6 InMemorySessionRepository", () => {
+  let repo: InMemorySessionRepository;
+
+  beforeEach(() => {
+    repo = new InMemorySessionRepository();
+  });
+
+  it("AC-6: createSession でセッションを生成できる", () => {
+    const session = repo.createSession({
+      engine: "claude",
+      source: "web",
+      sourceRef: "web:123",
+    });
+
+    expect(session.id).toBeDefined();
+    expect(session.engine).toBe("claude");
+    expect(session.source).toBe("web");
+    expect(session.status).toBe("idle");
+    expect(session.totalCost).toBe(0);
+    expect(session.totalTurns).toBe(0);
+  });
+
+  it("AC-6: getSession で作成済みセッションを取得できる", () => {
+    const created = repo.createSession({
+      engine: "claude",
+      source: "web",
+      sourceRef: "web:456",
+    });
+
+    const found = repo.getSession(created.id);
+    expect(found).toBeDefined();
+    expect(found?.id).toBe(created.id);
+  });
+
+  it("AC-6: updateSession でフィールドを更新できる", () => {
+    const session = repo.createSession({
+      engine: "claude",
+      source: "web",
+      sourceRef: "web:789",
+    });
+
+    const updated = repo.updateSession(session.id, { status: "running", title: "新しいタイトル" });
+    expect(updated?.status).toBe("running");
+    expect(updated?.title).toBe("新しいタイトル");
+  });
+
+  it("AC-6: deleteSession でセッションを削除できる", () => {
+    const session = repo.createSession({
+      engine: "claude",
+      source: "web",
+      sourceRef: "web:999",
+    });
+
+    const deleted = repo.deleteSession(session.id);
+    expect(deleted).toBe(true);
+    expect(repo.getSession(session.id)).toBeUndefined();
+  });
+
+  it("AC-6: listSessions でフィルタ適用済み一覧を取得できる", () => {
+    repo.createSession({ engine: "claude", source: "web", sourceRef: "web:1" });
+    const s2 = repo.createSession({ engine: "codex", source: "slack", sourceRef: "slack:1" });
+    repo.updateSession(s2.id, { status: "running" });
+
+    const running = repo.listSessions({ status: "running" });
+    expect(running).toHaveLength(1);
+    expect(running[0].id).toBe(s2.id);
+  });
+
+  it("AC-6: accumulateSessionCost でコストと回数を加算できる", () => {
+    const session = repo.createSession({
+      engine: "claude",
+      source: "web",
+      sourceRef: "web:cost",
+    });
+
+    repo.accumulateSessionCost(session.id, 0.5, 3);
+    repo.accumulateSessionCost(session.id, 0.3, 2);
+
+    const updated = repo.getSession(session.id);
+    expect(updated?.totalCost).toBeCloseTo(0.8);
+    expect(updated?.totalTurns).toBe(5);
+  });
+
+  it("AC-6: recoverStaleSessions で running セッションを interrupted に変更できる", () => {
+    const s1 = repo.createSession({ engine: "claude", source: "web", sourceRef: "web:stale1" });
+    const s2 = repo.createSession({ engine: "claude", source: "web", sourceRef: "web:stale2" });
+    repo.updateSession(s1.id, { status: "running" });
+    repo.updateSession(s2.id, { status: "running" });
+
+    const count = repo.recoverStaleSessions();
+    expect(count).toBe(2);
+    expect(repo.getSession(s1.id)?.status).toBe("interrupted");
+    expect(repo.getSession(s2.id)?.status).toBe("interrupted");
+  });
+});
