@@ -24,12 +24,13 @@ import {
 } from "../sessions/registry.js";
 import { loadConfig } from "../shared/config.js";
 import { configureLogger, logger } from "../shared/logger.js";
-import type {
-  Connector,
-  JinnConfig,
-  SlackConnectorConfig,
-  TelegramConnectorConfig,
-  WhatsAppConnectorConfig,
+import {
+  isInterruptibleEngine,
+  type Connector,
+  type JinnConfig,
+  type SlackConnectorConfig,
+  type TelegramConnectorConfig,
+  type WhatsAppConnectorConfig,
 } from "../shared/types.js";
 import { initStt } from "../stt/stt.js";
 import { type ApiContext, handleApiRequest, resumePendingWebQueueItems } from "./api.js";
@@ -716,7 +717,7 @@ export async function startGateway(config: JinnConfig): Promise<GatewayCleanup> 
 
     // Terminate live engine subprocesses after marking sessions.
     for (const engine of engines.values()) {
-      if ("killAll" in engine && typeof engine.killAll === "function") engine.killAll();
+      if (isInterruptibleEngine(engine)) engine.killAll();
     }
 
     // Stop cron scheduler
