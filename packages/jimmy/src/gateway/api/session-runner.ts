@@ -19,9 +19,15 @@ import { resolveEffort } from "../../shared/effort.js";
 import { logger } from "../../shared/logger.js";
 import { JINN_HOME } from "../../shared/paths.js";
 import { computeNextRetryDelayMs, computeRateLimitDeadlineMs, detectRateLimit } from "../../shared/rateLimit.js";
+import type { Result } from "../../shared/result.js";
 import type { Engine, JinnConfig, JsonObject, Session } from "../../shared/types.js";
 import { recordClaudeRateLimit } from "../../shared/usageAwareness.js";
 import type { ApiContext } from "../types.js";
+
+/** Result<Session | null, E> から Session | null を取り出す。Err の場合は null を返す */
+function unwrapSession<E>(result: Result<Session | null, E>): Session | null {
+  return result.ok ? result.value : null;
+}
 
 // ── Transcript helpers ────────────────────────────────────────────────────────
 
@@ -181,14 +187,14 @@ export function maybeRevertEngineOverride(session: Session): Session {
     nextMeta.claudeSyncSince = syncSince;
   }
   delete (nextMeta as Record<string, unknown>).engineOverride;
-  return (
-    updateSession(session.id, {
-      engine: originalEngine,
-      engineSessionId: restoredSessionId,
-      transportMeta: nextMeta as JsonObject,
-      lastError: null,
-    }) ?? session
-  );
+  const updateResult = updateSession(session.id, {
+    engine: originalEngine,
+    engineSessionId: restoredSessionId,
+    transportMeta: nextMeta as JsonObject,
+    lastError: null,
+  });
+  if (updateResult.ok && updateResult.value) return updateResult.value;
+  return session;
 }
 
 export function dispatchWebSessionRun(
@@ -244,7 +250,7 @@ export async function runWebSession(
   context: ApiContext,
   attachments?: string[],
 ): Promise<void> {
-  const currentSession = getSession(session.id);
+  const currentSession = unwrapSession(getSession(session.id));
   if (!currentSession) {
     logger.info(`Skipping deleted web session ${session.id} before run start`);
     return;
@@ -254,7 +260,7 @@ export async function runWebSession(
   );
 
   // Ensure status is "running" (may already be set by the POST handler)
-  const currentStatus = getSession(currentSession.id);
+  const currentStatus = unwrapSession(getSession(currentSession.id));
   if (currentStatus && currentStatus.status !== "running") {
     updateSession(currentSession.id, {
       status: "running",
@@ -355,7 +361,7 @@ export async function runWebSession(
         clearInterval(runHeartbeat);
       });
 
-    if (!getSession(currentSession.id)) {
+    if (!unwrapSession(getSession(currentSession.id))) {
       logger.info(`Skipping completion for deleted web session ${currentSession.id}`);
       return;
     }
@@ -460,19 +466,20 @@ export async function runWebSession(
           if (fallbackResult.sessionId) {
             nextEngineSessions.codex = fallbackResult.sessionId;
           }
-          const metaAfter = { ...(getSession(currentSession.id)?.transportMeta || nextMeta) } as Record<
+          const metaAfter = { ...(unwrapSession(getSession(currentSession.id))?.transportMeta || nextMeta) } as Record<
             string,
             unknown
           >;
           metaAfter.engineSessions = nextEngineSessions;
           updateSession(currentSession.id, { transportMeta: metaAfter as JsonObject });
 
-          const completedFallback = updateSession(currentSession.id, {
+          const completedFallbackResult = updateSession(currentSession.id, {
             engineSessionId: fallbackResult.sessionId,
             status: fallbackResult.error ? "error" : "idle",
             lastActivity: new Date().toISOString(),
             lastError: fallbackResult.error ?? null,
           });
+          const completedFallback = completedFallbackResult.ok ? completedFallbackResult.value : null;
           if (completedFallback) {
             notifyParentSession(
               completedFallback,
@@ -529,7 +536,7 @@ export async function runWebSession(
       insertMessage(currentSession.id, "notification", notificationText);
       context.emit("session:notification", { sessionId: currentSession.id, message: notificationText });
 
-      const waitingSession = updateSession(currentSession.id, {
+      const waitingSessionResult = updateSession(currentSession.id, {
         ...(result.sessionId?.trim() ? { engineSessionId: result.sessionId } : {}),
         status: "waiting",
         lastActivity: new Date().toISOString(),
@@ -537,9 +544,13 @@ export async function runWebSession(
           ? `Claude usage limit — resumes ${resumeAt.toISOString()}`
           : "Claude usage limit — waiting for reset",
       });
+      const waitingSession = (waitingSessionResult.ok ? waitingSessionResult.value : null) ?? {
+        ...currentSession,
+        status: "waiting" as const,
+      };
 
       notifyRateLimited(
-        (waitingSession ?? { ...currentSession, status: "waiting" }) as Session,
+        waitingSession as Session,
         resumeAt ? resumeAt.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }) : undefined,
       );
 
@@ -563,7 +574,7 @@ export async function runWebSession(
           await new Promise<void>((r) => setTimeout(r, nextDelayMs));
           attempt++;
 
-          const current = getSession(currentSession.id);
+          const current = unwrapSession(getSession(currentSession.id));
           if (!current || current.status === "error") {
             logger.info(`Web session ${currentSession.id} stopped while waiting for usage reset`);
             return;
@@ -614,12 +625,13 @@ export async function runWebSession(
             insertMessage(currentSession.id, "assistant", retryResult.result);
           }
 
-          const completedAfterRetry = updateSession(currentSession.id, {
+          const completedAfterRetryResult = updateSession(currentSession.id, {
             ...(retryResult.sessionId?.trim() ? { engineSessionId: retryResult.sessionId } : {}),
             status: retryResult.error ? "error" : "idle",
             lastActivity: new Date().toISOString(),
             lastError: retryResult.error ?? null,
           });
+          const completedAfterRetry = completedAfterRetryResult.ok ? completedAfterRetryResult.value : null;
 
           if (completedAfterRetry) {
             notifyRateLimitResumed(completedAfterRetry);
@@ -656,11 +668,12 @@ export async function runWebSession(
         notifyDiscordChannel(
           `❌ Claude usage limit did not clear in time. Session ${currentSession.id}${currentSession.employee ? ` (${currentSession.employee})` : ""} has been stopped.`,
         );
-        const erroredSession = updateSession(currentSession.id, {
+        const erroredSessionResult = updateSession(currentSession.id, {
           status: "error",
           lastActivity: new Date().toISOString(),
           lastError: "Claude usage limit did not clear in time",
         });
+        const erroredSession = erroredSessionResult.ok ? erroredSessionResult.value : null;
         if (erroredSession) {
           notifyParentSession(
             erroredSession,
@@ -685,17 +698,17 @@ export async function runWebSession(
       insertMessage(currentSession.id, "assistant", result.result);
     }
 
-    const completedSession = updateSession(currentSession.id, {
+    const completedSessionResult = updateSession(currentSession.id, {
       ...(result.sessionId?.trim() ? { engineSessionId: result.sessionId } : {}),
       status: result.error ? "error" : "idle",
       lastActivity: new Date().toISOString(),
       lastError: result.error ?? null,
     });
+    const completedSession = completedSessionResult.ok ? completedSessionResult.value : null;
     if (syncRequested && !rateLimit.limited && !wasInterrupted) {
-      const meta = (getSession(currentSession.id)?.transportMeta || currentSession.transportMeta || {}) as Record<
-        string,
-        unknown
-      >;
+      const meta = (unwrapSession(getSession(currentSession.id))?.transportMeta ||
+        currentSession.transportMeta ||
+        {}) as Record<string, unknown>;
       if (meta && typeof meta === "object" && !Array.isArray(meta)) {
         const nextMeta = { ...meta } as Record<string, unknown>;
         delete nextMeta.claudeSyncSince;
@@ -727,15 +740,16 @@ export async function runWebSession(
     );
   } catch (err) {
     const errMsg = err instanceof Error ? err.message : String(err);
-    if (!getSession(currentSession.id)) {
+    if (!unwrapSession(getSession(currentSession.id))) {
       logger.info(`Skipping error handling for deleted web session ${currentSession.id}: ${errMsg}`);
       return;
     }
-    const erroredSession = updateSession(currentSession.id, {
+    const erroredSessionResult2 = updateSession(currentSession.id, {
       status: "error",
       lastActivity: new Date().toISOString(),
       lastError: errMsg,
     });
+    const erroredSession = erroredSessionResult2.ok ? erroredSessionResult2.value : null;
     if (erroredSession) {
       notifyParentSession(erroredSession, { error: errMsg }, { alwaysNotify: employee?.alwaysNotify });
     }
@@ -756,7 +770,7 @@ export function resumePendingWebQueueItemsImpl(context: ApiContext): void {
 
   let resumed = 0;
   for (const item of pending) {
-    let session = getSession(item.sessionId);
+    let session = unwrapSession(getSession(item.sessionId));
     if (!session) {
       cancelQueueItem(item.id);
       continue;

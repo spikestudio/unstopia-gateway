@@ -1,5 +1,8 @@
 import { randomUUID } from "node:crypto";
 import type Database from "better-sqlite3";
+import { type RepositoryError, repositoryError } from "../../shared/errors.js";
+import type { Result } from "../../shared/result.js";
+import { err, ok } from "../../shared/result.js";
 import type { JsonObject, ReplyContext, Session } from "../../shared/types.js";
 import type {
   CreateSessionOpts,
@@ -125,19 +128,27 @@ export class SqliteSessionRepository implements ISessionRepository {
     };
   }
 
-  getSession(id: string): Session | undefined {
-    const row = this.db.prepare("SELECT * FROM sessions WHERE id = ?").get(id) as Record<string, unknown> | undefined;
-    return row ? rowToSession(row) : undefined;
+  getSession(id: string): Result<Session | null, RepositoryError> {
+    try {
+      const row = this.db.prepare("SELECT * FROM sessions WHERE id = ?").get(id) as Record<string, unknown> | undefined;
+      return ok(row ? rowToSession(row) : null);
+    } catch (e) {
+      return err(repositoryError("UNKNOWN", "getSession failed", e));
+    }
   }
 
-  getSessionBySessionKey(sessionKey: string): Session | undefined {
-    const row = this.db
-      .prepare("SELECT * FROM sessions WHERE session_key = ? ORDER BY last_activity DESC LIMIT 1")
-      .get(sessionKey) as Record<string, unknown> | undefined;
-    return row ? rowToSession(row) : undefined;
+  getSessionBySessionKey(sessionKey: string): Result<Session | null, RepositoryError> {
+    try {
+      const row = this.db
+        .prepare("SELECT * FROM sessions WHERE session_key = ? ORDER BY last_activity DESC LIMIT 1")
+        .get(sessionKey) as Record<string, unknown> | undefined;
+      return ok(row ? rowToSession(row) : null);
+    } catch (e) {
+      return err(repositoryError("UNKNOWN", "getSessionBySessionKey failed", e));
+    }
   }
 
-  updateSession(id: string, updates: UpdateSessionFields): Session | undefined {
+  updateSession(id: string, updates: UpdateSessionFields): Result<Session | null, RepositoryError> {
     const sets: string[] = [];
     const values: unknown[] = [];
 
@@ -184,9 +195,13 @@ export class SqliteSessionRepository implements ISessionRepository {
 
     if (sets.length === 0) return this.getSession(id);
 
-    values.push(id);
-    this.db.prepare(`UPDATE sessions SET ${sets.join(", ")} WHERE id = ?`).run(...values);
-    return this.getSession(id);
+    try {
+      values.push(id);
+      this.db.prepare(`UPDATE sessions SET ${sets.join(", ")} WHERE id = ?`).run(...values);
+      return this.getSession(id);
+    } catch (e) {
+      return err(repositoryError("UNKNOWN", "updateSession failed", e));
+    }
   }
 
   listSessions(filter?: ListSessionsFilter): Session[] {
@@ -256,7 +271,9 @@ export class SqliteSessionRepository implements ISessionRepository {
   }
 
   duplicateSession(sourceId: string, newTitle?: string): { session: Session; messageCount: number } {
-    const source = this.getSession(sourceId);
+    const sourceResult = this.getSession(sourceId);
+    if (!sourceResult.ok) throw new Error(`Session ${sourceId} not found — ${sourceResult.error.message}`);
+    const source = sourceResult.value;
     if (!source) throw new Error(`Session ${sourceId} not found`);
     if (!source.engineSessionId) throw new Error(`Session ${sourceId} has no engine session ID — cannot duplicate`);
 
@@ -307,8 +324,49 @@ export class SqliteSessionRepository implements ISessionRepository {
     });
     txn();
 
-    const newSession = this.getSession(newId);
-    if (!newSession) throw new Error(`Failed to retrieve newly duplicated session: ${newId}`);
-    return { session: newSession, messageCount: messages.length };
+    const sessionResult = this.getSession(newId);
+    if (!sessionResult.ok)
+      throw new Error(`Failed to retrieve newly duplicated session: ${newId} — ${sessionResult.error.message}`);
+    if (!sessionResult.value) throw new Error(`Failed to retrieve newly duplicated session: ${newId}`);
+    return { session: sessionResult.value, messageCount: messages.length };
+  }
+
+  findById(id: string): Result<Session | null, RepositoryError> {
+    try {
+      const row = this.db.prepare("SELECT * FROM sessions WHERE id = ?").get(id) as Record<string, unknown> | undefined;
+      return ok(row ? rowToSession(row) : null);
+    } catch (cause) {
+      return err(repositoryError("UNKNOWN", `findById failed: ${id}`, cause));
+    }
+  }
+
+  findByKey(sessionKey: string): Result<Session | null, RepositoryError> {
+    try {
+      const row = this.db
+        .prepare("SELECT * FROM sessions WHERE session_key = ? ORDER BY last_activity DESC LIMIT 1")
+        .get(sessionKey) as Record<string, unknown> | undefined;
+      return ok(row ? rowToSession(row) : null);
+    } catch (cause) {
+      return err(repositoryError("UNKNOWN", `findByKey failed: ${sessionKey}`, cause));
+    }
+  }
+
+  save(sessionData: Omit<Session, "id" | "createdAt" | "lastActivity">): Result<Session, RepositoryError> {
+    try {
+      const session = this.createSession(sessionData as CreateSessionOpts);
+      return ok(session);
+    } catch (cause) {
+      return err(repositoryError("CONSTRAINT_VIOLATION", "save failed", cause));
+    }
+  }
+
+  update(id: string, fields: Partial<Session>): Result<Session | null, RepositoryError> {
+    try {
+      const result = this.updateSession(id, fields as UpdateSessionFields);
+      if (!result.ok) return result;
+      return ok(result.value);
+    } catch (cause) {
+      return err(repositoryError("UNKNOWN", `update failed: ${id}`, cause));
+    }
   }
 }

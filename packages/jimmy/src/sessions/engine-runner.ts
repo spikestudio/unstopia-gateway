@@ -12,6 +12,7 @@ import {
   detectRateLimit,
   isDeadSessionError,
 } from "../shared/rateLimit.js";
+import type { Result } from "../shared/result.js";
 import type {
   Connector,
   Employee,
@@ -30,6 +31,11 @@ import {
 import { notifyDiscordChannel, notifyParentSession, notifyRateLimited, notifyRateLimitResumed } from "./callbacks.js";
 import { buildContext } from "./context.js";
 import type { Repositories } from "./repositories/index.js";
+
+/** Result<Session | null, E> から Session | null を取り出す。Err の場合は null を返す */
+function unwrapSessionResult<E>(result: Result<Session | null, E>): Session | null {
+  return result.ok ? result.value : null;
+}
 
 export function mergeTransportMeta(
   existing: Session["transportMeta"],
@@ -340,7 +346,8 @@ export async function runSession(
             nextEngineSessions.codex = fallbackResult.sessionId;
           }
           const metaAfter = {
-            ...(repos?.sessions.getSessionBySessionKey(msg.sessionKey)?.transportMeta || nextMeta),
+            ...(unwrapSessionResult(repos?.sessions.getSessionBySessionKey(msg.sessionKey) ?? { ok: true, value: null })
+              ?.transportMeta || nextMeta),
           } as Record<string, unknown>;
           metaAfter.engineSessions = nextEngineSessions;
           repos?.sessions.updateSession(session.id, { transportMeta: metaAfter as JsonObject });
@@ -353,18 +360,20 @@ export async function runSession(
             await connector.removeReaction(target, "eyes").catch(() => {});
           }
 
-          const updated = repos?.sessions.updateSession(session.id, {
+          const updatedResult = repos?.sessions.updateSession(session.id, {
             engineSessionId: fallbackResult.sessionId,
             status: fallbackResult.error ? "error" : "idle",
             replyContext: msg.replyContext,
             messageId: msg.messageId ?? null,
             transportMeta: mergeTransportMeta(
-              repos?.sessions.getSessionBySessionKey(msg.sessionKey)?.transportMeta ?? session.transportMeta,
+              unwrapSessionResult(repos?.sessions.getSessionBySessionKey(msg.sessionKey) ?? { ok: true, value: null })
+                ?.transportMeta ?? session.transportMeta,
               msg.transportMeta,
             ),
             lastActivity: new Date().toISOString(),
             lastError: fallbackResult.error ?? null,
           });
+          const updated = updatedResult ? (updatedResult.ok ? updatedResult.value : null) : null;
           if (updated) {
             notifyParentSession(
               updated,
@@ -418,15 +427,16 @@ export async function runSession(
         await connector.addReaction(target, waitEmoji).catch(() => {});
       }
 
-      const waitingSession =
-        repos?.sessions.updateSession(session.id, {
-          ...(result.sessionId?.trim() ? { engineSessionId: result.sessionId } : {}),
-          status: "waiting",
-          lastActivity: new Date().toISOString(),
-          lastError: resumeAt
-            ? `Claude usage limit — resumes ${resumeAt.toISOString()}`
-            : "Claude usage limit — waiting for reset",
-        }) ?? session;
+      const waitingSessionResult = repos?.sessions.updateSession(session.id, {
+        ...(result.sessionId?.trim() ? { engineSessionId: result.sessionId } : {}),
+        status: "waiting",
+        lastActivity: new Date().toISOString(),
+        lastError: resumeAt
+          ? `Claude usage limit — resumes ${resumeAt.toISOString()}`
+          : "Claude usage limit — waiting for reset",
+      });
+      const waitingSession: Session =
+        (waitingSessionResult ? (waitingSessionResult.ok ? waitingSessionResult.value : null) : null) ?? session;
 
       notifyRateLimited(
         waitingSession,
@@ -454,7 +464,8 @@ export async function runSession(
           attempt++;
 
           // Check if session was stopped while waiting
-          const currentSession = repos?.sessions.getSessionBySessionKey(msg.sessionKey);
+          const currentSessionResult = repos?.sessions.getSessionBySessionKey(msg.sessionKey);
+          const currentSession = currentSessionResult ? unwrapSessionResult(currentSessionResult) : null;
           if (!currentSession || currentSession.status === "error") {
             logger.info(`Session ${session.id} stopped while waiting for usage reset`);
             return;
@@ -534,7 +545,7 @@ export async function runSession(
           }
 
           await connector.replyMessage(target, retryText).catch(() => {});
-          const retryUpdated = repos?.sessions.updateSession(session.id, {
+          const retryUpdatedResult = repos?.sessions.updateSession(session.id, {
             ...(retryResult.sessionId?.trim() ? { engineSessionId: retryResult.sessionId } : {}),
             status: retryResult.error ? "error" : "idle",
             replyContext: msg.replyContext,
@@ -543,6 +554,7 @@ export async function runSession(
             lastActivity: new Date().toISOString(),
             lastError: retryResult.error ?? null,
           });
+          const retryUpdated = retryUpdatedResult ? (retryUpdatedResult.ok ? retryUpdatedResult.value : null) : null;
           if (retryUpdated) {
             notifyRateLimitResumed(retryUpdated);
             notifyDiscordChannel(
@@ -603,14 +615,16 @@ export async function runSession(
     if (decorateMessages && capabilities.reactions) {
       await connector.removeReaction(target, "eyes").catch(() => {});
     }
-    const updatedSession = repos?.sessions.updateSession(session.id, {
+    const updatedSessionResult = repos?.sessions.updateSession(session.id, {
       ...(result.sessionId?.trim() ? { engineSessionId: result.sessionId } : {}),
       status: wasInterrupted ? "idle" : result.error ? "error" : "idle",
       replyContext: msg.replyContext,
       messageId: msg.messageId ?? null,
       transportMeta: (() => {
+        const keyLookup = repos?.sessions.getSessionBySessionKey(msg.sessionKey);
+        const keySession = keyLookup ? unwrapSessionResult(keyLookup) : null;
         const merged = mergeTransportMeta(
-          repos?.sessions.getSessionBySessionKey(msg.sessionKey)?.transportMeta ?? session.transportMeta,
+          keySession?.transportMeta ?? session.transportMeta,
           msg.transportMeta,
         ) as Record<string, unknown>;
         if (syncRequested && !rateLimit.limited && !wasInterrupted) {
@@ -621,6 +635,7 @@ export async function runSession(
       lastActivity: new Date().toISOString(),
       lastError: wasInterrupted ? null : (result.error ?? null),
     });
+    const updatedSession = updatedSessionResult ? (updatedSessionResult.ok ? updatedSessionResult.value : null) : null;
     if (updatedSession) {
       notifyParentSession(
         updatedSession,
@@ -643,11 +658,12 @@ export async function runSession(
     const errMsg = err instanceof Error ? err.message : String(err);
     logger.error(`Session ${session.id} error: ${errMsg}`);
 
-    const erroredSession = repos?.sessions.updateSession(session.id, {
+    const erroredSessionResult = repos?.sessions.updateSession(session.id, {
       status: "error",
       lastActivity: new Date().toISOString(),
       lastError: errMsg,
     });
+    const erroredSession = erroredSessionResult ? (erroredSessionResult.ok ? erroredSessionResult.value : null) : null;
     if (erroredSession) {
       notifyParentSession(erroredSession, { error: errMsg }, { alwaysNotify: employee?.alwaysNotify }, repos?.sessions);
     }

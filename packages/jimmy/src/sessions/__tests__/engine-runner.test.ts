@@ -70,12 +70,18 @@ vi.mock("node:fs", () => ({
 }));
 
 import { checkBudget } from "../../gateway/budgets.js";
+import type { Result } from "../../shared/result.js";
 import { runSession } from "../engine-runner.js";
 import { InMemoryFileRepository } from "../repositories/InMemoryFileRepository.js";
 import { InMemoryMessageRepository } from "../repositories/InMemoryMessageRepository.js";
 import { InMemoryQueueRepository } from "../repositories/InMemoryQueueRepository.js";
 import { InMemorySessionRepository } from "../repositories/InMemorySessionRepository.js";
 import type { Repositories } from "../repositories/index.js";
+
+/** テスト用ヘルパー: Result から値を取り出す。Err/null の場合は undefined を返す */
+function unwrap<T, E>(result: Result<T | null, E>): T | undefined {
+  return result.ok ? (result.value ?? undefined) : undefined;
+}
 
 function makeConfig(): JinnConfig {
   return {
@@ -271,7 +277,7 @@ describe("runSession", () => {
         repos,
       );
 
-      const updated = repos.sessions.getSession(sessionId);
+      const updated = unwrap(repos.sessions.getSession(sessionId));
       expect(updated?.status).toBe("error");
     });
 
@@ -406,7 +412,7 @@ describe("runSession", () => {
         repos,
       );
 
-      const updated = repos.sessions.getSession(sessionId);
+      const updated = unwrap(repos.sessions.getSession(sessionId));
       expect(updated?.status).toBe("idle");
     });
 
@@ -435,7 +441,7 @@ describe("runSession", () => {
         repos,
       );
 
-      const updated = repos.sessions.getSession(sessionId);
+      const updated = unwrap(repos.sessions.getSession(sessionId));
       expect(updated?.status).toBe("error");
     });
 
@@ -573,7 +579,7 @@ describe("runSession", () => {
       );
 
       // claudeSyncSince が削除されている
-      const updated = repos.sessions.getSession(sessionId);
+      const updated = unwrap(repos.sessions.getSession(sessionId));
       expect((updated?.transportMeta as Record<string, unknown>)?.claudeSyncSince).toBeUndefined();
     });
   });
@@ -826,7 +832,7 @@ describe("runSession", () => {
       );
 
       // fallback engine の sessionId が保存されている
-      const updated = repos.sessions.getSession(sessionId);
+      const updated = unwrap(repos.sessions.getSession(sessionId));
       const meta = updated?.transportMeta as Record<string, unknown> | null;
       const engineSessions = meta?.engineSessions as Record<string, unknown> | undefined;
       expect(engineSessions?.codex).toBe("codex-session-1");
@@ -914,7 +920,7 @@ describe("runSession", () => {
       );
 
       // claude の engine session ID が保存されている
-      const updated = repos.sessions.getSession(sessionId);
+      const updated = unwrap(repos.sessions.getSession(sessionId));
       const meta = updated?.transportMeta as Record<string, unknown> | null;
       const engineSessions = meta?.engineSessions as Record<string, unknown> | undefined;
       expect(engineSessions?.claude).toBe("existing-claude-session");
@@ -1291,7 +1297,7 @@ describe("runSession", () => {
 
       // repos があるので session が更新され notifyParentSession が呼ばれる
       expect(vi.mocked(notifyParentSession)).toHaveBeenCalled();
-      const updated = repos.sessions.getSession(sessionId);
+      const updated = unwrap(repos.sessions.getSession(sessionId));
       expect(updated?.status).toBe("error");
     });
   });
@@ -1348,7 +1354,7 @@ describe("runSession", () => {
         repos,
       );
 
-      const updated = repos.sessions.getSession(sessionId);
+      const updated = unwrap(repos.sessions.getSession(sessionId));
       expect(updated?.engineSessionId).toBe("new-engine-session");
     });
 

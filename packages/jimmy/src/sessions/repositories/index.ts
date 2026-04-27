@@ -9,6 +9,7 @@ export type {
   CreateSessionOpts,
   ISessionRepository,
   ListSessionsFilter,
+  RepositoryError,
   UpdateSessionFields,
 } from "./ISessionRepository.js";
 export type { Repositories } from "./repositories.js";

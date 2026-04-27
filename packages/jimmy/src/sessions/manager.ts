@@ -44,14 +44,14 @@ function maybeRevertEngineOverride(session: Session, sessionRepo: ISessionReposi
     nextMeta.claudeSyncSince = syncSince;
   }
   delete (nextMeta as Record<string, unknown>).engineOverride;
-  return (
-    sessionRepo.updateSession(session.id, {
-      engine: originalEngine,
-      engineSessionId: restoredSessionId,
-      transportMeta: nextMeta as import("../shared/types.js").JsonObject,
-      lastError: null,
-    }) ?? session
-  );
+  const updateResult = sessionRepo.updateSession(session.id, {
+    engine: originalEngine,
+    engineSessionId: restoredSessionId,
+    transportMeta: nextMeta as import("../shared/types.js").JsonObject,
+    lastError: null,
+  });
+  if (updateResult.ok && updateResult.value) return updateResult.value;
+  return session;
 }
 
 export class SessionManager {
@@ -86,8 +86,10 @@ export class SessionManager {
   ): Promise<{ sessionId: string } | undefined> {
     if (await this.handleCommand(msg, connector)) return;
 
-    let session = this.repos.sessions.getSessionBySessionKey(msg.sessionKey);
-    if (!session) {
+    const sessionLookup = this.repos.sessions.getSessionBySessionKey(msg.sessionKey);
+    const existingSession = sessionLookup.ok ? sessionLookup.value : null;
+    let session: Session;
+    if (!existingSession) {
       session = this.repos.sessions.createSession({
         engine: opts.engine ?? opts.employee?.engine ?? this.config.engines.default,
         source: msg.source,
@@ -108,14 +110,14 @@ export class SessionManager {
           (opts.employee ? ` (employee: ${opts.employee.name})` : ""),
       );
     } else {
-      const mergedMeta = mergeTransportMeta(session.transportMeta, msg.transportMeta);
-      session =
-        this.repos.sessions.updateSession(session.id, {
-          replyContext: msg.replyContext,
-          messageId: msg.messageId ?? null,
-          transportMeta: mergedMeta,
-          ...(opts.model ? { model: opts.model } : {}),
-        }) ?? session;
+      const mergedMeta = mergeTransportMeta(existingSession.transportMeta, msg.transportMeta);
+      const updateResult = this.repos.sessions.updateSession(existingSession.id, {
+        replyContext: msg.replyContext,
+        messageId: msg.messageId ?? null,
+        transportMeta: mergedMeta,
+        ...(opts.model ? { model: opts.model } : {}),
+      });
+      session = (updateResult.ok && updateResult.value) ? updateResult.value : existingSession;
     }
 
     session = maybeRevertEngineOverride(session, this.repos.sessions);
@@ -183,7 +185,8 @@ export class SessionManager {
     }
 
     if (text === "/status" || text.startsWith("/status ")) {
-      const session = this.repos.sessions.getSessionBySessionKey(msg.sessionKey);
+      const statusLookup = this.repos.sessions.getSessionBySessionKey(msg.sessionKey);
+      const session = statusLookup.ok ? statusLookup.value : null;
       if (!session) {
         await connector.replyMessage(target, "No active session for this conversation.");
         return true;
@@ -216,13 +219,14 @@ export class SessionManager {
         return true;
       }
 
-      const session = this.repos.sessions.getSessionBySessionKey(msg.sessionKey);
-      if (!session) {
+      const modelLookup = this.repos.sessions.getSessionBySessionKey(msg.sessionKey);
+      const modelSession = modelLookup.ok ? modelLookup.value : null;
+      if (!modelSession) {
         await connector.replyMessage(target, "No active session for this conversation.");
         return true;
       }
 
-      this.repos.sessions.updateSession(session.id, {
+      this.repos.sessions.updateSession(modelSession.id, {
         model: nextModel,
         lastActivity: new Date().toISOString(),
       });
@@ -259,7 +263,8 @@ export class SessionManager {
   }
 
   resetSession(sessionKey: string): void {
-    const session = this.repos.sessions.getSessionBySessionKey(sessionKey);
+    const lookup = this.repos.sessions.getSessionBySessionKey(sessionKey);
+    const session = lookup.ok ? lookup.value : null;
     if (session) {
       this.repos.sessions.deleteSession(session.id);
       logger.info(`Deleted session ${session.id}`);

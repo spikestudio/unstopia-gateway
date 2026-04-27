@@ -33,6 +33,7 @@ vi.mock("../../shared/paths.js", () => ({
   INSTANCES_REGISTRY: path.join(os.tmpdir(), ".jinn-test", "instances.json"),
 }));
 
+import type { Result } from "../../shared/result.js";
 import {
   accumulateSessionCost,
   cancelAllPendingQueueItems,
@@ -63,6 +64,11 @@ import {
   updateSession,
 } from "../registry.js";
 
+/** テスト用ヘルパー: Result から値を取り出す。Err/null の場合は undefined を返す */
+function unwrap<T, E>(result: Result<T | null, E>): T | undefined {
+  return result.ok ? (result.value ?? undefined) : undefined;
+}
+
 describe("AC-E003-03: registry — initDb", () => {
   it("initializes the database and returns a Database instance", () => {
     const db = initDb();
@@ -88,14 +94,14 @@ describe("AC-E003-03: registry — createSession and getSession", () => {
     expect(session.totalCost).toBe(0);
     expect(session.totalTurns).toBe(0);
 
-    const fetched = getSession(session.id);
+    const fetched = unwrap(getSession(session.id));
     expect(fetched).toBeDefined();
     expect(fetched?.id).toBe(session.id);
     expect(fetched?.engine).toBe("claude");
   });
 
   it("returns undefined for a non-existent session ID", () => {
-    expect(getSession("nonexistent-id")).toBeUndefined();
+    expect(unwrap(getSession("nonexistent-id"))).toBeUndefined();
   });
 
   it("uses title when provided", () => {
@@ -126,7 +132,7 @@ describe("AC-E003-03: registry — createSession and getSession", () => {
       employee: "alice",
       model: "opus",
     });
-    const fetched = getSession(session.id);
+    const fetched = unwrap(getSession(session.id));
     expect(fetched?.employee).toBe("alice");
     expect(fetched?.model).toBe("opus");
   });
@@ -143,7 +149,7 @@ describe("AC-E003-03: registry — createSession and getSession", () => {
       sourceRef: "web:child",
       parentSessionId: parent.id,
     });
-    const fetched = getSession(child.id);
+    const fetched = unwrap(getSession(child.id));
     expect(fetched?.parentSessionId).toBe(parent.id);
   });
 
@@ -155,7 +161,7 @@ describe("AC-E003-03: registry — createSession and getSession", () => {
       sourceRef: "slack:C123",
       replyContext,
     });
-    const fetched = getSession(session.id);
+    const fetched = unwrap(getSession(session.id));
     expect(fetched?.replyContext).toEqual(replyContext);
   });
 });
@@ -167,12 +173,12 @@ describe("AC-E003-03: registry — getSessionBySessionKey and getSessionBySource
       source: "slack",
       sourceRef: "slack:C-lookup",
     });
-    const found = getSessionBySessionKey("slack:C-lookup");
+    const found = unwrap(getSessionBySessionKey("slack:C-lookup"));
     expect(found?.id).toBe(session.id);
   });
 
   it("returns undefined when session key not found", () => {
-    expect(getSessionBySessionKey("unknown-key")).toBeUndefined();
+    expect(unwrap(getSessionBySessionKey("unknown-key"))).toBeUndefined();
   });
 
   it("getSessionBySourceRef delegates to getSessionBySessionKey", () => {
@@ -181,7 +187,7 @@ describe("AC-E003-03: registry — getSessionBySessionKey and getSessionBySource
       source: "slack",
       sourceRef: "slack:C-sourceref",
     });
-    const found = getSessionBySourceRef("slack:C-sourceref");
+    const found = unwrap(getSessionBySourceRef("slack:C-sourceref"));
     expect(found?.id).toBe(session.id);
   });
 });
@@ -193,7 +199,7 @@ describe("AC-E003-03: registry — updateSession", () => {
       source: "web",
       sourceRef: "web:update1",
     });
-    const updated = updateSession(session.id, { status: "running" });
+    const updated = unwrap(updateSession(session.id, { status: "running" }));
     expect(updated?.status).toBe("running");
   });
 
@@ -204,7 +210,7 @@ describe("AC-E003-03: registry — updateSession", () => {
       sourceRef: "web:update2",
     });
     updateSession(session.id, { engineSessionId: "claude-session-abc" });
-    const fetched = getSession(session.id);
+    const fetched = unwrap(getSession(session.id));
     expect(fetched?.engineSessionId).toBe("claude-session-abc");
   });
 
@@ -215,7 +221,7 @@ describe("AC-E003-03: registry — updateSession", () => {
       sourceRef: "web:update3",
     });
     updateSession(session.id, { status: "error", lastError: "Something went wrong" });
-    const fetched = getSession(session.id);
+    const fetched = unwrap(getSession(session.id));
     expect(fetched?.lastError).toBe("Something went wrong");
   });
 
@@ -225,7 +231,7 @@ describe("AC-E003-03: registry — updateSession", () => {
       source: "web",
       sourceRef: "web:update4",
     });
-    const result = updateSession(session.id, {});
+    const result = unwrap(updateSession(session.id, {}));
     expect(result?.id).toBe(session.id);
     expect(result?.status).toBe("idle");
   });
@@ -237,7 +243,7 @@ describe("AC-E003-03: registry — updateSession", () => {
       sourceRef: "web:update5",
     });
     updateSession(session.id, { title: "New Title" });
-    const fetched = getSession(session.id);
+    const fetched = unwrap(getSession(session.id));
     expect(fetched?.title).toBe("New Title");
   });
 
@@ -249,14 +255,14 @@ describe("AC-E003-03: registry — updateSession", () => {
     });
     updateSession(session.id, { engineSessionId: "some-session" });
     updateSession(session.id, { engineSessionId: null });
-    const fetched = getSession(session.id);
+    const fetched = unwrap(getSession(session.id));
     expect(fetched?.engineSessionId).toBeNull();
   });
 
   it("updates model", () => {
     const session = createSession({ engine: "claude", source: "web", sourceRef: "web:update7" });
     updateSession(session.id, { model: "haiku" });
-    const fetched = getSession(session.id);
+    const fetched = unwrap(getSession(session.id));
     expect(fetched?.model).toBe("haiku");
   });
 
@@ -268,21 +274,21 @@ describe("AC-E003-03: registry — updateSession", () => {
       replyContext: { channel: "C1" },
     });
     updateSession(session.id, { replyContext: null });
-    const fetched = getSession(session.id);
+    const fetched = unwrap(getSession(session.id));
     expect(fetched?.replyContext).toBeNull();
   });
 
   it("updates messageId", () => {
     const session = createSession({ engine: "claude", source: "web", sourceRef: "web:update9" });
     updateSession(session.id, { messageId: "msg-001" });
-    const fetched = getSession(session.id);
+    const fetched = unwrap(getSession(session.id));
     expect(fetched?.messageId).toBe("msg-001");
   });
 
   it("updates transportMeta", () => {
     const session = createSession({ engine: "claude", source: "web", sourceRef: "web:update10" });
     updateSession(session.id, { transportMeta: { key: "value" } });
-    const fetched = getSession(session.id);
+    const fetched = unwrap(getSession(session.id));
     expect(fetched?.transportMeta).toEqual({ key: "value" });
   });
 });
@@ -326,7 +332,7 @@ describe("AC-E003-03: registry — recoverStaleSessions and getInterruptedSessio
     const count = recoverStaleSessions();
     expect(count).toBeGreaterThanOrEqual(1);
 
-    const fetched = getSession(session.id);
+    const fetched = unwrap(getSession(session.id));
     expect(fetched?.status).toBe("interrupted");
   });
 
@@ -379,7 +385,7 @@ describe("AC-E003-03: registry — deleteSession and deleteSessions", () => {
     const session = createSession({ engine: "claude", source: "web", sourceRef: "web:del1" });
     const result = deleteSession(session.id);
     expect(result).toBe(true);
-    expect(getSession(session.id)).toBeUndefined();
+    expect(unwrap(getSession(session.id))).toBeUndefined();
   });
 
   it("deleteSession also removes associated messages", () => {
@@ -398,8 +404,8 @@ describe("AC-E003-03: registry — deleteSession and deleteSessions", () => {
     const s2 = createSession({ engine: "claude", source: "web", sourceRef: "web:bulk2" });
     const count = deleteSessions([s1.id, s2.id]);
     expect(count).toBe(2);
-    expect(getSession(s1.id)).toBeUndefined();
-    expect(getSession(s2.id)).toBeUndefined();
+    expect(unwrap(getSession(s1.id))).toBeUndefined();
+    expect(unwrap(getSession(s2.id))).toBeUndefined();
   });
 
   it("deleteSessions returns 0 for empty array", () => {
@@ -411,7 +417,7 @@ describe("AC-E003-03: registry — accumulateSessionCost", () => {
   it("adds cost and turns to a session", () => {
     const session = createSession({ engine: "claude", source: "web", sourceRef: "web:cost1" });
     accumulateSessionCost(session.id, 0.05, 3);
-    const fetched = getSession(session.id);
+    const fetched = unwrap(getSession(session.id));
     expect(fetched?.totalCost).toBeCloseTo(0.05);
     expect(fetched?.totalTurns).toBe(3);
   });
@@ -420,7 +426,7 @@ describe("AC-E003-03: registry — accumulateSessionCost", () => {
     const session = createSession({ engine: "claude", source: "web", sourceRef: "web:cost2" });
     accumulateSessionCost(session.id, 0.01, 1);
     accumulateSessionCost(session.id, 0.02, 2);
-    const fetched = getSession(session.id);
+    const fetched = unwrap(getSession(session.id));
     expect(fetched?.totalCost).toBeCloseTo(0.03);
     expect(fetched?.totalTurns).toBe(3);
   });
