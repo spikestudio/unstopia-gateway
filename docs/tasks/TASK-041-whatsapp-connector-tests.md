@@ -7,7 +7,7 @@
 | Epic 仕様書 | ES-020 |
 | Story | 20.5, 20.6 |
 | Complexity | M |
-| PR | #TBD |
+| PR | #144 |
 
 ## 責務
 
@@ -36,23 +36,23 @@
 
 **機能面（AC-ID 参照）:**
 
-- [ ] **AC-E020-20**: グループ JID（`@g.us`）からのメッセージを送信すると handler が呼ばれない（グループフィルター）
-- [ ] **AC-E020-21**: `fromMe=true` で自分の JID 以外からのメッセージを送信すると handler が呼ばれない（自己送信フィルター）
-- [ ] **AC-E020-22**: allowFrom に含まれない JID からのメッセージを送信すると handler が呼ばれない
-- [ ] **AC-E020-23**: 正常なテキストメッセージを送信すると handler が正しい IncomingMessage 構造（source / sessionKey / channel / text 等）で呼ばれる
-- [ ] **AC-E020-24**: `getCapabilities` を呼ぶと threading=false / messageEdits=false / reactions=false / attachments=true が返る
-- [ ] **AC-E020-25**: `replyMessage` を呼ぶと `sock.sendMessage` が正しく呼ばれる
-- [ ] **AC-E020-26**: 接続前（`connectionStatus !== 'running'`）に `replyMessage` を呼ぶと `sock.sendMessage` が呼ばれずに処理が終わる
-- [ ] **AC-E020-27**: `getHealth` を呼ぶと connectionStatus に応じた status（running / qr_pending / stopped）が返る
-- [ ] **AC-E020-28**: `reconstructTarget` を replyContext で呼ぶと channel / messageTs が正しくマッピングされた Target が返る
-- [ ] Epic 仕様書の AC チェックボックス更新
+- [x] **AC-E020-20**: グループ JID（`@g.us`）からのメッセージを送信すると handler が呼ばれない（グループフィルター）
+- [x] **AC-E020-21**: `fromMe=true` で自分の JID 以外からのメッセージを送信すると handler が呼ばれない（自己送信フィルター）
+- [x] **AC-E020-22**: allowFrom に含まれない JID からのメッセージを送信すると handler が呼ばれない
+- [x] **AC-E020-23**: 正常なテキストメッセージを送信すると handler が正しい IncomingMessage 構造（source / sessionKey / channel / text 等）で呼ばれる
+- [x] **AC-E020-24**: `getCapabilities` を呼ぶと threading=false / messageEdits=false / reactions=false / attachments=true が返る
+- [x] **AC-E020-25**: `replyMessage` を呼ぶと `sock.sendMessage` が正しく呼ばれる
+- [x] **AC-E020-26**: 接続前（`connectionStatus !== 'running'`）に `replyMessage` を呼ぶと `sock.sendMessage` が呼ばれずに処理が終わる
+- [x] **AC-E020-27**: `getHealth` を呼ぶと connectionStatus に応じた status（running / qr_pending / stopped）が返る
+- [x] **AC-E020-28**: `reconstructTarget` を replyContext で呼ぶと channel / messageTs が正しくマッピングされた Target が返る
+- [x] Epic 仕様書の AC チェックボックス更新
 
 ### 品質面
 
-- [ ] ユニットテスト/統合テストが追加・通過している
+- [x] ユニットテスト/統合テストが追加・通過している
 - [ ] コードレビューが承認されている
 - [ ] CI パイプラインがグリーン
-- [ ] リンター/静的解析がクリーン
+- [x] リンター/静的解析がクリーン
 
 ## テスト方針
 
@@ -83,12 +83,12 @@
 
 ## 引き渡し前チェック
 
-- [ ] 完了条件が全て検証可能な形で記述されている
-- [ ] 対応する Epic AC（E2E シナリオ）が特定され、完了条件と対応づけられている
-- [ ] 参照すべき Epic 仕様書・ADR・既存コードが「AI への指示コンテキスト」に記載されている
-- [ ] 参照設計にセクション番号/名（§）が記載されている
-- [ ] コンテキスト量が複雑度レベルの目安に収まっている
-- [ ] 規約ドキュメント群にこの Task で使う規約・パターンが記載されている
-- [ ] 先行 Task が完了しコードがマージ済みである
-- [ ] ドキュメントに書かれていない暗黙の要件がない
-- [ ] Epic から委ねられた詳細が転記されている（該当なしを含む）
+- [x] 完了条件が全て検証可能な形で記述されている
+- [x] 対応する Epic AC（E2E シナリオ）が特定され、完了条件と対応づけられている
+- [x] 参照すべき Epic 仕様書・ADR・既存コードが「AI への指示コンテキスト」に記載されている
+- [x] 参照設計にセクション番号/名（§）が記載されている
+- [x] コンテキスト量が複雑度レベルの目安に収まっている
+- [x] 規約ドキュメント群にこの Task で使う規約・パターンが記載されている
+- [x] 先行 Task が完了しコードがマージ済みである
+- [x] ドキュメントに書かれていない暗黙の要件がない
+- [x] Epic から委ねられた詳細が転記されている（該当なしを含む）

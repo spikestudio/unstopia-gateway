@@ -7,7 +7,7 @@
 | Epic 仕様書 | ES-020 |
 | Story | 20.1, 20.2 |
 | Complexity | M |
-| PR | #TBD |
+| PR | #144 |
 
 ## 責務
 
@@ -35,23 +35,23 @@ discord.js Client をモック化し、DiscordConnector のフィルタリング
 
 **機能面（AC-ID 参照）:**
 
-- [ ] **AC-E020-01**: bot メッセージを送信すると handler が呼ばれない（bot フィルター）
-- [ ] **AC-E020-02**: allowFrom に含まれないユーザーからのメッセージを送信すると handler が呼ばれない（allowFrom フィルター）
-- [ ] **AC-E020-03**: guild 制限のある Connector に別 guild からのメッセージを送信すると handler が呼ばれない（guildId フィルター）
-- [ ] **AC-E020-04**: channel 制限のある Connector に別チャンネルからのメッセージを送信すると handler が呼ばれない（channelId フィルター）
-- [ ] **AC-E020-05**: 正常なメッセージを送信すると handler が正しい IncomingMessage 構造で呼ばれる
-- [ ] **AC-E020-06**: `sendMessage` を呼ぶと discord.js の `channel.send` が正しく呼ばれ、最後のメッセージ ID を返す
-- [ ] **AC-E020-07**: `sendMessage` でテキストチャンネルが取得できない場合、`undefined` が返りエラーを throw しない
-- [ ] **AC-E020-08**: `getHealth` を呼ぶと connector のステータス（running / stopped / error）と capabilities が返る
-- [ ] **AC-E020-09**: `reconstructTarget` を replyContext で呼ぶと、channel / thread / messageTs が正しくマッピングされた Target が返る
-- [ ] Epic 仕様書の AC チェックボックス更新
+- [x] **AC-E020-01**: bot メッセージを送信すると handler が呼ばれない（bot フィルター）
+- [x] **AC-E020-02**: allowFrom に含まれないユーザーからのメッセージを送信すると handler が呼ばれない（allowFrom フィルター）
+- [x] **AC-E020-03**: guild 制限のある Connector に別 guild からのメッセージを送信すると handler が呼ばれない（guildId フィルター）
+- [x] **AC-E020-04**: channel 制限のある Connector に別チャンネルからのメッセージを送信すると handler が呼ばれない（channelId フィルター）
+- [x] **AC-E020-05**: 正常なメッセージを送信すると handler が正しい IncomingMessage 構造で呼ばれる
+- [x] **AC-E020-06**: `sendMessage` を呼ぶと discord.js の `channel.send` が正しく呼ばれ、最後のメッセージ ID を返す
+- [x] **AC-E020-07**: `sendMessage` でテキストチャンネルが取得できない場合、`undefined` が返りエラーを throw しない
+- [x] **AC-E020-08**: `getHealth` を呼ぶと connector のステータス（running / stopped / error）と capabilities が返る
+- [x] **AC-E020-09**: `reconstructTarget` を replyContext で呼ぶと、channel / thread / messageTs が正しくマッピングされた Target が返る
+- [x] Epic 仕様書の AC チェックボックス更新
 
 ### 品質面
 
-- [ ] ユニットテスト/統合テストが追加・通過している
+- [x] ユニットテスト/統合テストが追加・通過している
 - [ ] コードレビューが承認されている
 - [ ] CI パイプラインがグリーン
-- [ ] リンター/静的解析がクリーン
+- [x] リンター/静的解析がクリーン
 
 ## テスト方針
 
@@ -82,12 +82,12 @@ discord.js Client をモック化し、DiscordConnector のフィルタリング
 
 ## 引き渡し前チェック
 
-- [ ] 完了条件が全て検証可能な形で記述されている
-- [ ] 対応する Epic AC（E2E シナリオ）が特定され、完了条件と対応づけられている
-- [ ] 参照すべき Epic 仕様書・ADR・既存コードが「AI への指示コンテキスト」に記載されている
-- [ ] 参照設計にセクション番号/名（§）が記載されている
-- [ ] コンテキスト量が複雑度レベルの目安に収まっている
-- [ ] 規約ドキュメント群にこの Task で使う規約・パターンが記載されている
-- [ ] 先行 Task が完了しコードがマージ済みである
-- [ ] ドキュメントに書かれていない暗黙の要件がない
-- [ ] Epic から委ねられた詳細が転記されている（該当なしを含む）
+- [x] 完了条件が全て検証可能な形で記述されている
+- [x] 対応する Epic AC（E2E シナリオ）が特定され、完了条件と対応づけられている
+- [x] 参照すべき Epic 仕様書・ADR・既存コードが「AI への指示コンテキスト」に記載されている
+- [x] 参照設計にセクション番号/名（§）が記載されている
+- [x] コンテキスト量が複雑度レベルの目安に収まっている
+- [x] 規約ドキュメント群にこの Task で使う規約・パターンが記載されている
+- [x] 先行 Task が完了しコードがマージ済みである
+- [x] ドキュメントに書かれていない暗黙の要件がない
+- [x] Epic から委ねられた詳細が転記されている（該当なしを含む）
