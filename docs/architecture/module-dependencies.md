@@ -1,5 +1,7 @@
 # モジュール依存関係
 
+> **最終更新: 2026-04-28 — Phase 2（PD-002）完了時点の状態を反映**
+
 ## パッケージ構成
 
 ```
@@ -47,7 +49,10 @@ cli/       → (全モジュール)
 | `types.ts` | `Engine`, `Connector`, `Session`, `JinnConfig` 等の中心的な型定義 |
 | `config.ts` | `loadConfig()` — 設定ファイルの読み込み |
 | `paths.ts` | `JINN_HOME`, `SESSIONS_DB`, `SKILLS_DIR` 等のパス定数 |
-| `logger.ts` | `logger`, `configureLogger()` |
+| `logger.ts` | `logger`, `configureLogger()`, `LogContext`（ES-023: JSON 構造化ログ対応済み） |
+| `result.ts` | `Result<T,E>`, `Ok<T>`, `Err<E>`, `ok()`, `err()`, `isOk()`, `isErr()`（ES-021 追加） |
+| `errors.ts` | `AppError`, `RepositoryError`, `appError()`, `repositoryError()`（ES-021 追加） |
+| `retry.ts` | `exponentialBackoffMs()`, `withRetry<T>()`（ES-024 追加） |
 | `effort.ts` | `resolveEffort()` — エフォートレベルの解決 |
 | `rateLimit.ts` | レートリミット情報の解析・判定 |
 | `usageAwareness.ts` | 使用量の認識・警告 |
@@ -63,7 +68,8 @@ cli/       → (全モジュール)
 
 | ファイル | エンジン |
 |---------|---------|
-| `claude.ts` | Claude Code（`@anthropic-ai/sdk` + CLI spawn） |
+| `claude.ts` | Claude Code（`@anthropic-ai/sdk` + CLI spawn）— `ClaudeStreamProcessor` を利用 |
+| `claude-stream-processor.ts` | Claude ストリーミング状態機械（`Idle/InText/InTool`）（ES-019 追加） |
 | `codex.ts` | OpenAI Codex（CLI spawn） |
 | `gemini.ts` | Google Gemini（API） |
 | `mock.ts` | テスト用モックエンジン |
@@ -84,13 +90,14 @@ cli/       → (全モジュール)
 | `telegram/` | Telegram Bot API（grammy） |
 | `slack/` | Slack API |
 | `discord/` | Discord API |
-| `whatsapp/` | WhatsApp（Baileys） |
+| `whatsapp/` | WhatsApp（Baileys）— 再接続バックオフに `shared/retry.exponentialBackoffMs` を使用（ES-024） |
 | `cron/` | Cron ジョブからのメッセージ配信 |
 
 依存:
 - `shared/types`（`Connector`, `IncomingMessage` インターフェース）
 - `shared/logger`
 - `shared/paths`
+- `shared/retry`（WhatsApp のみ — ES-024）
 
 ---
 
@@ -146,15 +153,36 @@ cli/       → (全モジュール)
 
 | ファイル | 主な機能 |
 |---------|---------|
-| `manager.ts` | `SessionManager` — セッション起動・終了・エンジン呼び出し |
-| `registry.ts` | SQLite ベースのセッション永続化 |
+| `manager.ts` | `SessionManager` — セッション起動・終了・エンジン呼び出し（273行。ES-014 で分割） |
+| `engine-runner.ts` | `runSession` — エンジン実行コア（ES-014 で `manager.ts` より抽出） |
+| `cron-command-handler.ts` | Cron コマンド処理（ES-014 で `manager.ts` より抽出） |
+| `registry.ts` | Repository ファサード — SQLite 永続化への委譲（ES-017 でファサード化） |
 | `context.ts` | 会話コンテキストの構築・管理 |
 | `callbacks.ts` | Connector へのコールバック処理 |
 | `fork.ts` | セッションの分岐（fork） |
 | `queue.ts` | メッセージキュー管理 |
+| `repositories/` | Repository パターン実装（ES-017 追加） |
+
+#### `sessions/repositories/`
+
+| ファイル | 内容 |
+|---------|------|
+| `ISessionRepository.ts` | セッション Repository インターフェース（Result 型対応 — ES-021） |
+| `IMessageRepository.ts` | メッセージ Repository インターフェース |
+| `IQueueRepository.ts` | キュー Repository インターフェース |
+| `IFileRepository.ts` | ファイル Repository インターフェース |
+| `SqliteSessionRepository.ts` | SQLite 実装 |
+| `SqliteMessageRepository.ts` | SQLite 実装 |
+| `SqliteQueueRepository.ts` | SQLite 実装 |
+| `SqliteFileRepository.ts` | SQLite 実装 |
+| `InMemorySessionRepository.ts` | インメモリ実装（テスト用） |
+| `InMemoryMessageRepository.ts` | インメモリ実装（テスト用） |
+| `InMemoryQueueRepository.ts` | インメモリ実装（テスト用） |
+| `InMemoryFileRepository.ts` | インメモリ実装（テスト用） |
 
 依存:
 - `shared/`（全体）
+- `shared/result`・`shared/errors`（Repository インターフェースの戻り値型 — ES-021）
 - `engines/`（Claude, Codex, Gemini — エンジン選択・実行）
 - `gateway/budgets`（予算チェック）
 - `cron/`（Cron ジョブの制御）
@@ -168,11 +196,14 @@ cli/       → (全モジュール)
 
 **責務:** HTTP API サーバー、組織管理、ライフサイクル制御。daemon のコアレイヤー。
 
-| ファイル | 主な機能 |
-|---------|---------|
-| `server.ts` | Fastify HTTP サーバー・全 API エンドポイント |
+| ファイル/ディレクトリ | 主な機能 |
+|---------------------|---------|
+| `server.ts` | HTTP サーバー・エントリーポイント・DI 組み立て（Composition Root — ES-012） |
+| `container.ts` | エンジン・コネクター・Repository ファクトリ（ES-012 追加） |
+| `api.ts` | API ルートディスパッチャ（39行。ES-013 で分割済み） |
+| `api/` | ドメイン別 API ハンドラー（ES-013 追加） |
+| `api/api-types.ts` | リクエスト・レスポンス型定義（ES-022 追加） |
 | `types.ts` | `ApiContext` インターフェース定義（ES-011 で `api.ts` から分離） |
-| `api.ts` | API ルート定義 |
 | `org.ts` / `org-hierarchy.ts` | 組織・従業員・部署の管理 |
 | `lifecycle.ts` | daemon の起動・停止フロー |
 | `files.ts` | ファイル操作 API |
@@ -182,6 +213,21 @@ cli/       → (全モジュール)
 | `services.ts` | サービス管理 |
 | `watcher.ts` | ファイル変更監視 |
 | `daemon-entry.ts` | daemon エントリーポイント |
+
+#### `gateway/api/` — ドメイン別ハンドラー（ES-013 分割）
+
+| ファイル | 担当 API ドメイン |
+|---------|----------------|
+| `sessions.ts` | `/api/sessions/*` — セッション CRUD |
+| `session-runner.ts` | セッション実行（メッセージキュー） |
+| `org.ts` | `/api/org/*` — 組織・従業員管理 |
+| `cron.ts` | `/api/cron/*` — Cron ジョブ管理 |
+| `connectors.ts` | `/api/connectors/*` — コネクター操作 |
+| `skills.ts` | `/api/skills/*` — スキル管理 |
+| `misc.ts` | `/api/status`, `/api/config` 等 |
+| `stt.ts` | `/api/stt/*` — 音声認識 |
+| `utils.ts` | 共通ユーティリティ（ボディパース等） |
+| `api-types.ts` | リクエスト・レスポンス型（ES-022） |
 
 依存:
 - `shared/`（全体）
@@ -198,7 +244,10 @@ cli/       → (全モジュール)
 
 | ファイル | コマンド |
 |---------|---------|
-| `setup.ts` | `jinn setup` — 初回セットアップ |
+| `setup.ts` | `jinn setup` — 初回セットアップ（288行。ES-025 で分割） |
+| `setup-ui.ts` | コンソール出力ユーティリティ（ok/warn/fail/info/prompt）（ES-025 追加） |
+| `setup-fs.ts` | ファイルシステムユーティリティ（whichBin/ensureDir 等）（ES-025 追加） |
+| `setup-context.ts` | プロジェクトコンテキスト検出・デフォルト設定（ES-025 追加） |
 | `start.ts` | `jinn start` — daemon 起動 |
 | `stop.ts` | `jinn stop` — daemon 停止 |
 | `create.ts` | `jinn create` — 組織・従業員作成 |
