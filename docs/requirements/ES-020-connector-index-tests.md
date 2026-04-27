@@ -30,11 +30,11 @@
 
 **受入基準:**
 
-- [ ] **AC-E020-01**: 開発者が discord.js の Client をモックして bot メッセージを送信すると、handler が呼ばれない（bot フィルター）. ← S13
-- [ ] **AC-E020-02**: 開発者が allowFrom に含まれないユーザーからのメッセージを送信すると、handler が呼ばれない（allowFrom フィルター）. ← S13
-- [ ] **AC-E020-03**: 開発者が guild 制限のある Connector に別 guild からのメッセージを送信すると、handler が呼ばれない（guildId フィルター）. ← S13（AI 補完: guildId フィルターは重要なセキュリティ境界）
-- [ ] **AC-E020-04**: 開発者が channel 制限のある Connector に別チャンネルからのメッセージを送信すると、handler が呼ばれない（channelId フィルター）. ← S13（AI 補完: channelId フィルターも同様）
-- [ ] **AC-E020-05**: 開発者が正常なメッセージを送信すると、handler が正しい `IncomingMessage` 構造（connector / source / sessionKey / channel / user / text 等）で呼ばれる. ← S13
+- [x] **AC-E020-01**: 開発者が discord.js の Client をモックして bot メッセージを送信すると、handler が呼ばれない（bot フィルター）. ← S13
+- [x] **AC-E020-02**: 開発者が allowFrom に含まれないユーザーからのメッセージを送信すると、handler が呼ばれない（allowFrom フィルター）. ← S13
+- [x] **AC-E020-03**: 開発者が guild 制限のある Connector に別 guild からのメッセージを送信すると、handler が呼ばれない（guildId フィルター）. ← S13（AI 補完: guildId フィルターは重要なセキュリティ境界）
+- [x] **AC-E020-04**: 開発者が channel 制限のある Connector に別チャンネルからのメッセージを送信すると、handler が呼ばれない（channelId フィルター）. ← S13（AI 補完: channelId フィルターも同様）
+- [x] **AC-E020-05**: 開発者が正常なメッセージを送信すると、handler が正しい `IncomingMessage` 構造（connector / source / sessionKey / channel / user / text 等）で呼ばれる. ← S13
 
 **インターフェース:** `packages/jimmy/src/connectors/discord/__tests__/connector.test.ts`（新規作成）
 
@@ -44,10 +44,10 @@
 
 **受入基準:**
 
-- [ ] **AC-E020-06**: 開発者が `sendMessage` を呼ぶと、discord.js の `channel.send` が正しく呼ばれ、最後のメッセージ ID を返す. ← S13
-- [ ] **AC-E020-07**: 開発者が `sendMessage` でテキストチャンネルが取得できない場合、`undefined` が返り、エラーを throw しない. ← S13（AI 補完: エラーハンドリングはユーザー体験に直結）
-- [ ] **AC-E020-08**: 開発者が `getHealth` を呼ぶと、connector のステータス（running / stopped / error）と capabilities が返る. ← S13
-- [ ] **AC-E020-09**: 開発者が `reconstructTarget` を replyContext で呼ぶと、channel / thread / messageTs が正しくマッピングされた Target が返る. ← S13（AI 補完: reconstructTarget は ReplyContext → Target 変換の唯一の窓口）
+- [x] **AC-E020-06**: 開発者が `sendMessage` を呼ぶと、discord.js の `channel.send` が正しく呼ばれ、最後のメッセージ ID を返す. ← S13
+- [x] **AC-E020-07**: 開発者が `sendMessage` でテキストチャンネルが取得できない場合、`undefined` が返り、エラーを throw しない. ← S13（AI 補完: エラーハンドリングはユーザー体験に直結）
+- [x] **AC-E020-08**: 開発者が `getHealth` を呼ぶと、connector のステータス（running / stopped / error）と capabilities が返る. ← S13
+- [x] **AC-E020-09**: 開発者が `reconstructTarget` を replyContext で呼ぶと、channel / thread / messageTs が正しくマッピングされた Target が返る. ← S13（AI 補完: reconstructTarget は ReplyContext → Target 変換の唯一の窓口）
 
 **インターフェース:** `packages/jimmy/src/connectors/discord/__tests__/connector.test.ts`（新規作成）
 
@@ -57,11 +57,11 @@
 
 **受入基準:**
 
-- [ ] **AC-E020-10**: 開発者が Slack の `message` イベントで `bot_id` が設定されたイベントを送信すると、handler が呼ばれない（bot フィルター）. ← S13
-- [ ] **AC-E020-11**: 開発者が `user` が未設定のイベント（URL unfurl 等）を送信すると、handler が呼ばれない（ghost event フィルター）. ← S13（AI 補完: Slack URL unfurl は既知の false positive パターン）
-- [ ] **AC-E020-12**: 開発者が allowFrom に含まれないユーザーからのメッセージを送信すると、handler が呼ばれない. ← S13
-- [ ] **AC-E020-13**: 開発者が正常なメッセージを送信すると、handler が正しい `IncomingMessage` 構造（source / sessionKey / channel / text 等）で呼ばれる. ← S13
-- [ ] **AC-E020-14**: 開発者が `reaction_added` イベントを送信すると、対象メッセージのテキストが取得されリアクション文脈のプロンプトで handler が呼ばれる. ← S13（AI 補完: reaction_added ハンドラーはコードの約1/3を占めるが未テスト）
+- [x] **AC-E020-10**: 開発者が Slack の `message` イベントで `bot_id` が設定されたイベントを送信すると、handler が呼ばれない（bot フィルター）. ← S13
+- [x] **AC-E020-11**: 開発者が `user` が未設定のイベント（URL unfurl 等）を送信すると、handler が呼ばれない（ghost event フィルター）. ← S13（AI 補完: Slack URL unfurl は既知の false positive パターン）
+- [x] **AC-E020-12**: 開発者が allowFrom に含まれないユーザーからのメッセージを送信すると、handler が呼ばれない. ← S13
+- [x] **AC-E020-13**: 開発者が正常なメッセージを送信すると、handler が正しい `IncomingMessage` 構造（source / sessionKey / channel / text 等）で呼ばれる. ← S13
+- [x] **AC-E020-14**: 開発者が `reaction_added` イベントを送信すると、対象メッセージのテキストが取得されリアクション文脈のプロンプトで handler が呼ばれる. ← S13（AI 補完: reaction_added ハンドラーはコードの約1/3を占めるが未テスト）
 
 **インターフェース:** `packages/jimmy/src/connectors/slack/__tests__/connector.test.ts`（新規作成）
 
@@ -71,11 +71,11 @@
 
 **受入基準:**
 
-- [ ] **AC-E020-15**: 開発者が `sendMessage` を呼ぶと、`chat.postMessage` が正しく呼ばれ最後の ts を返す. ← S13
-- [ ] **AC-E020-16**: 開発者が空文字で `sendMessage` を呼ぶと、`chat.postMessage` が呼ばれずに `undefined` を返す. ← S13（AI 補完: 空文字送信防止は Slack API の過剰呼び出し抑止）
-- [ ] **AC-E020-17**: 開発者が `replyMessage` を呼ぶと、`thread_ts` 付きで `chat.postMessage` が呼ばれる. ← S13
-- [ ] **AC-E020-18**: 開発者が `getHealth` を呼ぶと、started / error 状態が反映されたステータスを返す. ← S13
-- [ ] **AC-E020-19**: 開発者が `reconstructTarget` を replyContext で呼ぶと、channel / thread / messageTs が正しくマッピングされた Target が返る. ← S13（AI 補完: reconstructTarget はセッション継続の要）
+- [x] **AC-E020-15**: 開発者が `sendMessage` を呼ぶと、`chat.postMessage` が正しく呼ばれ最後の ts を返す. ← S13
+- [x] **AC-E020-16**: 開発者が空文字で `sendMessage` を呼ぶと、`chat.postMessage` が呼ばれずに `undefined` を返す. ← S13（AI 補完: 空文字送信防止は Slack API の過剰呼び出し抑止）
+- [x] **AC-E020-17**: 開発者が `replyMessage` を呼ぶと、`thread_ts` 付きで `chat.postMessage` が呼ばれる. ← S13
+- [x] **AC-E020-18**: 開発者が `getHealth` を呼ぶと、started / error 状態が反映されたステータスを返す. ← S13
+- [x] **AC-E020-19**: 開発者が `reconstructTarget` を replyContext で呼ぶと、channel / thread / messageTs が正しくマッピングされた Target が返る. ← S13（AI 補完: reconstructTarget はセッション継続の要）
 
 **インターフェース:** `packages/jimmy/src/connectors/slack/__tests__/connector.test.ts`（新規作成）
 
@@ -85,11 +85,11 @@
 
 **受入基準:**
 
-- [ ] **AC-E020-20**: 開発者がグループ JID（`@g.us`）からのメッセージを送信すると、handler が呼ばれない（グループフィルター）. ← S13（AI 補完: グループ通知を無視するのは WhatsApp コネクターの主要セキュリティ境界）
-- [ ] **AC-E020-21**: 開発者が `fromMe=true` で自分の JID 以外からのメッセージを送信すると、handler が呼ばれない（自己送信フィルター）. ← S13
-- [ ] **AC-E020-22**: 開発者が allowFrom に含まれない JID からのメッセージを送信すると、handler が呼ばれない. ← S13
-- [ ] **AC-E020-23**: 開発者が正常なテキストメッセージを送信すると、handler が正しい `IncomingMessage` 構造（source / sessionKey / channel / text 等）で呼ばれる. ← S13
-- [ ] **AC-E020-24**: 開発者が `getCapabilities` を呼ぶと、threading=false / messageEdits=false / reactions=false / attachments=true が返る. ← S13（AI 補完: WhatsApp は他コネクターと capability が異なるため明示的に検証）
+- [x] **AC-E020-20**: 開発者がグループ JID（`@g.us`）からのメッセージを送信すると、handler が呼ばれない（グループフィルター）. ← S13（AI 補完: グループ通知を無視するのは WhatsApp コネクターの主要セキュリティ境界）
+- [x] **AC-E020-21**: 開発者が `fromMe=true` で自分の JID 以外からのメッセージを送信すると、handler が呼ばれない（自己送信フィルター）. ← S13
+- [x] **AC-E020-22**: 開発者が allowFrom に含まれない JID からのメッセージを送信すると、handler が呼ばれない. ← S13
+- [x] **AC-E020-23**: 開発者が正常なテキストメッセージを送信すると、handler が正しい `IncomingMessage` 構造（source / sessionKey / channel / text 等）で呼ばれる. ← S13
+- [x] **AC-E020-24**: 開発者が `getCapabilities` を呼ぶと、threading=false / messageEdits=false / reactions=false / attachments=true が返る. ← S13（AI 補完: WhatsApp は他コネクターと capability が異なるため明示的に検証）
 
 **インターフェース:** `packages/jimmy/src/connectors/whatsapp/__tests__/connector.test.ts`（新規作成）
 
@@ -99,10 +99,10 @@
 
 **受入基準:**
 
-- [ ] **AC-E020-25**: 開発者が `replyMessage` を呼ぶと、`sock.sendMessage` が正しく呼ばれる. ← S13
-- [ ] **AC-E020-26**: 開発者が接続前（`connectionStatus !== 'running'`）に `replyMessage` を呼ぶと、`sock.sendMessage` が呼ばれずに処理が終わる. ← S13（AI 補完: 未接続時の防御は重要な安全境界）
-- [ ] **AC-E020-27**: 開発者が `getHealth` を呼ぶと、connectionStatus に応じた status（running / qr_pending / stopped）が返る. ← S13
-- [ ] **AC-E020-28**: 開発者が `reconstructTarget` を replyContext で呼ぶと、channel / messageTs が正しくマッピングされた Target が返る. ← S13
+- [x] **AC-E020-25**: 開発者が `replyMessage` を呼ぶと、`sock.sendMessage` が正しく呼ばれる. ← S13
+- [x] **AC-E020-26**: 開発者が接続前（`connectionStatus !== 'running'`）に `replyMessage` を呼ぶと、`sock.sendMessage` が呼ばれずに処理が終わる. ← S13（AI 補完: 未接続時の防御は重要な安全境界）
+- [x] **AC-E020-27**: 開発者が `getHealth` を呼ぶと、connectionStatus に応じた status（running / qr_pending / stopped）が返る. ← S13
+- [x] **AC-E020-28**: 開発者が `reconstructTarget` を replyContext で呼ぶと、channel / messageTs が正しくマッピングされた Target が返る. ← S13
 
 **インターフェース:** `packages/jimmy/src/connectors/whatsapp/__tests__/connector.test.ts`（新規作成）
 
@@ -164,7 +164,7 @@
 
 | # | 事項 | ステータス | 解決先 |
 |---|------|----------|--------|
-| 1 | WhatsApp の `connect()` メソッド（baileys の `useMultiFileAuthState` / `makeWASocket` 呼び出し）を完全モックするか部分モックにするか | 未決定 | Task 実装時に判断。TelegramConnector パターンを参考に vi.mock で完全モック推奨 |
+| 1 | WhatsApp の `connect()` メソッド（baileys の `useMultiFileAuthState` / `makeWASocket` 呼び出し）を完全モックするか部分モックにするか | 解決済み | vi.mock で完全モック採用（TelegramConnector パターンと同様） |
 
 ## 完全性チェック
 
