@@ -201,7 +201,7 @@ git commit -m "feat: TASK-NNN [Task名]"
 
 次のステップ:
 → `/aidd-impl` で次の Task を実装
-→ 全 Task 完了なら `/aidd-epic-review`
+→ 全 Task 完了なら `/aidd-review epic`
 ```
 
 ## 重要なルール

@@ -17,9 +17,11 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh pr edit ${{ github.event.pull_request.number }} \
-            --repo ${{ github.repository }} \
-            --remove-label "gate:reviewed" 2>/dev/null || true
+          for label in "gate:reviewed"; do
+            gh pr edit ${{ github.event.pull_request.number }} \
+              --repo ${{ github.repository }} \
+              --remove-label "$label" 2>/dev/null || true
+          done
           echo "⚠️ Gate labels reset — re-review required"
 
   check-epic-complete:
@@ -80,11 +82,21 @@ jobs:
             --repo ${{ github.repository }} \
             --json labels --jq '.labels[].name')
 
-          if ! echo "$LABELS" | grep -qx "gate:reviewed"; then
-            echo "::error::Missing required gate label: gate:reviewed"
+          MISSING=""
+          for gate in "gate:reviewed"; do
+            if ! echo "$LABELS" | grep -qx "$gate"; then
+              MISSING="${MISSING}  - ${gate}\n"
+            fi
+          done
+
+          if [ -n "$MISSING" ]; then
+            echo "::error::Missing required gate labels"
             echo ""
-            echo "This PR cannot be merged until the gate is passed:"
-            echo "  gate:reviewed  → /aidd-epic-review PASS (or /aidd-adhoc review PASS)"
+            echo "This PR cannot be merged until all gates are passed:"
+            printf '%b' "$MISSING"
+            echo ""
+            echo "Gates:"
+            echo "  gate:reviewed  → /aidd-review epic PASS"
             exit 1
           fi
 

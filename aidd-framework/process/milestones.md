@@ -185,11 +185,11 @@
 
 **確認事項:**
 
-`/aidd-epic-review` が 3 観点（ビジネス要件・ドキュメント・コード）でチェックを実施し、PASS していること。
+`/aidd-review epic` が 3 観点（ビジネス要件・ドキュメント・コード）でチェックを実施し、PASS していること。
 
 | カテゴリ | 項目 |
 |---------|------|
-| AI レビュー | `/aidd-epic-review` が PASS している（`gate:reviewed` ラベル付与済み） |
+| AI レビュー | `/aidd-review epic` が PASS している（`gate:reviewed` ラベル付与済み） |
 | AC カバレッジ | Epic の全 AC に対応する実装とテストが存在する |
 | 規約準拠 | 規約ドキュメント群の命名規則・実装パターンに従っている |
 | CI | 静的解析・型チェック・テスト・ビルドが全て通過 |
@@ -233,7 +233,8 @@
 - Phase 定義書のステータスを「完了」に更新
 - Milestone にマイルストーン通過コメントを記録（`✅ G6 通過 (日付)`）
 - Milestone をクローズ
-- Phase 完了検証（`/aidd-phase-review`）のドキュメント更新は最後の Epic PR に同梱済み、またはフォールバック PR でマージ済み（[gitflow ガイド](../guides/gitflow.md) 参照）
+- Phase 完了検証（`/aidd-review phase`）のドキュメント更新は最後の Epic PR に同梱済み、またはフォールバック PR でマージ済み（[gitflow ガイド](../guides/gitflow.md) 参照）
+- Phase クロージング処理（`/aidd-phase-closing`）で Milestone クローズ・G6 通過記録を実行
 
 ---
 
@@ -244,10 +245,10 @@
 | **G0** | `/aidd-setup`, `/aidd-skeleton` | 各スキル内蔵 | 人間（PO/TL） | `/aidd-next` |
 | **G1** | `/aidd-new-phase` | 各スキル内蔵 | `/aidd-new-phase` | `/aidd-next` |
 | **G2** | `/aidd-new-epic` | 各スキル内蔵 | 人間（PO/TL） | `/aidd-next` |
-| **G3** | `/aidd-new-epic`（Step 3） | 各スキル内蔵 | 人間（PO/TL） | `/aidd-next` |
+| **G3** | `/aidd-epic-design` | 各スキル内蔵 | 人間（TL） | `/aidd-next` |
 | **G4** | `/aidd-decompose-epic` | 各スキル内蔵 | 人間（PO/TL） | `/aidd-next` |
-| **G5** | `/aidd-impl` | `/aidd-epic-review` | `/aidd-epic-review` | `/aidd-next` |
-| **G6** | `/aidd-phase-review` | — | `/aidd-phase-review` | `/aidd-next` |
+| **G5** | `/aidd-impl` | `/aidd-review epic` | `/aidd-review epic` | `/aidd-next` |
+| **G6** | `/aidd-review phase` | — | `/aidd-phase-closing` | `/aidd-next` |
 
 画面系プロジェクトでは以下のスキルが追加される:
 
@@ -270,8 +271,8 @@
 
 3. 通過時: 各スキルが GitHub Issue / Milestone に通過コメントを記録
    - G1 → /aidd-new-phase の完了処理
-   - G5 → /aidd-epic-review の PASS 処理
-   - G6 → /aidd-phase-review の PASS 処理
+   - G5 → /aidd-review epic の PASS 処理
+   - G6 → /aidd-review phase の PASS 処理 + /aidd-phase-closing による通過記録
    - その他 → 人間が手動で記録
 ```
 

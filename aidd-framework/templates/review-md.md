@@ -3,7 +3,7 @@
 
 <!-- このファイルは Claude Code の /review コマンド向けのレビューガイドライン。
      プロジェクトルートに配置すると、/review 実行時に自動で参照される。
-     より厳密なレビューが必要な場合は /aidd-epic-review を使用すること。 -->
+     より厳密なレビューが必要な場合は /aidd-review epic を使用すること。 -->
 
 ## レビューの判断軸（優先順序）
 
@@ -58,5 +58,5 @@
 
 **規約違反は必ず Normal（修正必須）として報告すること。** 「実害がない」「コストが高い」は免除理由にならない。
 
-<!-- レビュー指摘: /aidd-epic-reviewと重大度用語が異なり混乱する可能性。対応関係を注記 -->
-> **`/aidd-epic-review` との対応:** より厳密なレビューが必要な場合は `/aidd-epic-review` スキルを使用すること。重大度の対応関係: Normal = MUST FIX、Nit = SHOULD FIX / CONSIDER。
+<!-- レビュー指摘: /aidd-review epicと重大度用語が異なり混乱する可能性。対応関係を注記 -->
+> **`/aidd-review epic` との対応:** より厳密なレビューが必要な場合は `/aidd-review epic` スキルを使用すること。重大度の対応関係: Normal = MUST FIX、Nit = SHOULD FIX / CONSIDER。

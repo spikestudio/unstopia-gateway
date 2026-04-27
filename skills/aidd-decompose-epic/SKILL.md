@@ -2,6 +2,7 @@
 name: aidd-decompose-epic
 description: >
   Epic仕様書の承認済みACと設計成果物を入力として、実装単位（コミット単位）のTaskに分解する。
+  3フェーズ並行サブエージェント構成でTask定義を生成する。
   分解ドラフト生成→ブリーフィング→承認→ファイル・Issue一括生成の2ステップで段階的に進行する。
   TaskへのAC分解・Task定義の作成を行いたい場合は常にこのスキルを呼び出す。
 type: skill
@@ -20,6 +21,7 @@ Epic 仕様書の承認済み AC と設計成果物を入力として、AI が A
 | 前提 | 確認方法 | 未完了時の案内 |
 |------|---------|-------------|
 | Epic 仕様書が承認済み（設計成果物含む） | Epic Issue が `status:in-progress` ラベル付きでオープン（`gh issue list --label "status:in-progress" --label epic`）かつ G2 通過コメントが存在する | `/aidd-new-epic` を先に実行 |
+| G3 通過済み（`/aidd-epic-design` 完了済み） | Epic Issue のコメントに G3 通過記録が存在すること（`gh issue view <Epic番号> --comments` で `gate:g3` または G3 通過コメントを確認） | `/aidd-epic-design` を先に実行 |
 | 横断設計事項が確定済み | Phase 定義書・ADR の確認 | 認証・認可方針、エラーコード体系、セキュリティ方針、DB マイグレーション戦略が Phase/ADR で確定されているか確認 |
 
 ### 入力
@@ -50,6 +52,7 @@ Task を作成する対象の Epic が見つかりませんでした。以下を
 | 項目 | 形式 | 説明 |
 |------|------|------|
 | Task 定義 | ファイル | `docs/tasks/TASK-NNN-slug.md`（複数ファイル） |
+| 要検討マーク解決済み Task 定義群 | ファイル | Phase 1〜2 の並行サブエージェントが設計判断クラスを調査・解決済みの Task 定義ファイル群 |
 | GitHub Issue | GitHub | task ラベル、親 Epic Issue の sub-issue、Milestone 紐付け |
 
 ### 後続スキル
@@ -78,9 +81,16 @@ Task を作成する対象の Epic が見つかりませんでした。以下を
 
 `references/step1-decompose.md` を読み込んで実行する。
 
-**概要:** AC を実装単位（コミット単位）の Task に分解し、E2E 検証 Task を末尾に配置する。分割ルール・テーブル形式・セルフレビュー観点の詳細は `references/step1-decompose.md` に定義されている。
+**概要:** 以下の 3 フェーズ構成で Task 定義を生成する。
 
-**成果物:** Task 分解ドラフト（テーブル形式 + 各 Task の詳細）
+- **Phase 0（メインエージェント）:** AC → Task リスト（番号・名前・対応AC・依存関係）を生成する。Task ファイルは書かない。
+- **Phase 1（並行サブエージェント）:** Task ごとにサブエージェントを並行起動し、Task 定義ファイルを書き込む。設計判断クラスに該当する委ねられた詳細に `<!-- 要検討 -->` マークを付与する。
+- **Phase 2（マークあり Task のみ並行）:** マークが存在する Task のみサブエージェントを並行起動し、`/aidd-research` でリサーチして選択肢+根拠+トレードオフをマーク位置に書き込む。
+- **Phase 3（メインエージェント）:** 全 Task を集約し、設計判断一覧をユーザーに提示して確認を得てから G4 ブリーフィングを実行する。
+
+フェーズ構成の詳細手順は `references/step1-decompose.md` に定義されている。
+
+**成果物:** 要検討マーク解決済み Task 定義群（テーブル形式 + 各 Task の詳細 + 設計判断一覧）
 
 **capability 呼び出し:**
 
@@ -123,6 +133,13 @@ Task 分解が完成しました:
 ```
 
 > **注記**: Task 定義ファイルと GitHub Issue を生成したら、Epic ブランチ（`feature/ES-NNN-slug`）にコミットする。**PR は `/aidd-new-epic` Step 1 承認時に draft として作成済み。** ここでは PR 作成・変更は行わない。詳細は [gitflow ガイド](../../aidd-framework/guides/gitflow.md) を参照。
+
+## 不変条件
+
+以下の条件は例外なく守られなければならない:
+
+- **G3 未通過（`/aidd-epic-design` 完了前）では実行不可。** Epic Issue に G3 通過記録がない場合、スキルを停止し `/aidd-epic-design` の先行実行を案内する。
+- **Phase 3 時点で未解決 `<!-- 要検討 -->` が残存する場合、G4 ブリーフィング FAIL。** 未解決マークが残っている Task が 1 件でも存在する場合は Phase 2 の再実行を指示してブリーフィングを停止する。
 
 ## ゲート制御ルール
 

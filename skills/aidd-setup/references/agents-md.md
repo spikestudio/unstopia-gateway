@@ -62,7 +62,7 @@
 
 ## 実装の参考
 
-- スキル実装例: `.agents/skills/aidd-new-phase/SKILL.md` / レビュー手順: `.agents/skills/aidd-epic-review/references/`
+- スキル実装例: `.agents/skills/aidd-new-phase/SKILL.md` / レビュー手順: `.agents/skills/aidd-review/references/`
 
 ## ドキュメント連動ルール
 
