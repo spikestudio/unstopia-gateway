@@ -244,13 +244,12 @@ describe("runSession", () => {
 
       const repos = makeRepos();
       // repos に session を登録
-      repos.sessions.createSession({
+      const { id: sessionId } = repos.sessions.createSession({
         engine: "claude",
         source: "slack",
         sourceRef: "slack:C12345",
         sessionKey: "slack:C12345",
       });
-      const sessionId = repos.sessions.getSessionBySessionKey("slack:C12345")!.id;
       const sessionWithId = makeSession({ id: sessionId, employee: "alice" });
 
       const engines = new Map<string, Engine>([["claude", makeEngine()]]);
@@ -280,13 +279,12 @@ describe("runSession", () => {
       vi.mocked(checkBudget).mockReturnValue("paused");
 
       const repos = makeRepos();
-      repos.sessions.createSession({
+      const { id: sessionId } = repos.sessions.createSession({
         engine: "claude",
         source: "slack",
         sourceRef: "slack:C12345",
         sessionKey: "slack:C12345",
       });
-      const sessionId = repos.sessions.getSessionBySessionKey("slack:C12345")!.id;
       const sessionWithId = makeSession({ id: sessionId, employee: "alice" });
 
       const connector = makeConnector();
@@ -385,13 +383,12 @@ describe("runSession", () => {
 
     it("repos がある場合 sessions.updateSession が呼ばれる", async () => {
       const repos = makeRepos();
-      repos.sessions.createSession({
+      const { id: sessionId } = repos.sessions.createSession({
         engine: "claude",
         source: "slack",
         sourceRef: "slack:C12345",
         sessionKey: "slack:C12345",
       });
-      const sessionId = repos.sessions.getSessionBySessionKey("slack:C12345")!.id;
       const session = makeSession({ id: sessionId });
 
       const engines = new Map<string, Engine>([["claude", makeEngine()]]);
@@ -415,13 +412,12 @@ describe("runSession", () => {
 
     it("engine.run がエラーを返した場合は status が 'error' になる", async () => {
       const repos = makeRepos();
-      repos.sessions.createSession({
+      const { id: sessionId } = repos.sessions.createSession({
         engine: "claude",
         source: "slack",
         sourceRef: "slack:C12345",
         sessionKey: "slack:C12345",
       });
-      const sessionId = repos.sessions.getSessionBySessionKey("slack:C12345")!.id;
       const session = makeSession({ id: sessionId });
 
       const engines = new Map<string, Engine>([["claude", makeEngine({ result: "", error: "Engine crashed" })]]);
@@ -543,13 +539,12 @@ describe("runSession", () => {
     it("syncRequested が true で rate limit なし・interrupted でない場合 claudeSyncSince が削除される", async () => {
       const repos = makeRepos();
       const sessionKey = "slack:C12345";
-      repos.sessions.createSession({
+      const { id: sessionId } = repos.sessions.createSession({
         engine: "claude",
         source: "slack",
         sourceRef: sessionKey,
         sessionKey,
       });
-      const sessionId = repos.sessions.getSessionBySessionKey(sessionKey)!.id;
 
       const syncSince = new Date(Date.now() - 60_000).toISOString();
       repos.sessions.updateSession(sessionId, {
@@ -587,13 +582,12 @@ describe("runSession", () => {
     it("session の transportMeta に claudeSyncSince がある場合 sync transcript が使われる", async () => {
       const repos = makeRepos();
       const sessionKey = "slack:C12345";
-      repos.sessions.createSession({
+      const { id: sessionId } = repos.sessions.createSession({
         engine: "claude",
         source: "slack",
         sourceRef: sessionKey,
         sessionKey,
       });
-      const sessionId = repos.sessions.getSessionBySessionKey(sessionKey)!.id;
 
       // claudeSyncSince を過去の時刻に設定（有効な ISO 文字列）
       const syncSince = new Date(Date.now() - 60_000).toISOString();
@@ -790,13 +784,12 @@ describe("runSession", () => {
       vi.mocked(detectRateLimit).mockReturnValue({ limited: true as const, resetsAt: null as never });
 
       const repos = makeRepos();
-      repos.sessions.createSession({
+      const { id: sessionId } = repos.sessions.createSession({
         engine: "claude",
         source: "slack",
         sourceRef: "slack:C12345",
         sessionKey: "slack:C12345",
       });
-      const sessionId = repos.sessions.getSessionBySessionKey("slack:C12345")!.id;
       const session = makeSession({ id: sessionId, engine: "claude" });
 
       const fallbackEngine: Engine = {
@@ -878,13 +871,12 @@ describe("runSession", () => {
       vi.mocked(detectRateLimit).mockReturnValue({ limited: true as const, resetsAt: null as never });
 
       const repos = makeRepos();
-      repos.sessions.createSession({
+      const { id: sessionId } = repos.sessions.createSession({
         engine: "claude",
         source: "slack",
         sourceRef: "slack:C12345",
         sessionKey: "slack:C12345",
       });
-      const sessionId = repos.sessions.getSessionBySessionKey("slack:C12345")!.id;
       // engineSessionId が設定済みの session
       const session = makeSession({ id: sessionId, engine: "claude", engineSessionId: "existing-claude-session" });
 
@@ -988,13 +980,12 @@ describe("runSession", () => {
       vi.mocked(detectRateLimit).mockReturnValue({ limited: true as const, resetsAt: null as never });
 
       const repos = makeRepos();
-      repos.sessions.createSession({
+      const { id: sessionId } = repos.sessions.createSession({
         engine: "claude",
         source: "slack",
         sourceRef: "slack:C12345",
         sessionKey: "slack:C12345",
       });
-      const sessionId = repos.sessions.getSessionBySessionKey("slack:C12345")!.id;
       // makeSession の overrides で parentSessionId を設定
       const session = makeSession({ id: sessionId, engine: "claude", parentSessionId: "parent-session" });
 
@@ -1078,13 +1069,12 @@ describe("runSession", () => {
       vi.mocked(isDeadSessionError).mockReturnValue(true);
 
       const repos = makeRepos();
-      repos.sessions.createSession({
+      const { id: sessionId } = repos.sessions.createSession({
         engine: "claude",
         source: "slack",
         sourceRef: "slack:C12345",
         sessionKey: "slack:C12345",
       });
-      const sessionId = repos.sessions.getSessionBySessionKey("slack:C12345")!.id;
       repos.sessions.updateSession(sessionId, { engineSessionId: "old-stale-id" });
       const session = makeSession({ id: sessionId, engineSessionId: "old-stale-id" });
 
@@ -1272,13 +1262,12 @@ describe("runSession", () => {
       const { notifyParentSession } = await import("../callbacks.js");
 
       const repos = makeRepos();
-      repos.sessions.createSession({
+      const { id: sessionId } = repos.sessions.createSession({
         engine: "claude",
         source: "slack",
         sourceRef: "slack:C12345",
         sessionKey: "slack:C12345",
       });
-      const sessionId = repos.sessions.getSessionBySessionKey("slack:C12345")!.id;
       const session = makeSession({ id: sessionId });
 
       const mockEngine: Engine = {
@@ -1335,13 +1324,12 @@ describe("runSession", () => {
   describe("engine.run の結果処理", () => {
     it("engine.run が sessionId を返した場合 repos.sessions.updateSession に engineSessionId が渡される", async () => {
       const repos = makeRepos();
-      repos.sessions.createSession({
+      const { id: sessionId } = repos.sessions.createSession({
         engine: "claude",
         source: "slack",
         sourceRef: "slack:C12345",
         sessionKey: "slack:C12345",
       });
-      const sessionId = repos.sessions.getSessionBySessionKey("slack:C12345")!.id;
       const session = makeSession({ id: sessionId });
 
       const mockEngine = makeEngine({ result: "Done", sessionId: "new-engine-session" });
