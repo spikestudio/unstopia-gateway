@@ -1,6 +1,5 @@
 import fs from "node:fs";
 import { checkBudget } from "../gateway/budgets.js";
-import type { Repositories } from "./repositories/index.js";
 import { scanOrg } from "../gateway/org.js";
 import { resolveOrgHierarchy } from "../gateway/org-hierarchy.js";
 import { cleanupMcpConfigFile, resolveMcpServers, writeMcpConfigFile } from "../mcp/resolver.js";
@@ -30,6 +29,7 @@ import {
 } from "../shared/usageAwareness.js";
 import { notifyDiscordChannel, notifyParentSession, notifyRateLimited, notifyRateLimitResumed } from "./callbacks.js";
 import { buildContext } from "./context.js";
+import type { Repositories } from "./repositories/index.js";
 
 export function mergeTransportMeta(
   existing: Session["transportMeta"],

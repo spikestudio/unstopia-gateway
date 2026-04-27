@@ -126,9 +126,7 @@ export class SqliteSessionRepository implements ISessionRepository {
   }
 
   getSession(id: string): Session | undefined {
-    const row = this.db.prepare("SELECT * FROM sessions WHERE id = ?").get(id) as
-      | Record<string, unknown>
-      | undefined;
+    const row = this.db.prepare("SELECT * FROM sessions WHERE id = ?").get(id) as Record<string, unknown> | undefined;
     return row ? rowToSession(row) : undefined;
   }
 
@@ -260,8 +258,7 @@ export class SqliteSessionRepository implements ISessionRepository {
   duplicateSession(sourceId: string, newTitle?: string): { session: Session; messageCount: number } {
     const source = this.getSession(sourceId);
     if (!source) throw new Error(`Session ${sourceId} not found`);
-    if (!source.engineSessionId)
-      throw new Error(`Session ${sourceId} has no engine session ID — cannot duplicate`);
+    if (!source.engineSessionId) throw new Error(`Session ${sourceId} has no engine session ID — cannot duplicate`);
 
     const now = new Date().toISOString();
     const newId = randomUUID();

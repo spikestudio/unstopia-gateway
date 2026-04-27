@@ -13,7 +13,6 @@ import { WhatsAppConnector } from "../connectors/whatsapp/index.js";
 import { loadJobs } from "../cron/jobs.js";
 import { reloadScheduler, startScheduler, stopScheduler } from "../cron/scheduler.js";
 import { type RouteOptions, SessionManager } from "../sessions/manager.js";
-import { buildConnectorNames, buildEngines, buildRepositories } from "./container.js";
 import {
   getInterruptedSessions,
   initDb,
@@ -25,8 +24,8 @@ import {
 import { loadConfig } from "../shared/config.js";
 import { configureLogger, logger } from "../shared/logger.js";
 import {
-  isInterruptibleEngine,
   type Connector,
+  isInterruptibleEngine,
   type JinnConfig,
   type SlackConnectorConfig,
   type TelegramConnectorConfig,
@@ -34,6 +33,7 @@ import {
 } from "../shared/types.js";
 import { initStt } from "../stt/stt.js";
 import { type ApiContext, handleApiRequest, resumePendingWebQueueItems } from "./api.js";
+import { buildConnectorNames, buildEngines, buildRepositories } from "./container.js";
 import { ensureFilesDir } from "./files.js";
 import { scanOrg } from "./org.js";
 import { startWatchers, stopWatchers, syncSkillSymlinks } from "./watcher.js";

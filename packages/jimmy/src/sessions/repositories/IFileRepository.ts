@@ -8,7 +8,13 @@ export interface FileMeta {
 }
 
 export interface IFileRepository {
-  insertFile(meta: { id: string; filename: string; size: number; mimetype?: string | null; path?: string | null }): FileMeta;
+  insertFile(meta: {
+    id: string;
+    filename: string;
+    size: number;
+    mimetype?: string | null;
+    path?: string | null;
+  }): FileMeta;
   getFile(id: string): FileMeta | undefined;
   listFiles(): FileMeta[];
   deleteFile(id: string): boolean;

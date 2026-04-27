@@ -2,13 +2,13 @@ import type Database from "better-sqlite3";
 import { ClaudeEngine } from "../engines/claude.js";
 import { CodexEngine } from "../engines/codex.js";
 import { GeminiEngine } from "../engines/gemini.js";
+import type { Repositories } from "../sessions/repositories/index.js";
 import {
   SqliteFileRepository,
   SqliteMessageRepository,
   SqliteQueueRepository,
   SqliteSessionRepository,
 } from "../sessions/repositories/index.js";
-import type { Repositories } from "../sessions/repositories/index.js";
 import type { Engine, JinnConfig } from "../shared/types.js";
 
 export type { Repositories };

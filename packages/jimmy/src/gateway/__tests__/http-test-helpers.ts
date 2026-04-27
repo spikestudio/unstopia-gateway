@@ -18,8 +18,12 @@ export function makeRes(): { res: ServerResponse; written: () => { status: numbe
   let status = 200;
   let rawBody = "";
   const res = {
-    writeHead: vi.fn((s: number) => { status = s; }),
-    end: vi.fn((b: string) => { rawBody = b; }),
+    writeHead: vi.fn((s: number) => {
+      status = s;
+    }),
+    end: vi.fn((b: string) => {
+      rawBody = b;
+    }),
   } as unknown as ServerResponse;
   return { res, written: () => ({ status, body: JSON.parse(rawBody || "null") }) };
 }

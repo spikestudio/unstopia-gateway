@@ -1,10 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Connector, Engine, JinnConfig } from "../../shared/types.js";
-import type { Repositories } from "../repositories/index.js";
 import { InMemoryFileRepository } from "../repositories/InMemoryFileRepository.js";
 import { InMemoryMessageRepository } from "../repositories/InMemoryMessageRepository.js";
 import { InMemoryQueueRepository } from "../repositories/InMemoryQueueRepository.js";
 import { InMemorySessionRepository } from "../repositories/InMemorySessionRepository.js";
+import type { Repositories } from "../repositories/index.js";
 
 vi.mock("../engine-runner.js", () => ({
   mergeTransportMeta: vi.fn((e: unknown, i: unknown) => ({ ...((e as object) || {}), ...((i as object) || {}) })),
@@ -44,7 +44,9 @@ function makeConnector(overrides: Partial<Connector> = {}): Connector {
   return {
     name: "telegram",
     reconstructTarget: vi.fn().mockReturnValue({ channel: "ch", messageTs: undefined }),
-    getCapabilities: vi.fn().mockReturnValue({ threading: false, messageEdits: false, reactions: false, attachments: false }),
+    getCapabilities: vi
+      .fn()
+      .mockReturnValue({ threading: false, messageEdits: false, reactions: false, attachments: false }),
     replyMessage: vi.fn().mockResolvedValue(undefined),
     sendMessage: vi.fn(),
     addReaction: vi.fn().mockResolvedValue(undefined),
@@ -55,10 +57,18 @@ function makeConnector(overrides: Partial<Connector> = {}): Connector {
 }
 
 const baseMsg = {
-  connector: "telegram", source: "telegram", sessionKey: "k1",
+  connector: "telegram",
+  source: "telegram",
+  sessionKey: "k1",
   replyContext: { channel: "ch", messageTs: undefined },
-  messageId: undefined, channel: "ch", thread: undefined,
-  user: "user1", userId: "user1", text: "hello", attachments: [], raw: {},
+  messageId: undefined,
+  channel: "ch",
+  thread: undefined,
+  user: "user1",
+  userId: "user1",
+  text: "hello",
+  attachments: [],
+  raw: {},
   transportMeta: undefined,
 };
 
@@ -131,7 +141,12 @@ describe("SessionManager", () => {
     });
 
     it("status が waiting のときはキュー待ちメッセージを返信する", async () => {
-      const session = sessionRepo.createSession({ engine: "claude", source: "telegram", sourceRef: "k1", sessionKey: "k1" });
+      const session = sessionRepo.createSession({
+        engine: "claude",
+        source: "telegram",
+        sourceRef: "k1",
+        sessionKey: "k1",
+      });
       sessionRepo.updateSession(session.id, { status: "waiting" });
       const connector = makeConnector();
 
@@ -181,7 +196,12 @@ describe("SessionManager", () => {
     });
 
     it("/model でモデルを更新して true を返す", async () => {
-      const session = sessionRepo.createSession({ engine: "claude", source: "telegram", sourceRef: "k1", sessionKey: "k1" });
+      const session = sessionRepo.createSession({
+        engine: "claude",
+        source: "telegram",
+        sourceRef: "k1",
+        sessionKey: "k1",
+      });
       const connector = makeConnector();
 
       const handled = await manager.handleCommand({ ...baseMsg, text: "/model claude-opus-4" } as never, connector);
