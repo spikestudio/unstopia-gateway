@@ -79,7 +79,7 @@ export type PutBoardBody = Record<string, unknown>;
 export interface CreateCronJobBody {
   id?: string;
   name?: string;
-  enabled?: unknown;
+  enabled?: boolean;
   schedule?: string;
   timezone?: string;
   engine?: string;
