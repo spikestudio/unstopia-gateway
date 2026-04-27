@@ -42,12 +42,7 @@ function createMockProcess(): MockProcess {
 }
 
 // Helper: simulate a successful non-streaming run
-async function runWithOutput(
-  engine: ClaudeEngine,
-  opts: EngineRunOpts,
-  outputLines: string[],
-  exitCode = 0,
-) {
+async function runWithOutput(engine: ClaudeEngine, opts: EngineRunOpts, outputLines: string[], exitCode = 0) {
   const proc = createMockProcess();
   mockSpawn.mockReturnValue(proc as unknown as ChildProcess);
 
@@ -294,12 +289,7 @@ describe("ClaudeEngine", () => {
     });
 
     it("resolves with error message on non-zero exit", async () => {
-      const result = await runWithOutput(
-        engine,
-        { prompt: "q", cwd: "/tmp" },
-        [],
-        127,
-      );
+      const result = await runWithOutput(engine, { prompt: "q", cwd: "/tmp" }, [], 127);
       expect(result.error).toContain("127");
     });
 
@@ -318,9 +308,7 @@ describe("ClaudeEngine", () => {
     });
 
     it("resolves with non-zero exit + stdout JSON (array with result)", async () => {
-      const output = JSON.stringify([
-        { type: "result", result: "partial", session_id: "cl-nz", is_error: false },
-      ]);
+      const output = JSON.stringify([{ type: "result", result: "partial", session_id: "cl-nz", is_error: false }]);
       const result = await runWithOutput(engine, { prompt: "q", cwd: "/tmp" }, [output], 1);
       expect(result.result).toBe("partial");
     });
@@ -458,9 +446,7 @@ describe("ClaudeEngine", () => {
         setTimeout(() => {
           proc2.stdout.emit(
             "data",
-            Buffer.from(
-              JSON.stringify({ type: "result", result: "ok", session_id: "s4", num_turns: 1 }) + "\n",
-            ),
+            Buffer.from(`${JSON.stringify({ type: "result", result: "ok", session_id: "s4", num_turns: 1 })}\n`),
           );
           proc2.exitCode = 0;
           proc2.emit("close", 0);
@@ -482,13 +468,13 @@ describe("ClaudeEngine", () => {
       proc1.stdout.emit(
         "data",
         Buffer.from(
-          JSON.stringify({
+          `${JSON.stringify({
             type: "result",
             result: "socket hang up during request",
             session_id: "s-pre",
             is_error: true,
             num_turns: 1,
-          }) + "\n",
+          })}\n`,
         ),
       );
       proc1.exitCode = 1;
