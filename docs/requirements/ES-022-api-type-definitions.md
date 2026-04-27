@@ -30,14 +30,14 @@
 
 <!-- ストーリートレース: 各 AC 末尾に ← Sn で導出元ストーリーを明示 -->
 
-- [ ] **AC-E022-01**: `gateway/api/api-types.ts` が新設され、各ハンドラーファイルから import できる。← S17
-- [ ] **AC-E022-02**: `sessions` ハンドラー（sessions.ts）の主要なリクエストボディ型（CreateSession・UpdateSession・BulkDelete・EnqueueMessage等）が `api-types.ts` に named type として定義され、`sessions.ts` から参照される。← S17
-- [ ] **AC-E022-03**: `org` ハンドラー（org.ts）の主要なリクエストボディ型（CrossRequest等）が `api-types.ts` に定義され、`org.ts` から参照される。← S17
-- [ ] **AC-E022-04**: `cron` ハンドラー（cron.ts）の主要なリクエストボディ型（CreateCronJob・UpdateCronJob等）が `api-types.ts` に定義され、`cron.ts` から参照される。← S17
-- [ ] **AC-E022-05**: `connectors` ハンドラー（connectors.ts）の主要なリクエストボディ型（IncomingMessageBody等）が `api-types.ts` に定義され、`connectors.ts` から参照される。← S17
-- [ ] **AC-E022-06**: `misc` ハンドラー（misc.ts）の主要なレスポンス型（StatusResponse・InstanceInfo等）が `api-types.ts` に定義され、`misc.ts` から参照される。← S17（AI 補完: レスポンス型の集約はリクエスト型と同等の重要性を持つ）
-- [ ] **AC-E022-07**: `api-types.ts` を変更後も `pnpm typecheck` がゼロエラーで通過する。← S17
-- [ ] **AC-E022-08**: `api-types.ts` を変更後も `pnpm test` が全 PASS する（ランタイム動作に変更なし）。← S17（AI 補完: リグレッション検証は必須）
+- [x] **AC-E022-01**: `gateway/api/api-types.ts` が新設され、各ハンドラーファイルから import できる。← S17
+- [x] **AC-E022-02**: `sessions` ハンドラー（sessions.ts）の主要なリクエストボディ型（CreateSession・UpdateSession・BulkDelete・EnqueueMessage等）が `api-types.ts` に named type として定義され、`sessions.ts` から参照される。← S17
+- [x] **AC-E022-03**: `org` ハンドラー（org.ts）の主要なリクエストボディ型（CrossRequest等）が `api-types.ts` に定義され、`org.ts` から参照される。← S17
+- [x] **AC-E022-04**: `cron` ハンドラー（cron.ts）の主要なリクエストボディ型（CreateCronJob・UpdateCronJob等）が `api-types.ts` に定義され、`cron.ts` から参照される。← S17
+- [x] **AC-E022-05**: `connectors` ハンドラー（connectors.ts）の主要なリクエストボディ型（IncomingMessageBody等）が `api-types.ts` に定義され、`connectors.ts` から参照される。← S17
+- [x] **AC-E022-06**: `misc` ハンドラー（misc.ts）の主要なレスポンス型（StatusResponse・InstanceInfo等）が `api-types.ts` に定義され、`misc.ts` から参照される。← S17（AI 補完: レスポンス型の集約はリクエスト型と同等の重要性を持つ）
+- [x] **AC-E022-07**: `api-types.ts` を変更後も `pnpm typecheck` がゼロエラーで通過する。← S17
+- [x] **AC-E022-08**: `api-types.ts` を変更後も `pnpm test` が全 PASS する（ランタイム動作に変更なし）。← S17（AI 補完: リグレッション検証は必須）
 
 **インターフェース:** `packages/jimmy/src/gateway/api/api-types.ts`（新規ファイル）
 
@@ -47,9 +47,9 @@
 
 **受入基準:**
 
-- [ ] **AC-E022-09**: `sessions.ts` における `body as Record<string, unknown>` の主要キャスト箇所（5箇所以上）が named 型アサーションに置き換えられる。← S17
-- [ ] **AC-E022-10**: `org.ts`・`cron.ts`・`connectors.ts` における同様のキャスト箇所が named 型参照に置き換えられる。← S17
-- [ ] **AC-E022-11**: 置き換え後も biome check がゼロ警告・ゼロエラーを維持する。← S17（AI 補完: 型定義ファイル追加で新たな biome 違反が発生しないこと）
+- [x] **AC-E022-09**: `sessions.ts` における `body as Record<string, unknown>` の主要キャスト箇所（5箇所以上）が named 型アサーションに置き換えられる。← S17
+- [x] **AC-E022-10**: `org.ts`・`cron.ts`・`connectors.ts` における同様のキャスト箇所が named 型参照に置き換えられる。← S17
+- [x] **AC-E022-11**: 置き換え後も biome check がゼロ警告・ゼロエラーを維持する。← S17（AI 補完: 型定義ファイル追加で新たな biome 違反が発生しないこと）
 
 **インターフェース:** 既存ハンドラーファイルの import 文・型アサーション
 
