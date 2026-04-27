@@ -17,7 +17,8 @@ import {
 } from "../../sessions/registry.js";
 import { logger } from "../../shared/logger.js";
 import { JINN_HOME } from "../../shared/paths.js";
-import type { JsonObject } from "../../shared/types.js";
+import type { Result } from "../../shared/result.js";
+import type { JsonObject, Session } from "../../shared/types.js";
 import { isInterruptibleEngine } from "../../shared/types.js";
 import { getClaudeExpectedResetAt } from "../../shared/usageAwareness.js";
 import type { ApiContext } from "../types.js";
@@ -37,6 +38,13 @@ import {
   serializeSession,
   serverError,
 } from "./utils.js";
+
+// ── Result unwrap helpers ────────────────────────────────────────────────────
+
+/** Result<Session | null, E> から Session | null を取り出す。Err の場合は null を返す */
+function unwrapSession<E>(result: Result<Session | null, E>): Session | null {
+  return result.ok ? result.value : null;
+}
 
 // ── Handler ─────────────────────────────────────────────────────────────────
 
@@ -82,7 +90,7 @@ export async function handleSessionsRequest(
 
     // Kill any live engine processes before deleting
     for (const id of ids) {
-      const session = getSession(id);
+      const session = unwrapSession(getSession(id));
       if (!session) continue;
       const engine = context.sessionManager.getEngine(session.engine);
       if (engine && isInterruptibleEngine(engine) && engine.isAlive(id)) {
@@ -139,7 +147,7 @@ export async function handleSessionsRequest(
     const config = context.getConfig();
     const engineName = (body.engine as string | undefined) || config.engines.default;
     const sessionKey = `web:${Date.now()}`;
-    const session = createSession({
+    let session = createSession({
       engine: engineName,
       source: "web",
       sourceRef: sessionKey,
@@ -176,11 +184,15 @@ export async function handleSessionsRequest(
     }
 
     // Set status to "running" synchronously BEFORE returning the response.
-    updateSession(session.id, {
+    const runningResult = updateSession(session.id, {
       status: "running",
       lastActivity: new Date().toISOString(),
     });
-    session.status = "running";
+    if (runningResult.ok && runningResult.value) {
+      session = runningResult.value;
+    } else {
+      session = { ...session, status: "running" };
+    }
 
     const attachmentPaths = resolveAttachmentPaths(body.attachments);
 
@@ -200,7 +212,7 @@ export async function handleSessionsRequest(
   // GET /api/sessions/:id
   let params = matchRoute("/api/sessions/:id", pathname);
   if (method === "GET" && params) {
-    const session = getSession(params.id);
+    const session = unwrapSession(getSession(params.id));
     if (!session) {
       notFound(res);
       return true;
@@ -231,7 +243,7 @@ export async function handleSessionsRequest(
   // PUT /api/sessions/:id
   params = matchRoute("/api/sessions/:id", pathname);
   if (method === "PUT" && params) {
-    const session = getSession(params.id);
+    const session = unwrapSession(getSession(params.id));
     if (!session) {
       notFound(res);
       return true;
@@ -256,7 +268,8 @@ export async function handleSessionsRequest(
       badRequest(res, "no valid fields to update");
       return true;
     }
-    const updated = updateSession(params.id, updates);
+    const updatedResult = updateSession(params.id, updates);
+    const updated = updatedResult.ok ? updatedResult.value : null;
     if (!updated) {
       notFound(res);
       return true;
@@ -269,7 +282,7 @@ export async function handleSessionsRequest(
   // DELETE /api/sessions/:id
   params = matchRoute("/api/sessions/:id", pathname);
   if (method === "DELETE" && params) {
-    const session = getSession(params.id);
+    const session = unwrapSession(getSession(params.id));
     if (!session) {
       notFound(res);
       return true;
@@ -296,7 +309,7 @@ export async function handleSessionsRequest(
   // POST /api/sessions/:id/stop
   params = matchRoute("/api/sessions/:id/stop", pathname);
   if (method === "POST" && params) {
-    const session = getSession(params.id);
+    const session = unwrapSession(getSession(params.id));
     if (!session) {
       notFound(res);
       return true;
@@ -315,7 +328,7 @@ export async function handleSessionsRequest(
   // POST /api/sessions/:id/reset — clear stuck session state (stale engine IDs, errors)
   params = matchRoute("/api/sessions/:id/reset", pathname);
   if (method === "POST" && params) {
-    const session = getSession(params.id);
+    const session = unwrapSession(getSession(params.id));
     if (!session) {
       notFound(res);
       return true;
@@ -346,7 +359,7 @@ export async function handleSessionsRequest(
   // POST /api/sessions/:id/duplicate — duplicate a session (snapshot fork)
   params = matchRoute("/api/sessions/:id/duplicate", pathname);
   if (method === "POST" && params) {
-    const source = getSession(params.id);
+    const source = unwrapSession(getSession(params.id));
     if (!source) {
       notFound(res);
       return true;
@@ -369,7 +382,7 @@ export async function handleSessionsRequest(
       // 3. Store the new engine session ID
       updateSession(newSession.id, { engineSessionId: forkResult.engineSessionId });
 
-      const result = getSession(newSession.id);
+      const result = unwrapSession(getSession(newSession.id));
       if (!result) {
         serverError(res, "Failed to retrieve duplicated session");
         return true;
@@ -400,7 +413,7 @@ export async function handleSessionsRequest(
   // DELETE /api/sessions/:id/queue/:itemId — cancel specific item
   const queueItemParams = matchRoute("/api/sessions/:id/queue/:itemId", pathname);
   if (method === "DELETE" && queueItemParams) {
-    const session = getSession(queueItemParams.id);
+    const session = unwrapSession(getSession(queueItemParams.id));
     if (!session) {
       notFound(res);
       return true;
@@ -419,7 +432,7 @@ export async function handleSessionsRequest(
   // GET /api/sessions/:id/queue
   params = matchRoute("/api/sessions/:id/queue", pathname);
   if (method === "GET" && params) {
-    const session = getSession(params.id);
+    const session = unwrapSession(getSession(params.id));
     if (!session) {
       notFound(res);
       return true;
@@ -432,7 +445,7 @@ export async function handleSessionsRequest(
   // DELETE /api/sessions/:id/queue — clear all pending
   params = matchRoute("/api/sessions/:id/queue", pathname);
   if (method === "DELETE" && params) {
-    const session = getSession(params.id);
+    const session = unwrapSession(getSession(params.id));
     if (!session) {
       notFound(res);
       return true;
@@ -448,7 +461,7 @@ export async function handleSessionsRequest(
   // POST /api/sessions/:id/queue/pause
   params = matchRoute("/api/sessions/:id/queue/pause", pathname);
   if (method === "POST" && params) {
-    const session = getSession(params.id);
+    const session = unwrapSession(getSession(params.id));
     if (!session) {
       notFound(res);
       return true;
@@ -463,7 +476,7 @@ export async function handleSessionsRequest(
   // POST /api/sessions/:id/queue/resume
   params = matchRoute("/api/sessions/:id/queue/resume", pathname);
   if (method === "POST" && params) {
-    const session = getSession(params.id);
+    const session = unwrapSession(getSession(params.id));
     if (!session) {
       notFound(res);
       return true;
@@ -489,7 +502,7 @@ export async function handleSessionsRequest(
   // GET /api/sessions/:id/transcript — return raw Claude Code session transcript
   params = matchRoute("/api/sessions/:id/transcript", pathname);
   if (method === "GET" && params) {
-    const session = getSession(params.id);
+    const session = unwrapSession(getSession(params.id));
     if (!session) {
       notFound(res);
       return true;
@@ -506,7 +519,7 @@ export async function handleSessionsRequest(
   // POST /api/sessions/:id/message
   params = matchRoute("/api/sessions/:id/message", pathname);
   if (method === "POST" && params) {
-    let session = getSession(params.id);
+    let session = unwrapSession(getSession(params.id));
     if (!session) {
       notFound(res);
       return true;

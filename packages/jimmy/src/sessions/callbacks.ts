@@ -68,7 +68,8 @@ async function _sendNotification(
 ): Promise<void> {
   const parentSessionId = childSession.parentSessionId;
   if (!parentSessionId) return;
-  const parent = sessionRepo?.getSession(parentSessionId);
+  const parentResult = sessionRepo?.getSession(parentSessionId);
+  const parent = parentResult?.ok ? parentResult.value : null;
   if (!parent) return; // Parent gone or expired
   if (parent.status === "error") return; // Parent already in error — skip
 

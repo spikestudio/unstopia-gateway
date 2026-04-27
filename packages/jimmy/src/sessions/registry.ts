@@ -2,12 +2,14 @@ import { mkdirSync } from "node:fs";
 import path from "node:path";
 import Database from "better-sqlite3";
 import { SESSIONS_DB } from "../shared/paths.js";
+import type { Result } from "../shared/result.js";
 import type { Session } from "../shared/types.js";
 import type {
   CreateSessionOpts,
   FileMeta,
   ListSessionsFilter,
   QueueItem,
+  RepositoryError,
   SessionMessage,
   UpdateSessionFields,
 } from "./repositories/index.js";
@@ -201,19 +203,19 @@ export function createSession(opts: CreateSessionOpts & { prompt?: string; porta
   return getSessionRepo().createSession(opts);
 }
 
-export function getSession(id: string): Session | undefined {
+export function getSession(id: string): Result<Session | null, RepositoryError> {
   return getSessionRepo().getSession(id);
 }
 
-export function getSessionBySourceRef(sourceRef: string): Session | undefined {
+export function getSessionBySourceRef(sourceRef: string): Result<Session | null, RepositoryError> {
   return getSessionRepo().getSessionBySessionKey(sourceRef);
 }
 
-export function getSessionBySessionKey(sessionKey: string): Session | undefined {
+export function getSessionBySessionKey(sessionKey: string): Result<Session | null, RepositoryError> {
   return getSessionRepo().getSessionBySessionKey(sessionKey);
 }
 
-export function updateSession(id: string, updates: UpdateSessionFields): Session | undefined {
+export function updateSession(id: string, updates: UpdateSessionFields): Result<Session | null, RepositoryError> {
   return getSessionRepo().updateSession(id, updates);
 }
 
