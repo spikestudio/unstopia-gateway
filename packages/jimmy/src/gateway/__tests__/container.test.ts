@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { buildConnectorNames, buildEngines } from "../container.js";
 import type { JinnConfig } from "../../shared/types.js";
+import { buildConnectorNames, buildEngines } from "../container.js";
 
 function makeConfig(connectors: JinnConfig["connectors"] = {}): JinnConfig {
   return {
