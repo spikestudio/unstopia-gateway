@@ -35,7 +35,9 @@ import { handleOrgRequest } from "../api/org.js";
 import { makeContext, makeReq, makeRes } from "./http-test-helpers.js";
 
 describe("handleOrgRequest", () => {
-  beforeEach(() => { vi.clearAllMocks(); });
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
 
   describe("GET /api/org", () => {
     it("ORG_DIR がない場合は空の org 構造を返す", async () => {

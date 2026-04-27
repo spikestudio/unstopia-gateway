@@ -155,8 +155,7 @@ export class InMemorySessionRepository implements ISessionRepository {
   duplicateSession(sourceId: string, newTitle?: string): { session: Session; messageCount: number } {
     const source = this.store.get(sourceId);
     if (!source) throw new Error(`Session ${sourceId} not found`);
-    if (!source.engineSessionId)
-      throw new Error(`Session ${sourceId} has no engine session ID — cannot duplicate`);
+    if (!source.engineSessionId) throw new Error(`Session ${sourceId} has no engine session ID — cannot duplicate`);
 
     const now = new Date().toISOString();
     const newId = randomUUID();

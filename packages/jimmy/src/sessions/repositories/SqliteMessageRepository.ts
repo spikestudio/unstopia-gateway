@@ -14,9 +14,7 @@ export class SqliteMessageRepository implements IMessageRepository {
 
   getMessages(sessionId: string): SessionMessage[] {
     return this.db
-      .prepare(
-        "SELECT id, role, content, timestamp FROM messages WHERE session_id = ? ORDER BY timestamp ASC",
-      )
+      .prepare("SELECT id, role, content, timestamp FROM messages WHERE session_id = ? ORDER BY timestamp ASC")
       .all(sessionId) as SessionMessage[];
   }
 }

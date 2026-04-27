@@ -37,16 +37,12 @@ export class SqliteFileRepository implements IFileRepository {
   }
 
   getFile(id: string): FileMeta | undefined {
-    const row = this.db.prepare("SELECT * FROM files WHERE id = ?").get(id) as
-      | Record<string, unknown>
-      | undefined;
+    const row = this.db.prepare("SELECT * FROM files WHERE id = ?").get(id) as Record<string, unknown> | undefined;
     return row ? rowToFileMeta(row) : undefined;
   }
 
   listFiles(): FileMeta[] {
-    const rows = this.db
-      .prepare("SELECT * FROM files ORDER BY created_at DESC")
-      .all() as Record<string, unknown>[];
+    const rows = this.db.prepare("SELECT * FROM files ORDER BY created_at DESC").all() as Record<string, unknown>[];
     return rows.map(rowToFileMeta);
   }
 

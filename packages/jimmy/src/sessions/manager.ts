@@ -1,11 +1,10 @@
-import type { Repositories } from "./repositories/index.js";
 import { logger } from "../shared/logger.js";
 import type { Connector, Engine, IncomingMessage, JinnConfig, RouteOptions, Session } from "../shared/types.js";
 import { getClaudeExpectedResetAt } from "../shared/usageAwareness.js";
 import { handleCronCommand } from "./cron-command-handler.js";
 import { mergeTransportMeta, runSession } from "./engine-runner.js";
 import { SessionQueue } from "./queue.js";
-import type { ISessionRepository } from "./repositories/index.js";
+import type { ISessionRepository, Repositories } from "./repositories/index.js";
 
 export type { RouteOptions } from "../shared/types.js";
 
@@ -62,12 +61,7 @@ export class SessionManager {
   private connectorProvider: () => Map<string, Connector> = () => new Map();
   private repos: Repositories;
 
-  constructor(
-    config: JinnConfig,
-    engines: Map<string, Engine>,
-    _connectorNames: string[] = [],
-    repos: Repositories,
-  ) {
+  constructor(config: JinnConfig, engines: Map<string, Engine>, _connectorNames: string[] = [], repos: Repositories) {
     this.config = config;
     this.engines = engines;
     this.repos = repos;

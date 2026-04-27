@@ -37,12 +37,17 @@ import { handleCronRequest } from "../api/cron.js";
 import { makeContext, makeReq, makeRes } from "./http-test-helpers.js";
 
 const sampleJob = {
-  id: "job-1", name: "Test Job", enabled: true,
-  schedule: "0 * * * *", prompt: "Do work",
+  id: "job-1",
+  name: "Test Job",
+  enabled: true,
+  schedule: "0 * * * *",
+  prompt: "Do work",
 };
 
 describe("handleCronRequest", () => {
-  beforeEach(() => { vi.clearAllMocks(); });
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
 
   describe("GET /api/cron", () => {
     it("ジョブ一覧を返す", async () => {

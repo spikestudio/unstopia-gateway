@@ -14,8 +14,8 @@ vi.mock("../../shared/logger.js", () => ({
 }));
 
 import type { Session } from "../../shared/types.js";
-import { InMemorySessionRepository } from "../repositories/InMemorySessionRepository.js";
 import { notifyDiscordChannel, notifyParentSession, notifyRateLimited, notifyRateLimitResumed } from "../callbacks.js";
+import { InMemorySessionRepository } from "../repositories/InMemorySessionRepository.js";
 
 function makeSession(_overrides: Partial<Session> = {}): Session {
   return {

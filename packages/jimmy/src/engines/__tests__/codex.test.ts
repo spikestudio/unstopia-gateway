@@ -408,7 +408,7 @@ describe("CodexEngine", () => {
       proc.stdout.emit(
         "data",
         Buffer.from(
-          JSON.stringify({ type: "item.completed", item: { type: "agent_message", text: "Resumed!" } }) + "\n",
+          `${JSON.stringify({ type: "item.completed", item: { type: "agent_message", text: "Resumed!" } })}\n`,
         ),
       );
       proc.exitCode = 0;
@@ -434,9 +434,7 @@ describe("CodexEngine", () => {
 
       proc.stdout.emit(
         "data",
-        Buffer.from(
-          JSON.stringify({ type: "item.completed", item: { type: "agent_message", text: "done" } }) + "\n",
-        ),
+        Buffer.from(`${JSON.stringify({ type: "item.completed", item: { type: "agent_message", text: "done" } })}\n`),
       );
       proc.exitCode = 0;
       proc.emit("close", 0);
@@ -461,7 +459,7 @@ describe("CodexEngine", () => {
 
       proc.stdout.emit(
         "data",
-        Buffer.from(JSON.stringify({ type: "item.completed", item: { type: "agent_message", text: "ok" } }) + "\n"),
+        Buffer.from(`${JSON.stringify({ type: "item.completed", item: { type: "agent_message", text: "ok" } })}\n`),
       );
       proc.exitCode = 0;
       proc.emit("close", 0);
@@ -479,7 +477,7 @@ describe("CodexEngine", () => {
       const p = engine.run({ prompt: "q", cwd: "/tmp", sessionId: "cx-bin" });
       proc.stdout.emit(
         "data",
-        Buffer.from(JSON.stringify({ type: "item.completed", item: { type: "agent_message", text: "ok" } }) + "\n"),
+        Buffer.from(`${JSON.stringify({ type: "item.completed", item: { type: "agent_message", text: "ok" } })}\n`),
       );
       proc.exitCode = 0;
       proc.emit("close", 0);
@@ -495,7 +493,7 @@ describe("CodexEngine", () => {
       const p = engine.run({ prompt: "q", cwd: "/tmp", bin: "/custom/codex", sessionId: "cx-cbin" });
       proc.stdout.emit(
         "data",
-        Buffer.from(JSON.stringify({ type: "item.completed", item: { type: "agent_message", text: "ok" } }) + "\n"),
+        Buffer.from(`${JSON.stringify({ type: "item.completed", item: { type: "agent_message", text: "ok" } })}\n`),
       );
       proc.exitCode = 0;
       proc.emit("close", 0);
@@ -560,10 +558,7 @@ describe("CodexEngine", () => {
         onStream: (d) => deltas.push(d),
       });
 
-      proc.stdout.emit(
-        "data",
-        Buffer.from(JSON.stringify({ type: "error", message: "API error occurred" }) + "\n"),
-      );
+      proc.stdout.emit("data", Buffer.from(`${JSON.stringify({ type: "error", message: "API error occurred" })}\n`));
       proc.exitCode = 1;
       proc.emit("close", 1);
 
@@ -586,9 +581,7 @@ describe("CodexEngine", () => {
 
       proc.stdout.emit(
         "data",
-        Buffer.from(
-          JSON.stringify({ type: "turn.failed", error: { message: "Turn failed hard" } }) + "\n",
-        ),
+        Buffer.from(`${JSON.stringify({ type: "turn.failed", error: { message: "Turn failed hard" } })}\n`),
       );
       proc.exitCode = 1;
       proc.emit("close", 1);
@@ -667,10 +660,7 @@ describe("CodexEngine", () => {
       const p = engine.run({ prompt: "q", cwd: "/tmp", sessionId: "cx-buf" });
 
       // Send data without trailing newline — will be in lineBuf at close
-      proc.stdout.emit(
-        "data",
-        Buffer.from(JSON.stringify({ type: "thread.started", thread_id: "th-buf" })),
-      );
+      proc.stdout.emit("data", Buffer.from(JSON.stringify({ type: "thread.started", thread_id: "th-buf" })));
       proc.exitCode = 0;
       proc.emit("close", 0);
 
@@ -718,7 +708,7 @@ describe("CodexEngine", () => {
         const p = engine.run({ prompt: "q", cwd: "/tmp", sessionId: "cx-env1" });
         proc.stdout.emit(
           "data",
-          Buffer.from(JSON.stringify({ type: "item.completed", item: { type: "agent_message", text: "ok" } }) + "\n"),
+          Buffer.from(`${JSON.stringify({ type: "item.completed", item: { type: "agent_message", text: "ok" } })}\n`),
         );
         proc.exitCode = 0;
         proc.emit("close", 0);
@@ -742,7 +732,7 @@ describe("CodexEngine", () => {
         const p = engine.run({ prompt: "q", cwd: "/tmp", sessionId: "cx-env2" });
         proc.stdout.emit(
           "data",
-          Buffer.from(JSON.stringify({ type: "item.completed", item: { type: "agent_message", text: "ok" } }) + "\n"),
+          Buffer.from(`${JSON.stringify({ type: "item.completed", item: { type: "agent_message", text: "ok" } })}\n`),
         );
         proc.exitCode = 0;
         proc.emit("close", 0);
@@ -766,7 +756,7 @@ describe("CodexEngine", () => {
         const p = engine.run({ prompt: "q", cwd: "/tmp", sessionId: "cx-env3" });
         proc.stdout.emit(
           "data",
-          Buffer.from(JSON.stringify({ type: "item.completed", item: { type: "agent_message", text: "ok" } }) + "\n"),
+          Buffer.from(`${JSON.stringify({ type: "item.completed", item: { type: "agent_message", text: "ok" } })}\n`),
         );
         proc.exitCode = 0;
         proc.emit("close", 0);

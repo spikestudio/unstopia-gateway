@@ -17,7 +17,7 @@ import { SqliteQueueRepository } from "./repositories/SqliteQueueRepository.js";
 import { SqliteSessionRepository } from "./repositories/SqliteSessionRepository.js";
 
 // Re-export types for backward compatibility
-export type { CreateSessionOpts, UpdateSessionFields, ListSessionsFilter, SessionMessage, QueueItem, FileMeta };
+export type { CreateSessionOpts, FileMeta, ListSessionsFilter, QueueItem, SessionMessage, UpdateSessionFields };
 
 // ── DB infrastructure ────────────────────────────────────────────────
 
@@ -176,19 +176,23 @@ let _queueRepo: SqliteQueueRepository | undefined;
 let _fileRepo: SqliteFileRepository | undefined;
 
 function getSessionRepo(): SqliteSessionRepository {
-  return (_sessionRepo ??= new SqliteSessionRepository(initDb()));
+  _sessionRepo ??= new SqliteSessionRepository(initDb());
+  return _sessionRepo;
 }
 
 function getMessageRepo(): SqliteMessageRepository {
-  return (_messageRepo ??= new SqliteMessageRepository(initDb()));
+  _messageRepo ??= new SqliteMessageRepository(initDb());
+  return _messageRepo;
 }
 
 function getQueueRepo(): SqliteQueueRepository {
-  return (_queueRepo ??= new SqliteQueueRepository(initDb()));
+  _queueRepo ??= new SqliteQueueRepository(initDb());
+  return _queueRepo;
 }
 
 function getFileRepo(): SqliteFileRepository {
-  return (_fileRepo ??= new SqliteFileRepository(initDb()));
+  _fileRepo ??= new SqliteFileRepository(initDb());
+  return _fileRepo;
 }
 
 // ── Session façade ────────────────────────────────────────────────────
@@ -226,7 +230,7 @@ export function getInterruptedSessions(): Session[] {
 }
 
 export function accumulateSessionCost(id: string, cost: number, turns: number): void {
-  return getSessionRepo().accumulateSessionCost(id, cost, turns);
+  getSessionRepo().accumulateSessionCost(id, cost, turns);
 }
 
 export function duplicateSession(sourceId: string, newTitle?: string): { session: Session; messageCount: number } {
@@ -244,7 +248,7 @@ export function deleteSessions(ids: string[]): number {
 // ── Message façade ────────────────────────────────────────────────────
 
 export function insertMessage(sessionId: string, role: string, content: string): void {
-  return getMessageRepo().insertMessage(sessionId, role, content);
+  getMessageRepo().insertMessage(sessionId, role, content);
 }
 
 export function getMessages(sessionId: string): SessionMessage[] {
@@ -258,11 +262,11 @@ export function enqueueQueueItem(sessionId: string, sessionKey: string, prompt: 
 }
 
 export function markQueueItemRunning(itemId: string): void {
-  return getQueueRepo().markQueueItemRunning(itemId);
+  getQueueRepo().markQueueItemRunning(itemId);
 }
 
 export function markQueueItemCompleted(itemId: string): void {
-  return getQueueRepo().markQueueItemCompleted(itemId);
+  getQueueRepo().markQueueItemCompleted(itemId);
 }
 
 export function cancelQueueItem(itemId: string): boolean {

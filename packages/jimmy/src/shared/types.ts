@@ -442,9 +442,5 @@ export interface RouteOptions {
 
 /** Minimal interface for routing incoming messages to sessions. Used by cron/ to avoid depending on sessions/manager.ts directly. */
 export interface SessionRouter {
-  route(
-    msg: IncomingMessage,
-    connector: Connector,
-    opts?: RouteOptions,
-  ): Promise<{ sessionId: string } | undefined>;
+  route(msg: IncomingMessage, connector: Connector, opts?: RouteOptions): Promise<{ sessionId: string } | undefined>;
 }

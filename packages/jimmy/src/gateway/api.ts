@@ -1,6 +1,5 @@
 import type { IncomingMessage as HttpRequest, ServerResponse } from "node:http";
 import { logger } from "../shared/logger.js";
-import type { ApiContext } from "./types.js";
 import { handleConnectorsRequest } from "./api/connectors.js";
 import { handleCronRequest } from "./api/cron.js";
 import { handleMiscRequest } from "./api/misc.js";
@@ -9,6 +8,7 @@ import { handleSessionsRequest, resumePendingWebQueueItemsImpl } from "./api/ses
 import { handleSkillsRequest } from "./api/skills.js";
 import { handleSttRequest } from "./api/stt.js";
 import { json, serverError } from "./api/utils.js";
+import type { ApiContext } from "./types.js";
 
 export type { ApiContext } from "./types.js";
 
