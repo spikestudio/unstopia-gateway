@@ -9,4 +9,4 @@ Step 2 完了時に以下の情報を提示する。
 - MVP スコープ内の画面数と割合
 - Epic ごとの画面数内訳
 - 重複 SCR-ID の有無と件数
-- 後続スキルへの接続（`/aidd-phase-review`）
+- 後続スキルへの接続（`/aidd-review phase`）

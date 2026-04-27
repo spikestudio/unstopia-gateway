@@ -30,6 +30,26 @@
 <!-- Epic 設計成果物の「Task に委ねる」項目から、この Task に関連する詳細を転記する -->
 <!-- step3-interface.md の「実装詳細（How）— Task に委ねる」リストを参照 -->
 <!-- 該当する項目がない場合は「該当なし」と記載 -->
+<!-- 設計判断マーク仕様（/aidd-decompose-epic Phase 1/2 が自動付与・解決）
+
+未解決マーク（Phase 1 が付与）:
+
+```
+要検討: category=algorithm reason=ソート戦略が未定 candidates=TimSort,QuickSort
+```
+
+解決済みマーク（Phase 2 が置換）:
+
+```
+設計判断確定: category=algorithm
+  選択: TimSort（推奨）
+  根拠: 安定ソート・実装済みライブラリ対応・平均 O(n log n)
+  対案: QuickSort（不安定・インプレース）
+  トレードオフ: TimSort はメモリ使用量がやや多い
+```
+
+G4 承認前に全マークが解決済みであること（未解決マークがあると G4 FAIL）
+-->
 
 - 委ねられた設計詳細1: Epic の方針（What）を踏まえた、この Task で決定すべき実装詳細
 - 委ねられた設計詳細2: ...

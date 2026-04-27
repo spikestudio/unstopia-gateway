@@ -17,6 +17,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { logger } from "../../shared/logger.js";
 import { JINN_HOME } from "../../shared/paths.js";
+import { exponentialBackoffMs } from "../../shared/retry.js";
 import type { Connector, ConnectorCapabilities, ConnectorHealth, IncomingMessage, Target } from "../../shared/types.js";
 import { formatResponse } from "./format.js";
 
@@ -79,7 +80,7 @@ export class WhatsAppConnector implements Connector {
   private scheduleReconnect(): void {
     if (this.connectionStatus === "stopped") return;
     // Exponential backoff: 5s, 10s, 20s, 40s, 60s max
-    const delay = Math.min(5000 * 2 ** this.reconnectAttempts, 60000);
+    const delay = exponentialBackoffMs(this.reconnectAttempts, 5000, 60000);
     this.reconnectAttempts++;
     logger.info(`WhatsApp reconnecting in ${delay / 1000}s (attempt ${this.reconnectAttempts})`);
     this.reconnectTimer = setTimeout(() => this.connect(), delay);

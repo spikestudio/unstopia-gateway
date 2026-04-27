@@ -113,7 +113,7 @@ chore の場合も**変更が既存機能に影響する場合はテストを追
 
 セルフレビュー完了後、**ローカル環境で**変更内容に応じた実行時検証を実施する（ローカルファースト原則: `aidd-framework/guides/local-verification.md`）。
 
-`skills/aidd-epic-review/references/check-code.md` の「7. 実行時検証」セクションに従い、変更ファイルのパターンから Tier を判定して対応する検証を実施する。検証が失敗した場合は PR を作成せず、失敗内容を解消してから再検証する。
+`skills/aidd-review/references/step2-review-code.md` の「7. 実行時検証」セクションに従い、変更ファイルのパターンから Tier を判定して対応する検証を実施する。検証が失敗した場合は PR を作成せず、失敗内容を解消してから再検証する。
 
 ### 9. ドキュメント更新確認
 

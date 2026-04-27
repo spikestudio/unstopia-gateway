@@ -1,6 +1,12 @@
 {
   "permissions": {
-    "allow": ["Bash(git *)", "Bash(gh *)", "Bash(task *)", "Bash(mise *)", "Bash(lefthook *)"],
+    "allow": [
+      "Bash(git *)",
+      "Bash(gh *)",
+      "Bash(task *)",
+      "Bash(mise *)",
+      "Bash(lefthook *)"
+    ],
     "defaultMode": "acceptEdits"
   }
 }

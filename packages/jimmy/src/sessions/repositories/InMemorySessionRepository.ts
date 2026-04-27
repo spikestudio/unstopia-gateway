@@ -1,4 +1,7 @@
 import { randomUUID } from "node:crypto";
+import { type RepositoryError, repositoryError } from "../../shared/errors.js";
+import type { Result } from "../../shared/result.js";
+import { err, ok } from "../../shared/result.js";
 import type { Session } from "../../shared/types.js";
 import type {
   CreateSessionOpts,
@@ -59,11 +62,11 @@ export class InMemorySessionRepository implements ISessionRepository {
     return session;
   }
 
-  getSession(id: string): Session | undefined {
-    return this.store.get(id);
+  getSession(id: string): Result<Session | null, RepositoryError> {
+    return ok(this.store.get(id) ?? null);
   }
 
-  getSessionBySessionKey(sessionKey: string): Session | undefined {
+  getSessionBySessionKey(sessionKey: string): Result<Session | null, RepositoryError> {
     let found: Session | undefined;
     for (const session of this.store.values()) {
       if (session.sessionKey === sessionKey) {
@@ -72,12 +75,12 @@ export class InMemorySessionRepository implements ISessionRepository {
         }
       }
     }
-    return found;
+    return ok(found ?? null);
   }
 
-  updateSession(id: string, updates: UpdateSessionFields): Session | undefined {
+  updateSession(id: string, updates: UpdateSessionFields): Result<Session | null, RepositoryError> {
     const existing = this.store.get(id);
-    if (!existing) return undefined;
+    if (!existing) return ok(null);
 
     const updated: Session = { ...existing };
     if (updates.engine !== undefined) updated.engine = updates.engine;
@@ -92,7 +95,7 @@ export class InMemorySessionRepository implements ISessionRepository {
     if (updates.title !== undefined) updated.title = updates.title;
 
     this.store.set(id, updated);
-    return updated;
+    return ok(updated);
   }
 
   listSessions(filter?: ListSessionsFilter): Session[] {
@@ -182,5 +185,48 @@ export class InMemorySessionRepository implements ISessionRepository {
     // InMemory 実装はセッション本体のみを複製する。messageCount に依存するテストは
     // InMemoryMessageRepository と組み合わせて上位層で検証すること。
     return { session, messageCount: 0 };
+  }
+
+  findById(id: string): Result<Session | null, RepositoryError> {
+    try {
+      return ok(this.store.get(id) ?? null);
+    } catch (cause) {
+      return err(repositoryError("UNKNOWN", `findById failed: ${id}`, cause));
+    }
+  }
+
+  findByKey(sessionKey: string): Result<Session | null, RepositoryError> {
+    try {
+      let found: Session | undefined;
+      for (const session of this.store.values()) {
+        if (session.sessionKey === sessionKey) {
+          if (!found || session.lastActivity > found.lastActivity) {
+            found = session;
+          }
+        }
+      }
+      return ok(found ?? null);
+    } catch (cause) {
+      return err(repositoryError("UNKNOWN", `findByKey failed: ${sessionKey}`, cause));
+    }
+  }
+
+  save(sessionData: Omit<Session, "id" | "createdAt" | "lastActivity">): Result<Session, RepositoryError> {
+    try {
+      const session = this.createSession(sessionData as CreateSessionOpts);
+      return ok(session);
+    } catch (cause) {
+      return err(repositoryError("CONSTRAINT_VIOLATION", "save failed", cause));
+    }
+  }
+
+  update(id: string, fields: Partial<Session>): Result<Session | null, RepositoryError> {
+    try {
+      const result = this.updateSession(id, fields as UpdateSessionFields);
+      if (!result.ok) return result;
+      return ok(result.value);
+    } catch (cause) {
+      return err(repositoryError("UNKNOWN", `update failed: ${id}`, cause));
+    }
   }
 }

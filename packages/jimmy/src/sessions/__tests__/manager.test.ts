@@ -1,10 +1,16 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { Result } from "../../shared/result.js";
 import type { Connector, Engine, JinnConfig } from "../../shared/types.js";
 import { InMemoryFileRepository } from "../repositories/InMemoryFileRepository.js";
 import { InMemoryMessageRepository } from "../repositories/InMemoryMessageRepository.js";
 import { InMemoryQueueRepository } from "../repositories/InMemoryQueueRepository.js";
 import { InMemorySessionRepository } from "../repositories/InMemorySessionRepository.js";
 import type { Repositories } from "../repositories/index.js";
+
+/** テスト用ヘルパー: Result から値を取り出す。Err/null の場合は undefined を返す */
+function unwrap<T, E>(result: Result<T | null, E>): T | undefined {
+  return result.ok ? (result.value ?? undefined) : undefined;
+}
 
 vi.mock("../engine-runner.js", () => ({
   mergeTransportMeta: vi.fn((e: unknown, i: unknown) => ({ ...((e as object) || {}), ...((i as object) || {}) })),
@@ -117,7 +123,7 @@ describe("SessionManager", () => {
 
       manager.resetSession("key-1");
 
-      expect(sessionRepo.getSessionBySessionKey("key-1")).toBeUndefined();
+      expect(unwrap(sessionRepo.getSessionBySessionKey("key-1"))).toBeUndefined();
     });
 
     it("セッションが存在しない場合は何もしない", () => {
@@ -173,7 +179,7 @@ describe("SessionManager", () => {
       const handled = await manager.handleCommand({ ...baseMsg, text: "/new" } as never, connector);
 
       expect(handled).toBe(true);
-      expect(sessionRepo.getSessionBySessionKey("k1")).toBeUndefined();
+      expect(unwrap(sessionRepo.getSessionBySessionKey("k1"))).toBeUndefined();
       expect(vi.mocked(connector.replyMessage)).toHaveBeenCalled();
     });
 
@@ -207,7 +213,7 @@ describe("SessionManager", () => {
       const handled = await manager.handleCommand({ ...baseMsg, text: "/model claude-opus-4" } as never, connector);
 
       expect(handled).toBe(true);
-      expect(sessionRepo.getSession(session.id)?.model).toBe("claude-opus-4");
+      expect(unwrap(sessionRepo.getSession(session.id))?.model).toBe("claude-opus-4");
       const [, reply] = vi.mocked(connector.replyMessage).mock.calls[0];
       expect(String(reply)).toContain("claude-opus-4");
     });

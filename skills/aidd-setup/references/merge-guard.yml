@@ -17,7 +17,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          for label in "gate:reviewed" "gate:briefed" "gate:approved"; do
+          for label in "gate:reviewed"; do
             gh pr edit ${{ github.event.pull_request.number }} \
               --repo ${{ github.repository }} \
               --remove-label "$label" 2>/dev/null || true
@@ -83,7 +83,7 @@ jobs:
             --json labels --jq '.labels[].name')
 
           MISSING=""
-          for gate in "gate:reviewed" "gate:briefed" "gate:approved"; do
+          for gate in "gate:reviewed"; do
             if ! echo "$LABELS" | grep -qx "$gate"; then
               MISSING="${MISSING}  - ${gate}\n"
             fi
@@ -96,9 +96,7 @@ jobs:
             printf "$MISSING"
             echo ""
             echo "Gates:"
-            echo "  gate:reviewed  → /aidd-epic-review PASS"
-            echo "  gate:briefed   → Briefing 6-step completed"
-            echo "  gate:approved  → Human merge approval"
+            echo "  gate:reviewed  → /aidd-review epic PASS"
             exit 1
           fi
 
