@@ -1,6 +1,5 @@
 import type { IncomingMessage as HttpRequest, ServerResponse } from "node:http";
 import { forkEngineSession } from "../../sessions/fork.js";
-import type { Result } from "../../shared/result.js";
 import {
   cancelAllPendingQueueItems,
   cancelQueueItem,
@@ -18,6 +17,7 @@ import {
 } from "../../sessions/registry.js";
 import { logger } from "../../shared/logger.js";
 import { JINN_HOME } from "../../shared/paths.js";
+import type { Result } from "../../shared/result.js";
 import type { JsonObject, Session } from "../../shared/types.js";
 import { isInterruptibleEngine } from "../../shared/types.js";
 import { getClaudeExpectedResetAt } from "../../shared/usageAwareness.js";

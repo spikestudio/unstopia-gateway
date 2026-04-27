@@ -1,8 +1,8 @@
 import { mkdirSync } from "node:fs";
 import path from "node:path";
 import Database from "better-sqlite3";
-import type { Result } from "../shared/result.js";
 import { SESSIONS_DB } from "../shared/paths.js";
+import type { Result } from "../shared/result.js";
 import type { Session } from "../shared/types.js";
 import type {
   CreateSessionOpts,

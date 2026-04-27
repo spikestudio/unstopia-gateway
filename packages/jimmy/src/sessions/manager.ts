@@ -117,7 +117,7 @@ export class SessionManager {
         transportMeta: mergedMeta,
         ...(opts.model ? { model: opts.model } : {}),
       });
-      session = (updateResult.ok && updateResult.value) ? updateResult.value : existingSession;
+      session = updateResult.ok && updateResult.value ? updateResult.value : existingSession;
     }
 
     session = maybeRevertEngineOverride(session, this.repos.sessions);
