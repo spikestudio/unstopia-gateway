@@ -126,14 +126,14 @@ describe("AC-E023-02: ctx.sessionId appears in JSON log output", () => {
     const raw = String(stdoutSpy.mock.calls[0][0]).trim();
     const parsed = JSON.parse(raw);
     expect(parsed.sessionId).toBe("s2");
-    expect(Object.prototype.hasOwnProperty.call(parsed, "connector")).toBe(false);
+    expect("connector" in parsed).toBe(false);
   });
 
   it("no context produces JSON without extra fields", () => {
     logger.info("no ctx");
     const raw = String(stdoutSpy.mock.calls[0][0]).trim();
     const parsed = JSON.parse(raw);
-    expect(Object.prototype.hasOwnProperty.call(parsed, "sessionId")).toBe(false);
+    expect("sessionId" in parsed).toBe(false);
   });
 });
 
