@@ -153,7 +153,7 @@ cli/       → (全モジュール)
 
 | ファイル | 主な機能 |
 |---------|---------|
-| `manager.ts` | `SessionManager` — セッション起動・終了・エンジン呼び出し（268行。ES-014 で分割） |
+| `manager.ts` | `SessionManager` — セッション起動・終了・エンジン呼び出し（273行。ES-014 で分割） |
 | `engine-runner.ts` | `runSession` — エンジン実行コア（ES-014 で `manager.ts` より抽出） |
 | `cron-command-handler.ts` | Cron コマンド処理（ES-014 で `manager.ts` より抽出） |
 | `registry.ts` | Repository ファサード — SQLite 永続化への委譲（ES-017 でファサード化） |
