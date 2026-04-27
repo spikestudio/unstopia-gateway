@@ -5,7 +5,6 @@ updates:
     schedule:
       interval: "weekly"
       day: "monday"
-    auto-merge: true
     groups:
       patch-updates:
         update-types:
