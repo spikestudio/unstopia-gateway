@@ -845,6 +845,205 @@ describe("ClaudeEngine", () => {
       }
     });
 
+    // ---- AC-E019-05〜09: Story 19.2 ストリーミングイベント単体テスト ----
+
+    describe("AC-E019-05: result イベントを処理すると __result 型の戻り値が返される", () => {
+      it("processes result event and returns __result type", () => {
+        const processor = new ClaudeStreamProcessor();
+        const line = JSON.stringify({
+          type: "result",
+          result: "final answer",
+          session_id: "sess-ac05",
+          total_cost_usd: 0.01,
+        });
+        const r = processor.process(line, 0);
+        expect(r?.type).toBe("__result");
+        expect((r as { type: "__result"; msg: Record<string, unknown> })?.msg.result).toBe("final answer");
+        expect((r as { type: "__result"; msg: Record<string, unknown> })?.msg.session_id).toBe("sess-ac05");
+      });
+
+      it("handles result event with is_error=true and returns __result type", () => {
+        const processor = new ClaudeStreamProcessor();
+        const line = JSON.stringify({
+          type: "result",
+          result: "error occurred",
+          session_id: "sess-ac05-err",
+          is_error: true,
+        });
+        const r = processor.process(line, 0);
+        expect(r?.type).toBe("__result");
+        expect((r as { type: "__result"; msg: Record<string, unknown> })?.msg.is_error).toBe(true);
+      });
+    });
+
+    describe("AC-E019-06: stream_event + content_block_start + tool_use を処理すると __tool_start 型が返される", () => {
+      it("processes stream_event content_block_start tool_use and returns __tool_start type", () => {
+        const processor = new ClaudeStreamProcessor();
+        const line = JSON.stringify({
+          type: "stream_event",
+          event: {
+            type: "content_block_start",
+            content_block: { type: "tool_use", name: "read_file", id: "tool-ac06" },
+          },
+        });
+        const r = processor.process(line, 0);
+        expect(r?.type).toBe("__tool_start");
+        const toolStart = r as { type: "__tool_start"; delta: StreamDelta };
+        expect(toolStart.delta.type).toBe("tool_use");
+        expect(toolStart.delta.toolName).toBe("read_file");
+        expect(toolStart.delta.toolId).toBe("tool-ac06");
+      });
+
+      it("transitions state to InTool on content_block_start tool_use", () => {
+        const processor = new ClaudeStreamProcessor();
+        expect(processor.state).toBe("Idle");
+        const line = JSON.stringify({
+          type: "stream_event",
+          event: {
+            type: "content_block_start",
+            content_block: { type: "tool_use", name: "bash", id: "tool-ac06b" },
+          },
+        });
+        processor.process(line, 0);
+        expect(processor.state).toBe("InTool");
+      });
+    });
+
+    describe("AC-E019-07: stream_event + content_block_delta + text_delta（inTool=false）を処理すると delta.type='text' が返される", () => {
+      it("processes text_delta when state is Idle and returns delta with type=text", () => {
+        const processor = new ClaudeStreamProcessor();
+        expect(processor.state).toBe("Idle");
+        const line = JSON.stringify({
+          type: "stream_event",
+          event: { type: "content_block_delta", delta: { type: "text_delta", text: "streaming text" } },
+        });
+        const r = processor.process(line, 0);
+        expect(r?.type).toBe("delta");
+        const delta = (r as { type: "delta"; delta: StreamDelta }).delta;
+        expect(delta.type).toBe("text");
+        expect(delta.content).toBe("streaming text");
+      });
+
+      it("processes text_delta when state is InText and returns delta with type=text", () => {
+        const processor = new ClaudeStreamProcessor();
+        // First delta: Idle → InText
+        processor.process(
+          JSON.stringify({
+            type: "stream_event",
+            event: { type: "content_block_delta", delta: { type: "text_delta", text: "first" } },
+          }),
+          0,
+        );
+        expect(processor.state).toBe("InText");
+        // Second delta: InText → InText
+        const line = JSON.stringify({
+          type: "stream_event",
+          event: { type: "content_block_delta", delta: { type: "text_delta", text: "second" } },
+        });
+        const r = processor.process(line, 1);
+        expect(r?.type).toBe("delta");
+        expect((r as { type: "delta"; delta: StreamDelta }).delta.type).toBe("text");
+        expect((r as { type: "delta"; delta: StreamDelta }).delta.content).toBe("second");
+      });
+
+      it("returns null for text_delta when state is InTool (inTool=true)", () => {
+        const processor = new ClaudeStreamProcessor();
+        // Transition to InTool
+        processor.process(
+          JSON.stringify({
+            type: "stream_event",
+            event: { type: "content_block_start", content_block: { type: "tool_use", name: "bash", id: "t1" } },
+          }),
+          0,
+        );
+        expect(processor.state).toBe("InTool");
+        // text_delta in InTool state must be ignored
+        const line = JSON.stringify({
+          type: "stream_event",
+          event: { type: "content_block_delta", delta: { type: "text_delta", text: "ignored" } },
+        });
+        expect(processor.process(line, 1)).toBeNull();
+      });
+    });
+
+    describe("AC-E019-08: stream_event + content_block_stop（inTool=true）を処理すると __tool_end 型が返される", () => {
+      it("processes content_block_stop when state is InTool and returns __tool_end type", () => {
+        const processor = new ClaudeStreamProcessor();
+        // Transition to InTool
+        processor.process(
+          JSON.stringify({
+            type: "stream_event",
+            event: { type: "content_block_start", content_block: { type: "tool_use", name: "bash", id: "t1" } },
+          }),
+          0,
+        );
+        expect(processor.state).toBe("InTool");
+        // content_block_stop in InTool state → __tool_end
+        const stopLine = JSON.stringify({
+          type: "stream_event",
+          event: { type: "content_block_stop" },
+        });
+        const r = processor.process(stopLine, 1);
+        expect(r?.type).toBe("__tool_end");
+        const toolEnd = r as { type: "__tool_end"; delta: StreamDelta };
+        expect(toolEnd.delta.type).toBe("tool_result");
+        expect(processor.state).toBe("Idle");
+      });
+
+      it("returns null for content_block_stop when state is InText (not InTool)", () => {
+        const processor = new ClaudeStreamProcessor();
+        // Transition to InText
+        processor.process(
+          JSON.stringify({
+            type: "stream_event",
+            event: { type: "content_block_delta", delta: { type: "text_delta", text: "hi" } },
+          }),
+          0,
+        );
+        expect(processor.state).toBe("InText");
+        // content_block_stop in InText state → null (just reset to Idle)
+        const stopLine = JSON.stringify({
+          type: "stream_event",
+          event: { type: "content_block_stop" },
+        });
+        const r = processor.process(stopLine, 1);
+        expect(r).toBeNull();
+        expect(processor.state).toBe("Idle");
+      });
+    });
+
+    describe("AC-E019-09: 空行・不正 JSON を処理すると null が返され例外が発生しない", () => {
+      it("returns null for empty string without throwing", () => {
+        const processor = new ClaudeStreamProcessor();
+        expect(() => processor.process("", 0)).not.toThrow();
+        expect(processor.process("", 0)).toBeNull();
+      });
+
+      it("returns null for whitespace-only line without throwing", () => {
+        const processor = new ClaudeStreamProcessor();
+        expect(() => processor.process("   ", 0)).not.toThrow();
+        expect(processor.process("   ", 0)).toBeNull();
+      });
+
+      it("returns null for invalid JSON without throwing", () => {
+        const processor = new ClaudeStreamProcessor();
+        expect(() => processor.process("not-valid-json", 0)).not.toThrow();
+        expect(processor.process("not-valid-json", 0)).toBeNull();
+      });
+
+      it("returns null for truncated JSON without throwing", () => {
+        const processor = new ClaudeStreamProcessor();
+        expect(() => processor.process('{"type": "result"', 0)).not.toThrow();
+        expect(processor.process('{"type": "result"', 0)).toBeNull();
+      });
+
+      it("returns null for empty JSON object (no type field) without throwing", () => {
+        const processor = new ClaudeStreamProcessor();
+        expect(() => processor.process("{}", 0)).not.toThrow();
+        expect(processor.process("{}", 0)).toBeNull();
+      });
+    });
+
     // AC-E019-01: 状態遷移テスト
     describe("AC-E019-01: state transitions", () => {
       it("initial state is Idle", () => {

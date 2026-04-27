@@ -46,11 +46,11 @@
 
 **受入基準:**
 
-- [ ] **AC-E019-05**: 開発者が `result` イベントを処理するテストを実行すると、`__result` 型の戻り値が返される. ← S10（AI 補完: テスト可能性がストーリーの "so that" から導出可能）
-- [ ] **AC-E019-06**: 開発者が `stream_event` + `content_block_start` + `tool_use` block のイベントを処理するテストを実行すると、`__tool_start` 型の戻り値が返される. ← S10（AI 補完: ツール開始イベントは最重要ケース）
-- [ ] **AC-E019-07**: 開発者が `stream_event` + `content_block_delta` + `text_delta`（inTool=false）のイベントを処理するテストを実行すると、`delta.type = "text"` の戻り値が返される. ← S10（AI 補完: テキストデルタは最頻出パス）
-- [ ] **AC-E019-08**: 開発者が `stream_event` + `content_block_stop`（inTool=true）のイベントを処理するテストを実行すると、`__tool_end` 型の戻り値が返される. ← S10（AI 補完: ツール終了イベントの境界ケース）
-- [ ] **AC-E019-09**: 開発者が空行・不正JSONを含む入力のテストを実行すると、`null` が返され例外が発生しない. ← S10（AI 補完: エラーハンドリングの網羅性）
+- [x] **AC-E019-05**: 開発者が `result` イベントを処理するテストを実行すると、`__result` 型の戻り値が返される. ← S10（AI 補完: テスト可能性がストーリーの "so that" から導出可能）
+- [x] **AC-E019-06**: 開発者が `stream_event` + `content_block_start` + `tool_use` block のイベントを処理するテストを実行すると、`__tool_start` 型の戻り値が返される. ← S10（AI 補完: ツール開始イベントは最重要ケース）
+- [x] **AC-E019-07**: 開発者が `stream_event` + `content_block_delta` + `text_delta`（inTool=false）のイベントを処理するテストを実行すると、`delta.type = "text"` の戻り値が返される. ← S10（AI 補完: テキストデルタは最頻出パス）
+- [x] **AC-E019-08**: 開発者が `stream_event` + `content_block_stop`（inTool=true）のイベントを処理するテストを実行すると、`__tool_end` 型の戻り値が返される. ← S10（AI 補完: ツール終了イベントの境界ケース）
+- [x] **AC-E019-09**: 開発者が空行・不正JSONを含む入力のテストを実行すると、`null` が返され例外が発生しない. ← S10（AI 補完: エラーハンドリングの網羅性）
 
 ### Story 19.3: 状態遷移の可視化（オプション / COULD）
 
