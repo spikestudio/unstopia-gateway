@@ -71,7 +71,7 @@ vi.mock("node:fs", () => ({
 
 import { checkBudget } from "../../gateway/budgets.js";
 import type { Result } from "../../shared/result.js";
-import { runSession } from "../engine-runner.js";
+import { checkBudgetResult, runSession } from "../engine-runner.js";
 import { InMemoryFileRepository } from "../repositories/InMemoryFileRepository.js";
 import { InMemoryMessageRepository } from "../repositories/InMemoryMessageRepository.js";
 import { InMemoryQueueRepository } from "../repositories/InMemoryQueueRepository.js";
@@ -1299,6 +1299,23 @@ describe("runSession", () => {
       expect(vi.mocked(notifyParentSession)).toHaveBeenCalled();
       const updated = unwrap(repos.sessions.getSession(sessionId));
       expect(updated?.status).toBe("error");
+    });
+  });
+
+  // AC-E021-10: checkBudgetResult の Result 型参照実装
+  describe("checkBudgetResult (AC-E021-10: Result パターン試験適用)", () => {
+    it("returns Ok<void> when budget is ok", () => {
+      const result = checkBudgetResult("alice", { alice: 100 }, "ok");
+      expect(result.ok).toBe(true);
+    });
+
+    it("returns Err<AppError> when budget is paused", () => {
+      const result = checkBudgetResult("alice", { alice: 100 }, "paused");
+      expect(result.ok).toBe(false);
+      if (!result.ok) {
+        expect(result.error.code).toBe("BUDGET_EXCEEDED");
+        expect(result.error.message).toContain("alice");
+      }
     });
   });
 

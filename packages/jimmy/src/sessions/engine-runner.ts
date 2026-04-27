@@ -4,6 +4,7 @@ import { scanOrg } from "../gateway/org.js";
 import { resolveOrgHierarchy } from "../gateway/org-hierarchy.js";
 import { cleanupMcpConfigFile, resolveMcpServers, writeMcpConfigFile } from "../mcp/resolver.js";
 import { resolveEffort } from "../shared/effort.js";
+import { type AppError, appError } from "../shared/errors.js";
 import { logger } from "../shared/logger.js";
 import { JINN_HOME } from "../shared/paths.js";
 import {
@@ -12,7 +13,7 @@ import {
   detectRateLimit,
   isDeadSessionError,
 } from "../shared/rateLimit.js";
-import type { Result } from "../shared/result.js";
+import { err, ok, type Result } from "../shared/result.js";
 import type {
   Connector,
   Employee,
@@ -35,6 +36,21 @@ import type { Repositories } from "./repositories/index.js";
 /** Result<Session | null, E> から Session | null を取り出す。Err の場合は null を返す */
 function unwrapSessionResult<E>(result: Result<Session | null, E>): Session | null {
   return result.ok ? result.value : null;
+}
+
+/**
+ * AC-E021-10: 予算チェックを Result<void, AppError> で表現する参照実装。
+ * runSession の budget チェック（L157〜176）を純粋関数として分離。
+ */
+export function checkBudgetResult(
+  employee: string,
+  _budgetConfig: Record<string, number>,
+  budgetStatus: "ok" | "paused",
+): Result<void, AppError> {
+  if (budgetStatus === "paused") {
+    return err(appError("BUDGET_EXCEEDED", `Budget limit exceeded for employee "${employee}". Session blocked.`));
+  }
+  return ok(undefined);
 }
 
 export function mergeTransportMeta(
