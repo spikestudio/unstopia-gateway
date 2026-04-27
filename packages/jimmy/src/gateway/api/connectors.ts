@@ -4,6 +4,7 @@ import type { WhatsAppConnector } from "../../connectors/whatsapp/index.js";
 import { TMP_DIR } from "../../shared/paths.js";
 import type { IncomingMessage, JsonObject, Target } from "../../shared/types.js";
 import type { ApiContext } from "../types.js";
+import type { IncomingMessageBody, ProxyActionBody, SendMessageBody } from "./api-types.js";
 import { badRequest, json, matchRoute, notFound, readJsonBody } from "./utils.js";
 
 export async function handleConnectorsRequest(
@@ -77,7 +78,7 @@ export async function handleConnectorsRequest(
 
     const _parsed = await readJsonBody(req, res);
     if (!_parsed.ok) return true;
-    const body = _parsed.body as Record<string, unknown>;
+    const body = _parsed.body as IncomingMessageBody;
 
     // Download attachments from Discord CDN URLs to local temp
     const { downloadAttachment } = await import("../../connectors/discord/format.js");
@@ -132,7 +133,7 @@ export async function handleConnectorsRequest(
 
     const _parsed = await readJsonBody(req, res);
     if (!_parsed.ok) return true;
-    const body = _parsed.body as Record<string, unknown>;
+    const body = _parsed.body as ProxyActionBody;
 
     const action = body.action as string;
     const target = body.target as Target | undefined;
@@ -203,7 +204,7 @@ export async function handleConnectorsRequest(
     }
     const _parsed = await readJsonBody(req, res);
     if (!_parsed.ok) return true;
-    const body = _parsed.body as Record<string, unknown>;
+    const body = _parsed.body as SendMessageBody;
     if (!body.channel || !body.text) {
       badRequest(res, "channel and text are required");
       return true;
