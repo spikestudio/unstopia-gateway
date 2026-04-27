@@ -9,7 +9,7 @@
  * Runtime validation is NOT performed here — types are compile-time only.
  */
 
-import type { CronJob, JsonObject, Target } from "../../shared/types.js";
+import type { ConnectorHealth, CronJob, JinnConfig, JsonObject, Target } from "../../shared/types.js";
 
 // ── Sessions ─────────────────────────────────────────────────────────────────
 
@@ -70,8 +70,8 @@ export interface PatchEmployeeBody {
   alwaysNotify?: boolean;
 }
 
-/** PUT /api/org/departments/:name/board — arbitrary board state, shape varies by department */
-export type PutBoardBody = Record<string, unknown>;
+/** PUT /api/org/departments/:name/board — arbitrary JSON board state, shape varies by department */
+export type PutBoardBody = JsonObject;
 
 // ── Cron ─────────────────────────────────────────────────────────────────────
 
@@ -147,7 +147,7 @@ export interface StatusResponse {
     gemini?: { model: string; available: boolean };
   };
   sessions: { total: number; running: number; active: number };
-  connectors: Record<string, unknown>;
+  connectors: Record<string, ConnectorHealth>;
 }
 
 /** Single entry in GET /api/instances response */
@@ -165,18 +165,8 @@ export interface OnboardingBody {
   language?: string;
 }
 
-/** PUT /api/config — top-level config update (known top-level keys; values are validated at runtime) */
-export interface PutConfigBody {
-  gateway?: Record<string, unknown>;
-  engines?: Record<string, unknown>;
-  connectors?: Record<string, unknown>;
-  portal?: Record<string, unknown>;
-  mcp?: Record<string, unknown>;
-  [key: string]: unknown;
-}
+/** PUT /api/config — top-level config partial update */
+export type PutConfigBody = Partial<JinnConfig>;
 
-/** PUT /api/budgets — budget limits update body */
-export interface PutBudgetsBody {
-  employees?: Record<string, number>;
-  [key: string]: unknown;
-}
+/** PUT /api/budgets — employees budget map { employeeName: limitUsd } */
+export type PutBudgetsBody = Record<string, number>;
