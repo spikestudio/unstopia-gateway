@@ -24,7 +24,7 @@
 | プロジェクト状態サマリー | SessionStart Hook で自動注入 | `/aidd-status` |
 | 進行中の作業 | GitHub Issues (`status:in-progress` ラベル) | `gh issue list --label "status:in-progress"` |
 | 未対応タスク・Epic | GitHub Issues | `gh issue list` |
-| Phase の進捗 | Phase Issue + GitHub Milestone | `gh issue list --milestone "Phase N"` |
+| Phase の進捗 | GitHub Milestone | `gh issue list --milestone "Phase N"` |
 | 仕様書・Task 定義 | `docs/requirements/` / `docs/tasks/` | |
 
 ## 作業の進め方
@@ -62,7 +62,7 @@
 
 ## 実装の参考
 
-- スキル実装例: `.agents/skills/aidd-new-phase/SKILL.md` / レビュー手順: `.agents/skills/aidd-epic-review/references/`
+- スキル実装例: `.agents/skills/aidd-new-phase/SKILL.md` / レビュー手順: `.agents/skills/aidd-review/references/`
 
 ## ドキュメント連動ルール
 

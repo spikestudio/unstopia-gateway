@@ -29,7 +29,7 @@ Epic レビュー時の実働確認は、変更ファイルのパターンから
 
 複数 Tier に該当する場合は最高 Tier を適用する。
 
-> **詳細手順:** `skills/aidd-epic-review/references/check-code.md` の「実行時検証」セクションを参照。
+> **詳細手順:** `skills/aidd-review/references/step2-review-code.md` の「実行時検証」セクションを参照。
 
 ---
 

@@ -98,8 +98,8 @@ Epic のライフサイクル全体を 1 つのブランチ・1 つの PR で管
 | G2〜G4 各スキル実行時 | 設計成果物をコミット（`docs:` prefix） | `/aidd-new-epic`, `/aidd-decompose-epic` |
 | 各 Task 実装完了時 | 実装コード + テストをコミット（`feat:` prefix） | `/aidd-impl` |
 | `/aidd-new-epic` Step 1 承認後 | draft PR を作成（`[WIP]` タイトル）。PR body には `Epic: #<Epic Issue番号>` を含める | `/aidd-new-epic` |
-| `/aidd-epic-review` PASS 後 | draft 解除 + `[WIP]` 除去 → マージ準備完了 | `/aidd-epic-review` |
-| `/aidd-epic-review` PASS + 人間承認後 | PR をマージ | `/aidd-next` |
+| `/aidd-review epic` PASS 後 | draft 解除 + `[WIP]` 除去 → マージ準備完了 | `/aidd-review epic` |
+| `/aidd-review epic` PASS + 人間承認後 | PR をマージ | `/aidd-next` |
 
 **PR スコープ**: Epic 仕様書 + 設計成果物 + Task 定義群 + 実装コード + テスト
 
@@ -112,7 +112,7 @@ Epic のライフサイクル全体を 1 つのブランチ・1 つの PR で管
 **ブランチ・ワークツリーの運用ルール（必須）:**
 
 - **main ブランチへの直接コミット・プッシュ禁止。** 全作業はブランチで行い PR 経由でマージする。
-- **Epic フロー中はブランチを切り替えない。** `/aidd-new-epic` 〜 `/aidd-epic-review` まで一貫して `feature/ES-NNN-slug` ブランチ（ワークツリー）上で作業する。main や他ブランチへの切り替えは禁止
+- **Epic フロー中はブランチを切り替えない。** `/aidd-new-epic` 〜 `/aidd-review epic` まで一貫して `feature/ES-NNN-slug` ブランチ（ワークツリー）上で作業する。main や他ブランチへの切り替えは禁止
 - **ワークツリーは `/aidd-new-epic` で作成し、PR マージまで維持する。** `task wt:create BRANCH=feature/ES-NNN-slug` で `/tmp/<project>-feature/ES-NNN-slug/` に作成される
   - 中断後の再開は `git worktree list` でパスを確認し、該当ワークツリーで作業を継続する。同じ Epic のワークツリーを削除して作り直してはならない
   - PR マージ後は速やかに `task wt:remove BRANCH=feature/ES-NNN-slug` でワークツリーとブランチを削除する
@@ -158,7 +158,7 @@ Phase/Epic パイプラインに属さない単発作業を `/aidd-adhoc` で処
 
 ### Epic/Phase 完了（G6）
 
-`/aidd-phase-review` で Phase 完了を検証する。Epic 単位の成果物は `/aidd-epic-review` で検証済みのため、Phase レベルでは成功基準の達成状況とマスタドキュメントの最新化を確認する。
+`/aidd-review phase` + `/aidd-phase-closing` で Phase 完了を検証する。Epic 単位の成果物は `/aidd-review epic` で検証済みのため、Phase レベルでは成功基準の達成状況とマスタドキュメントの最新化を確認する。
 
 ---
 
@@ -183,8 +183,8 @@ PR のマージには以下の 3 つの Gate ラベルが全て必要。GitHub A
 
 | Gate ラベル | 付与タイミング | 付与スキル |
 |-----------|-------------|-----------|
-| `gate:reviewed` | `/aidd-epic-review` PASS 時 | `/aidd-epic-review` |
-| `gate:briefed` | ブリーフィング完了時 | `/aidd-epic-review` |
+| `gate:reviewed` | `/aidd-review epic` PASS 時 | `/aidd-review epic` |
+| `gate:briefed` | ブリーフィング完了時 | `/aidd-review epic` |
 | `gate:approved` | 人間が「merge」と明示的に指示した時 | マージ手順（CLAUDE.md） |
 
 **コード変更時のリセット:** PR に新しいコミットが push されると、`synchronize` イベントで全 gate ラベルが自動除去される。レビュー・ブリーフィング・承認を再実施する必要がある。

@@ -24,8 +24,8 @@ Phase 12 から導入された「薄い Phase・重い Epic」モデルで開発
 [Inception]         /aidd-new-epic   → G2（ストーリー + AC を承認）
                     G3（/aidd-screen-plan → /aidd-screen-spec → /aidd-screen-ui）
 [Construction]      /aidd-decompose-epic → /aidd-impl × N → G4
-[Operations]        /aidd-epic-review → G5
-[Release]           /aidd-phase-review → G6
+[Operations]        /aidd-review epic → G5
+[Release]           /aidd-review phase + /aidd-phase-closing → G6
 ```
 
 ---
@@ -64,7 +64,11 @@ AI が以下を実施する:
 
 **G2 ゲート**: ストーリー + AC の承認を得たら G2 通過。
 
-> **Inception 道具箱を使う場合（G1後・G2前）**: `/aidd-mob`（ペルソナ議論）や `/aidd-inception`（モック・API仕様・CLI仕様の対話的生成）を先に実行すると、ストーリー・ACの品質が上がる（Phase 13 以降に提供予定）。
+> **Inception 道具箱を使う場合（G1後・G2前）**: 推奨実行順序は `/aidd-mob` → `/aidd-inception` の順。
+> 1. まず `/aidd-mob` で複数ペルソナによる要件深掘りを行い、ストーリードラフトと制約を得る
+> 2. 次に `/aidd-inception`（または直接 `/aidd-inception-mock` 等のサブスキル）で具体的成果物（画面モック・API仕様・CLI仕様）を生成する
+> 3. `/aidd-mob` の成果物は `/aidd-inception` 起動時のプロンプトに引き渡す（「mob セッションでは以下のストーリーが確定しています...」）
+> プロジェクト特性に応じてどちらか一方のみ使用することも可能。
 
 ---
 
@@ -83,7 +87,7 @@ AI が以下を実施する:
 ```
 /aidd-decompose-epic  # G4: Task 分解
 /aidd-impl            # Task ごとに実装
-/aidd-epic-review     # G5: Epic の総合レビュー
+/aidd-review epic     # G5: Epic の総合レビュー
 ```
 
 ---
@@ -92,7 +96,8 @@ AI が以下を実施する:
 
 ```
 /aidd-screen-catalog  # 画面系のみ: Phase 横断カタログ生成
-/aidd-phase-review    # G6: Phase 完了検証
+/aidd-review phase    # G6: Phase 完了検証
+/aidd-phase-closing   # G6: Phase クローズ処理
 ```
 
 ---
@@ -120,16 +125,16 @@ AI が以下を実施する:
 
 ### Q: `/aidd-mob` はいつ使うの？
 
-要件が曖昧、複数ステークホルダーの視点が必要、新技術領域のケースで有効。
-シンプルな Epic では `/aidd-new-epic` に直行してよい。
-（Phase 13 以降に提供予定）
+要件が曖昧、複数ステークホルダーの視点が必要、新技術領域のケースで有効。シンプルな Epic では `/aidd-new-epic` に直行してよい。
+
+G1後・`/aidd-new-epic` 実行前に実行することで、高品質なストーリードラフトが得られる。
 
 ### Q: 画面系 Epic で `/aidd-inception-mock` を使うべき？
 
 **G1後（`/aidd-new-epic` を実行する前）** に画面モックを作って PO と方向を合わせることで、
 ストーリー・AC の品質が大幅に上がる。特に UI の方向性が未確定な場合は強く推奨。
 Inception モックは要件探索ツールであり、G3 の代替ではなく G3 の参考資料として活用する。
-（Phase 13 以降に提供予定。現在は `/aidd-new-epic` → G3 の通常フローを使用）
+API 系は `/aidd-inception-api-spec`、CLI 系は `/aidd-inception-cli` を使用する。
 
 ---
 

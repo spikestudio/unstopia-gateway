@@ -7,12 +7,12 @@
 | タイミング | Epic 全 Task 実装完了時 |
 | 問い | **実装が Epic の全 AC に準拠し、規約を満たしているか？** |
 
-> 品質は `/aidd-epic-review` が 3 観点（ビジネス要件・ドキュメント・コード）でチェック済み。マイルストーンは統合確認。
+> 品質は `/aidd-review epic` が 3 観点（ビジネス要件・ドキュメント・コード）でチェック済み。マイルストーンは統合確認。
 
 ## 確認事項
 
 ### AI レビュー
-- [ ] `/aidd-epic-review` が PASS している（`gate:reviewed` ラベル付与済み）
+- [ ] `/aidd-review epic` が PASS している（`gate:reviewed` ラベル付与済み）
 - [ ] ブリーフィングが実施され、`gate:briefed` ラベルが付与されている
 - [ ] TL が内容を確認し、`gate:approved` ラベルが付与されている
 
@@ -35,7 +35,7 @@
 - [ ] Epic のスコープ外の変更が含まれていない
 - [ ] 意図しない副作用がない
 
-## 通過後アクション（`/aidd-epic-review` が実行）
+## 通過後アクション（`/aidd-review epic` が実行）
 - [ ] 全 Task 定義のステータスを「完了」に更新
 - [ ] Epic Issue にマイルストーン通過コメントを記録（`✅ G5 通過 (日付)`）
 - [ ] PR body に `Epic: #<Epic Issue番号>` を記載している

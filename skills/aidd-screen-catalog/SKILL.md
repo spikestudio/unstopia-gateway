@@ -2,7 +2,7 @@
 name: aidd-screen-catalog
 description: >
   /aidd-screen-plan が生成した画面一覧ファイル群を Phase 横断で集約し、アプリ全体の画面カタログを生成する。
-  Phase 完了後（/aidd-phase-review の前）に実行する。
+  Phase 完了後（/aidd-review phase 前）に実行する。
 type: skill
 argument-hint: "[docs/design/ ディレクトリパス（省略可）]"
 ---
@@ -43,7 +43,7 @@ argument-hint: "[docs/design/ ディレクトリパス（省略可）]"
 
 | スキル | 条件 |
 |--------|------|
-| `/aidd-phase-review` | カタログ生成後、Phase 完了検証に進む場合 |
+| `/aidd-review --type phase` | カタログ生成後、Phase 完了検証に進む場合 |
 
 ## Step 0: 引数受付・screen-list 収集
 
