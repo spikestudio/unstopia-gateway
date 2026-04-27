@@ -178,13 +178,9 @@ export class ClaudeStreamProcessor {
    * InTool 状態の場合はツール終了イベントを返す。
    */
   private handleContentBlockStop(): StreamLineResult | null {
-    if (this._state === "InTool") {
-      this._state = "Idle";
-      return { type: "__tool_end", delta: { type: "tool_result", content: "" } };
-    }
-
+    const wasInTool = this._state === "InTool";
     this._state = "Idle";
-    return null;
+    return wasInTool ? { type: "__tool_end", delta: { type: "tool_result", content: "" } } : null;
   }
 }
 

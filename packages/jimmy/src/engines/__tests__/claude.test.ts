@@ -1,6 +1,6 @@
 import type { ChildProcess } from "node:child_process";
 import { EventEmitter } from "node:events";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, assert, beforeEach, describe, expect, it, vi } from "vitest";
 import type { EngineRateLimitInfo, EngineResult, EngineRunOpts, StreamDelta } from "../../shared/types.js";
 import { ClaudeEngine } from "../claude.js";
 import { ClaudeStreamProcessor, parseRateLimitInfo } from "../claude-stream-processor.js";
@@ -706,8 +706,8 @@ describe("ClaudeEngine", () => {
     it("returns __result for type='result'", () => {
       const line = JSON.stringify({ type: "result", result: "answer", session_id: "s1" });
       const r = psl(line);
-      expect(r?.type).toBe("__result");
-      expect((r as { type: "__result"; msg: Record<string, unknown> })?.msg.result).toBe("answer");
+      assert(r !== null && r.type === "__result");
+      expect(r.msg.result).toBe("answer");
     });
 
     it("returns __rate_limit for type='rate_limit_event'", () => {
@@ -716,8 +716,8 @@ describe("ClaudeEngine", () => {
         rate_limit_info: { status: "ok", resetsAt: 9999 },
       });
       const r = psl(line);
-      expect(r?.type).toBe("__rate_limit");
-      expect((r as { type: "__rate_limit"; info: { status: string } })?.info.status).toBe("ok");
+      assert(r !== null && r.type === "__rate_limit");
+      expect(r.info.status).toBe("ok");
     });
 
     it("returns null for rate_limit_event with no valid info", () => {
@@ -731,9 +731,9 @@ describe("ClaudeEngine", () => {
         message: { content: [{ type: "text", text: "snapshot" }] },
       });
       const r = psl(line);
-      expect(r?.type).toBe("delta");
-      expect((r as { type: "delta"; delta: StreamDelta })?.delta.type).toBe("text_snapshot");
-      expect((r as { type: "delta"; delta: StreamDelta })?.delta.content).toBe("snapshot");
+      assert(r !== null && r.type === "delta");
+      expect(r.delta.type).toBe("text_snapshot");
+      expect(r.delta.content).toBe("snapshot");
     });
 
     it("returns null for assistant message without text content", () => {
@@ -755,8 +755,8 @@ describe("ClaudeEngine", () => {
         event: { type: "content_block_start", content_block: { type: "tool_use", name: "bash", id: "t1" } },
       });
       const r = psl(line);
-      expect(r?.type).toBe("__tool_start");
-      expect((r as { type: "__tool_start"; delta: StreamDelta })?.delta.toolName).toBe("bash");
+      assert(r !== null && r.type === "__tool_start");
+      expect(r.delta.toolName).toBe("bash");
     });
 
     it("returns delta text for content_block_delta text_delta when NOT inTool (state=Idle)", () => {
@@ -768,9 +768,9 @@ describe("ClaudeEngine", () => {
         event: { type: "content_block_delta", delta: { type: "text_delta", text: "hello" } },
       });
       const r = processor.process(line, 0);
-      expect(r?.type).toBe("delta");
-      expect((r as { type: "delta"; delta: StreamDelta })?.delta.type).toBe("text");
-      expect((r as { type: "delta"; delta: StreamDelta })?.delta.content).toBe("hello");
+      assert(r !== null && r.type === "delta");
+      expect(r.delta.type).toBe("text");
+      expect(r.delta.content).toBe("hello");
     });
 
     it("returns null for content_block_delta text_delta when state=InTool", () => {
@@ -814,8 +814,8 @@ describe("ClaudeEngine", () => {
         event: { type: "content_block_stop" },
       });
       const r = processor.process(stopLine, 1);
-      expect(r?.type).toBe("__tool_end");
-      expect((r as { type: "__tool_end"; delta: StreamDelta })?.delta.type).toBe("tool_result");
+      assert(r !== null && r.type === "__tool_end");
+      expect(r.delta.type).toBe("tool_result");
       expect(processor.state).toBe("Idle");
     });
 
@@ -865,9 +865,9 @@ describe("ClaudeEngine", () => {
           total_cost_usd: 0.01,
         });
         const r = processor.process(line, 0);
-        expect(r?.type).toBe("__result");
-        expect((r as { type: "__result"; msg: Record<string, unknown> })?.msg.result).toBe("final answer");
-        expect((r as { type: "__result"; msg: Record<string, unknown> })?.msg.session_id).toBe("sess-ac05");
+        assert(r !== null && r.type === "__result");
+        expect(r.msg.result).toBe("final answer");
+        expect(r.msg.session_id).toBe("sess-ac05");
       });
 
       it("handles result event with is_error=true and returns __result type", () => {
@@ -879,8 +879,8 @@ describe("ClaudeEngine", () => {
           is_error: true,
         });
         const r = processor.process(line, 0);
-        expect(r?.type).toBe("__result");
-        expect((r as { type: "__result"; msg: Record<string, unknown> })?.msg.is_error).toBe(true);
+        assert(r !== null && r.type === "__result");
+        expect(r.msg.is_error).toBe(true);
       });
     });
 
@@ -895,11 +895,10 @@ describe("ClaudeEngine", () => {
           },
         });
         const r = processor.process(line, 0);
-        expect(r?.type).toBe("__tool_start");
-        const toolStart = r as { type: "__tool_start"; delta: StreamDelta };
-        expect(toolStart.delta.type).toBe("tool_use");
-        expect(toolStart.delta.toolName).toBe("read_file");
-        expect(toolStart.delta.toolId).toBe("tool-ac06");
+        assert(r !== null && r.type === "__tool_start");
+        expect(r.delta.type).toBe("tool_use");
+        expect(r.delta.toolName).toBe("read_file");
+        expect(r.delta.toolId).toBe("tool-ac06");
       });
 
       it("transitions state to InTool on content_block_start tool_use", () => {
@@ -926,10 +925,9 @@ describe("ClaudeEngine", () => {
           event: { type: "content_block_delta", delta: { type: "text_delta", text: "streaming text" } },
         });
         const r = processor.process(line, 0);
-        expect(r?.type).toBe("delta");
-        const delta = (r as { type: "delta"; delta: StreamDelta }).delta;
-        expect(delta.type).toBe("text");
-        expect(delta.content).toBe("streaming text");
+        assert(r !== null && r.type === "delta");
+        expect(r.delta.type).toBe("text");
+        expect(r.delta.content).toBe("streaming text");
       });
 
       it("processes text_delta when state is InText and returns delta with type=text", () => {
@@ -949,9 +947,9 @@ describe("ClaudeEngine", () => {
           event: { type: "content_block_delta", delta: { type: "text_delta", text: "second" } },
         });
         const r = processor.process(line, 1);
-        expect(r?.type).toBe("delta");
-        expect((r as { type: "delta"; delta: StreamDelta }).delta.type).toBe("text");
-        expect((r as { type: "delta"; delta: StreamDelta }).delta.content).toBe("second");
+        assert(r !== null && r.type === "delta");
+        expect(r.delta.type).toBe("text");
+        expect(r.delta.content).toBe("second");
       });
 
       it("returns null for text_delta when state is InTool (inTool=true)", () => {
@@ -992,9 +990,8 @@ describe("ClaudeEngine", () => {
           event: { type: "content_block_stop" },
         });
         const r = processor.process(stopLine, 1);
-        expect(r?.type).toBe("__tool_end");
-        const toolEnd = r as { type: "__tool_end"; delta: StreamDelta };
-        expect(toolEnd.delta.type).toBe("tool_result");
+        assert(r !== null && r.type === "__tool_end");
+        expect(r.delta.type).toBe("tool_result");
         expect(processor.state).toBe("Idle");
       });
 
