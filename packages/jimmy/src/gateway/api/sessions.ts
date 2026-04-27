@@ -22,6 +22,13 @@ import type { JsonObject, Session } from "../../shared/types.js";
 import { isInterruptibleEngine } from "../../shared/types.js";
 import { getClaudeExpectedResetAt } from "../../shared/usageAwareness.js";
 import type { ApiContext } from "../types.js";
+import type {
+  BulkDeleteBody,
+  CreateSessionBody,
+  EnqueueMessageBody,
+  StubSessionBody,
+  UpdateSessionBody,
+} from "./api-types.js";
 import {
   dispatchWebSessionRun,
   loadRawTranscript,
@@ -81,7 +88,7 @@ export async function handleSessionsRequest(
   if (method === "POST" && pathname === "/api/sessions/bulk-delete") {
     const _parsed = await readJsonBody(req, res);
     if (!_parsed.ok) return true;
-    const body = _parsed.body as Record<string, unknown>;
+    const body = _parsed.body as BulkDeleteBody;
     const ids: string[] = Array.isArray(body.ids) ? (body.ids as string[]) : [];
     if (ids.length === 0) {
       badRequest(res, "ids array is required");
@@ -112,7 +119,7 @@ export async function handleSessionsRequest(
   if (method === "POST" && pathname === "/api/sessions/stub") {
     const _parsed = await readJsonBody(req, res);
     if (!_parsed.ok) return true;
-    const body = _parsed.body as Record<string, unknown>;
+    const body = _parsed.body as StubSessionBody;
     const greeting = (body.greeting as string | undefined) || "Hey! Say hi when you're ready to get started.";
     const config = context.getConfig();
     const engineName = (body.engine as string | undefined) || config.engines.default;
@@ -138,7 +145,7 @@ export async function handleSessionsRequest(
   if (method === "POST" && pathname === "/api/sessions") {
     const _parsed = await readJsonBody(req, res);
     if (!_parsed.ok) return true;
-    const body = _parsed.body as Record<string, unknown>;
+    const body = _parsed.body as CreateSessionBody;
     const prompt = (body.prompt as string | undefined) || (body.message as string | undefined);
     if (!prompt) {
       badRequest(res, "prompt or message is required");
@@ -250,7 +257,7 @@ export async function handleSessionsRequest(
     }
     const _parsed = await readJsonBody(req, res);
     if (!_parsed.ok) return true;
-    const body = _parsed.body as Record<string, unknown>;
+    const body = _parsed.body as UpdateSessionBody;
     const updates: import("../../sessions/registry.js").UpdateSessionFields = {};
     if (body.title !== undefined) {
       if (typeof body.title !== "string") {
@@ -527,7 +534,7 @@ export async function handleSessionsRequest(
     session = maybeRevertEngineOverride(session);
     const _parsed = await readJsonBody(req, res);
     if (!_parsed.ok) return true;
-    const body = _parsed.body as Record<string, unknown>;
+    const body = _parsed.body as EnqueueMessageBody;
     const prompt = (body.message as string | undefined) || (body.prompt as string | undefined);
     if (!prompt) {
       badRequest(res, "message is required");

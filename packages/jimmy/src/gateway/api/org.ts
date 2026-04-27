@@ -5,6 +5,7 @@ import { createSession, insertMessage } from "../../sessions/registry.js";
 import { logger } from "../../shared/logger.js";
 import { ORG_DIR } from "../../shared/paths.js";
 import type { ApiContext } from "../types.js";
+import type { CrossRequestBody, PatchEmployeeBody, PutBoardBody } from "./api-types.js";
 import { badRequest, json, matchRoute, notFound, readJsonBody } from "./utils.js";
 
 export async function handleOrgRequest(
@@ -77,7 +78,7 @@ export async function handleOrgRequest(
   if (method === "POST" && pathname === "/api/org/cross-request") {
     const parsed = await readJsonBody(req, res);
     if (!parsed.ok) return true;
-    const body = parsed.body as Record<string, unknown>;
+    const body = parsed.body as CrossRequestBody;
     const fromEmployee = body.fromEmployee as string | undefined;
     const service = body.service as string | undefined;
     const prompt = body.prompt as string | undefined;
@@ -186,7 +187,7 @@ Handle this as a priority request from a colleague.`;
   if (method === "PATCH" && params) {
     const _parsed = await readJsonBody(req, res);
     if (!_parsed.ok) return true;
-    const body = _parsed.body as Record<string, unknown>;
+    const body = _parsed.body as PatchEmployeeBody;
     const { updateEmployeeYaml } = await import("../org.js");
     const updated = updateEmployeeYaml(params.name, {
       alwaysNotify: typeof body.alwaysNotify === "boolean" ? body.alwaysNotify : undefined,
@@ -225,7 +226,7 @@ Handle this as a priority request from a colleague.`;
     }
     const _parsed = await readJsonBody(req, res);
     if (!_parsed.ok) return true;
-    const body = _parsed.body as Record<string, unknown>;
+    const body = _parsed.body as PutBoardBody;
     fs.writeFileSync(boardPath, JSON.stringify(body, null, 2));
     context.emit("board:updated", { department: p.name });
     json(res, { status: "ok" });

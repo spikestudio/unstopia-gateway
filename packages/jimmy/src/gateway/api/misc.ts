@@ -8,6 +8,7 @@ import { logger } from "../../shared/logger.js";
 import { CONFIG_PATH, JINN_HOME, LOGS_DIR, ORG_DIR } from "../../shared/paths.js";
 import { handleFilesRequest } from "../files.js";
 import type { ApiContext } from "../types.js";
+import type { OnboardingBody, PutBudgetsBody, PutConfigBody } from "./api-types.js";
 import { badRequest, checkInstanceHealth, deepMerge, json, matchRoute, notFound, readJsonBody } from "./utils.js";
 
 export async function handleMiscRequest(
@@ -101,7 +102,7 @@ export async function handleMiscRequest(
   if (method === "PUT" && pathname === "/api/config") {
     const _parsed = await readJsonBody(req, res);
     if (!_parsed.ok) return true;
-    const body = _parsed.body as Record<string, unknown>;
+    const body = _parsed.body as PutConfigBody;
     // Basic validation: must be a plain object
     if (!body || typeof body !== "object" || Array.isArray(body)) {
       badRequest(res, "Config must be a JSON object");
@@ -247,7 +248,7 @@ export async function handleMiscRequest(
   if (method === "POST" && pathname === "/api/onboarding") {
     const _parsed = await readJsonBody(req, res);
     if (!_parsed.ok) return true;
-    const body = _parsed.body as Record<string, unknown>;
+    const body = _parsed.body as OnboardingBody;
     const { portalName, operatorName, language } = body;
 
     // Read current config and merge portal settings
@@ -430,7 +431,7 @@ export async function handleMiscRequest(
   if (method === "PUT" && pathname === "/api/budgets") {
     const _parsed = await readJsonBody(req, res);
     if (!_parsed.ok) return true;
-    const body = _parsed.body as Record<string, unknown>;
+    const body = _parsed.body as PutBudgetsBody;
     let existing: Record<string, unknown> = {};
     try {
       existing = (yaml.load(fs.readFileSync(CONFIG_PATH, "utf-8")) as Record<string, unknown>) || {};

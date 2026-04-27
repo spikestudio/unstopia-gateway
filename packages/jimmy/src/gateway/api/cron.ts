@@ -9,6 +9,7 @@ import { logger } from "../../shared/logger.js";
 import { CRON_RUNS } from "../../shared/paths.js";
 import type { CronJob } from "../../shared/types.js";
 import type { ApiContext } from "../types.js";
+import type { CreateCronJobBody, UpdateCronJobBody } from "./api-types.js";
 import { json, matchRoute, notFound, readJsonBody } from "./utils.js";
 
 export async function handleCronRequest(
@@ -61,7 +62,7 @@ export async function handleCronRequest(
   if (method === "POST" && pathname === "/api/cron") {
     const _parsed = await readJsonBody(req, res);
     if (!_parsed.ok) return true;
-    const body = _parsed.body as Record<string, unknown>;
+    const body = _parsed.body as CreateCronJobBody;
     const jobs = loadJobs();
     const newJob: CronJob = {
       id: (body.id as string | undefined) || crypto.randomUUID(),
@@ -93,8 +94,8 @@ export async function handleCronRequest(
     }
     const _parsed = await readJsonBody(req, res);
     if (!_parsed.ok) return true;
-    const body = _parsed.body as Record<string, unknown>;
-    jobs[idx] = { ...jobs[idx], ...body, id: params.id };
+    const body = _parsed.body as UpdateCronJobBody;
+    jobs[idx] = { ...jobs[idx], ...body, id: params.id } as CronJob;
     saveJobs(jobs);
     reloadScheduler(jobs);
     json(res, jobs[idx]);
