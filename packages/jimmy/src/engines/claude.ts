@@ -1,13 +1,8 @@
 import { type ChildProcess, spawn } from "node:child_process";
 import { logger } from "../shared/logger.js";
 import { isDeadSessionError } from "../shared/rateLimit.js";
-import type {
-  EngineRateLimitInfo,
-  EngineResult,
-  EngineRunOpts,
-  InterruptibleEngine,
-  StreamDelta,
-} from "../shared/types.js";
+import type { EngineRateLimitInfo, EngineResult, EngineRunOpts, InterruptibleEngine } from "../shared/types.js";
+import { ClaudeStreamProcessor, parseRateLimitInfo } from "./claude-stream-processor.js";
 
 interface LiveProcess {
   proc: ChildProcess;
@@ -165,12 +160,12 @@ export class ClaudeEngine implements InterruptibleEngine {
       let lastResultMsg: Record<string, unknown> | null = null;
       let rateLimitInfo: EngineRateLimitInfo | undefined;
       let lineCount = 0;
-      let inTool = false;
 
       const STDERR_MAX = 10 * 1024; // 10KB rolling window for error reporting
 
       if (streaming && opts.onStream) {
         const onStream = opts.onStream;
+        const processor = new ClaudeStreamProcessor();
         let lineBuf = "";
 
         proc.stdout.on("data", (d: Buffer) => {
@@ -181,7 +176,7 @@ export class ClaudeEngine implements InterruptibleEngine {
           const lines = lineBuf.split("\n");
           lineBuf = lines.pop() || "";
           for (const line of lines) {
-            const parsed = this.processStreamLine(line, lineCount++, inTool);
+            const parsed = processor.process(line, lineCount++);
             if (!parsed) continue;
 
             if (parsed.type === "__result") {
@@ -195,13 +190,11 @@ export class ClaudeEngine implements InterruptibleEngine {
             }
 
             if (parsed.type === "__tool_start") {
-              inTool = true;
               onStream(parsed.delta);
               continue;
             }
 
             if (parsed.type === "__tool_end") {
-              inTool = false;
               onStream(parsed.delta);
               continue;
             }
@@ -368,94 +361,6 @@ export class ClaudeEngine implements InterruptibleEngine {
     });
   }
 
-  private processStreamLine(
-    line: string,
-    lineCount: number,
-    inTool: boolean,
-  ):
-    | { type: "__result"; msg: Record<string, unknown> }
-    | { type: "__rate_limit"; info: EngineRateLimitInfo }
-    | { type: "__tool_start"; delta: StreamDelta }
-    | { type: "__tool_end"; delta: StreamDelta }
-    | { type: "delta"; delta: StreamDelta }
-    | null {
-    const trimmed = line.trim();
-    if (!trimmed) return null;
-
-    if (lineCount <= 5) {
-      logger.debug(`[claude stream] line ${lineCount}: ${trimmed.slice(0, 300)}`);
-    }
-
-    let msg: Record<string, unknown>;
-    try {
-      msg = JSON.parse(trimmed);
-    } catch {
-      logger.debug(`[claude stream] unparseable line: ${trimmed.slice(0, 100)}`);
-      return null;
-    }
-
-    const msgType = String(msg.type || "");
-    if (msgType === "result") {
-      return { type: "__result", msg };
-    }
-
-    if (msgType === "rate_limit_event") {
-      const info = this.parseRateLimitInfo(msg.rate_limit_info);
-      if (!info) return null;
-      return { type: "__rate_limit", info };
-    }
-
-    // Partial assistant messages contain the full accumulated text so far.
-    // Use these as snapshots to correct any dropped text_delta events.
-    if (msgType === "assistant") {
-      const message = msg.message as Record<string, unknown> | undefined;
-      if (message) {
-        const content = message.content as Array<Record<string, unknown>> | undefined;
-        if (Array.isArray(content)) {
-          const textParts = content
-            .filter((b) => b.type === "text" && typeof b.text === "string")
-            .map((b) => b.text as string);
-          if (textParts.length > 0) {
-            return { type: "delta", delta: { type: "text_snapshot", content: textParts.join("") } };
-          }
-        }
-      }
-      return null;
-    }
-
-    if (msgType === "stream_event") {
-      const event = msg.event as Record<string, unknown> | undefined;
-      if (!event) return null;
-      const eventType = String(event.type || "");
-
-      if (eventType === "content_block_start") {
-        const block = event.content_block as Record<string, unknown> | undefined;
-        if (block?.type === "tool_use") {
-          const toolName = String(block.name || "unknown");
-          const toolId = String(block.id || "");
-          return {
-            type: "__tool_start",
-            delta: { type: "tool_use", content: `Using ${toolName}`, toolName, toolId },
-          };
-        }
-      } else if (eventType === "content_block_delta") {
-        const delta = event.delta as Record<string, unknown> | undefined;
-        if (!delta) return null;
-        if (delta.type === "text_delta" && !inTool) {
-          const text = String(delta.text || "");
-          if (text) {
-            return { type: "delta", delta: { type: "text", content: text } };
-          }
-        }
-      } else if (eventType === "content_block_stop" && inTool) {
-        return { type: "__tool_end", delta: { type: "tool_result", content: "" } };
-      }
-      return null;
-    }
-
-    return null;
-  }
-
   private formatClaudeError(message: string, rateLimit?: EngineRateLimitInfo): string {
     const cleaned = message.trim() || "Claude error";
     if (rateLimit?.status === "rejected") {
@@ -482,26 +387,6 @@ export class ClaudeEngine implements InterruptibleEngine {
     };
   }
 
-  private parseRateLimitInfo(value: unknown): EngineRateLimitInfo | undefined {
-    if (!value || typeof value !== "object") return undefined;
-    const obj = value as Record<string, unknown>;
-    const info: EngineRateLimitInfo = {};
-
-    if (typeof obj.status === "string") info.status = obj.status;
-    const resetsAt = obj.resetsAt;
-    if (typeof resetsAt === "number" && Number.isFinite(resetsAt)) info.resetsAt = resetsAt;
-    if (typeof resetsAt === "string" && resetsAt.trim()) {
-      const parsed = Number(resetsAt);
-      if (Number.isFinite(parsed)) info.resetsAt = parsed;
-    }
-    if (typeof obj.rateLimitType === "string") info.rateLimitType = obj.rateLimitType;
-    if (typeof obj.overageStatus === "string") info.overageStatus = obj.overageStatus;
-    if (typeof obj.overageDisabledReason === "string") info.overageDisabledReason = obj.overageDisabledReason;
-    if (typeof obj.isUsingOverage === "boolean") info.isUsingOverage = obj.isUsingOverage;
-
-    return Object.keys(info).length > 0 ? info : undefined;
-  }
-
   private parseClaudeJsonOutput(stdout: string, fallbackSessionId?: string): EngineResult {
     const parsed = JSON.parse(stdout) as unknown;
 
@@ -524,7 +409,7 @@ export class ClaudeEngine implements InterruptibleEngine {
             !!e && typeof e === "object" && (e as Record<string, unknown>).type === "rate_limit_event",
         );
       if (foundRate) {
-        rateLimitInfo = this.parseRateLimitInfo((foundRate as Record<string, unknown>).rate_limit_info);
+        rateLimitInfo = parseRateLimitInfo((foundRate as Record<string, unknown>).rate_limit_info);
       }
     } else if (parsed && typeof parsed === "object") {
       resultEvent = parsed as Record<string, unknown>;

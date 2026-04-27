@@ -3,6 +3,7 @@ import { EventEmitter } from "node:events";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { EngineRunOpts, StreamDelta } from "../../shared/types.js";
 import { ClaudeEngine } from "../claude.js";
+import { ClaudeStreamProcessor, parseRateLimitInfo } from "../claude-stream-processor.js";
 
 // Mock child_process.spawn
 vi.mock("node:child_process", () => ({
@@ -678,12 +679,12 @@ describe("ClaudeEngine", () => {
     });
   });
 
-  // ── 10. processStreamLine (via any cast) ─────────────────────────────────────
+  // ── 10. ClaudeStreamProcessor ─────────────────────────────────────────────────
 
-  describe("processStreamLine (internal)", () => {
-    // Access private method for direct unit testing
-    // biome-ignore lint/suspicious/noExplicitAny: intentional private method access for testing
-    const psl = (line: string, count = 0, inTool = false) => (engine as any).processStreamLine(line, count, inTool);
+  describe("ClaudeStreamProcessor", () => {
+    // AC-E019-03: 外部プロセスなしにテスト可能な独立クラス
+    const psl = (line: string, count = 0, processor?: ClaudeStreamProcessor) =>
+      (processor ?? new ClaudeStreamProcessor()).process(line, count);
 
     it("returns null for empty line", () => {
       expect(psl("")).toBeNull();
@@ -698,7 +699,7 @@ describe("ClaudeEngine", () => {
       const line = JSON.stringify({ type: "result", result: "answer", session_id: "s1" });
       const r = psl(line);
       expect(r?.type).toBe("__result");
-      expect(r?.msg.result).toBe("answer");
+      expect((r as { type: "__result"; msg: Record<string, unknown> })?.msg.result).toBe("answer");
     });
 
     it("returns __rate_limit for type='rate_limit_event'", () => {
@@ -708,7 +709,7 @@ describe("ClaudeEngine", () => {
       });
       const r = psl(line);
       expect(r?.type).toBe("__rate_limit");
-      expect(r?.info.status).toBe("ok");
+      expect((r as { type: "__rate_limit"; info: { status: string } })?.info.status).toBe("ok");
     });
 
     it("returns null for rate_limit_event with no valid info", () => {
@@ -723,8 +724,8 @@ describe("ClaudeEngine", () => {
       });
       const r = psl(line);
       expect(r?.type).toBe("delta");
-      expect(r?.delta.type).toBe("text_snapshot");
-      expect(r?.delta.content).toBe("snapshot");
+      expect((r as { type: "delta"; delta: StreamDelta })?.delta.type).toBe("text_snapshot");
+      expect((r as { type: "delta"; delta: StreamDelta })?.delta.content).toBe("snapshot");
     });
 
     it("returns null for assistant message without text content", () => {
@@ -747,26 +748,39 @@ describe("ClaudeEngine", () => {
       });
       const r = psl(line);
       expect(r?.type).toBe("__tool_start");
-      expect(r?.delta.toolName).toBe("bash");
+      expect((r as { type: "__tool_start"; delta: StreamDelta })?.delta.toolName).toBe("bash");
     });
 
-    it("returns delta text for content_block_delta text_delta when NOT inTool", () => {
+    it("returns delta text for content_block_delta text_delta when NOT inTool (state=Idle)", () => {
+      // AC-E019-01: Idle 状態からのテキストデルタ処理
+      const processor = new ClaudeStreamProcessor();
+      expect(processor.state).toBe("Idle");
       const line = JSON.stringify({
         type: "stream_event",
         event: { type: "content_block_delta", delta: { type: "text_delta", text: "hello" } },
       });
-      const r = psl(line, 0, false);
+      const r = processor.process(line, 0);
       expect(r?.type).toBe("delta");
-      expect(r?.delta.type).toBe("text");
-      expect(r?.delta.content).toBe("hello");
+      expect((r as { type: "delta"; delta: StreamDelta })?.delta.type).toBe("text");
+      expect((r as { type: "delta"; delta: StreamDelta })?.delta.content).toBe("hello");
     });
 
-    it("returns null for content_block_delta text_delta when inTool=true", () => {
+    it("returns null for content_block_delta text_delta when state=InTool", () => {
+      // AC-E019-01: InTool 状態ではテキストデルタを無視する
+      const processor = new ClaudeStreamProcessor();
+      // InTool 状態に遷移させる
+      const startLine = JSON.stringify({
+        type: "stream_event",
+        event: { type: "content_block_start", content_block: { type: "tool_use", name: "bash", id: "t1" } },
+      });
+      processor.process(startLine, 0);
+      expect(processor.state).toBe("InTool");
+
       const line = JSON.stringify({
         type: "stream_event",
         event: { type: "content_block_delta", delta: { type: "text_delta", text: "hello" } },
       });
-      expect(psl(line, 0, true)).toBeNull();
+      expect(processor.process(line, 1)).toBeNull();
     });
 
     it("returns null for empty text in content_block_delta", () => {
@@ -777,14 +791,24 @@ describe("ClaudeEngine", () => {
       expect(psl(line)).toBeNull();
     });
 
-    it("returns __tool_end for content_block_stop when inTool=true", () => {
-      const line = JSON.stringify({
+    it("returns __tool_end for content_block_stop when state=InTool", () => {
+      // AC-E019-01: InTool → Idle 遷移
+      const processor = new ClaudeStreamProcessor();
+      const startLine = JSON.stringify({
+        type: "stream_event",
+        event: { type: "content_block_start", content_block: { type: "tool_use", name: "bash", id: "t1" } },
+      });
+      processor.process(startLine, 0);
+      expect(processor.state).toBe("InTool");
+
+      const stopLine = JSON.stringify({
         type: "stream_event",
         event: { type: "content_block_stop" },
       });
-      const r = psl(line, 0, true);
+      const r = processor.process(stopLine, 1);
       expect(r?.type).toBe("__tool_end");
-      expect(r?.delta.type).toBe("tool_result");
+      expect((r as { type: "__tool_end"; delta: StreamDelta })?.delta.type).toBe("tool_result");
+      expect(processor.state).toBe("Idle");
     });
 
     it("returns null for stream_event without event field", () => {
@@ -815,37 +839,89 @@ describe("ClaudeEngine", () => {
 
     it("logs first 5 lines at debug level (no throw)", () => {
       // Just ensure no throw for early lines
+      const processor = new ClaudeStreamProcessor();
       for (let i = 0; i <= 5; i++) {
-        expect(() => psl(JSON.stringify({ type: "result", result: "ok" }), i)).not.toThrow();
+        expect(() => processor.process(JSON.stringify({ type: "result", result: "ok" }), i)).not.toThrow();
       }
+    });
+
+    // AC-E019-01: 状態遷移テスト
+    describe("AC-E019-01: state transitions", () => {
+      it("initial state is Idle", () => {
+        const processor = new ClaudeStreamProcessor();
+        expect(processor.state).toBe("Idle");
+      });
+
+      it("transitions Idle → InTool on content_block_start (tool_use)", () => {
+        const processor = new ClaudeStreamProcessor();
+        const line = JSON.stringify({
+          type: "stream_event",
+          event: { type: "content_block_start", content_block: { type: "tool_use", name: "bash", id: "t1" } },
+        });
+        processor.process(line, 0);
+        expect(processor.state).toBe("InTool");
+      });
+
+      it("transitions Idle → InText on content_block_delta (text_delta)", () => {
+        const processor = new ClaudeStreamProcessor();
+        const line = JSON.stringify({
+          type: "stream_event",
+          event: { type: "content_block_delta", delta: { type: "text_delta", text: "hello" } },
+        });
+        processor.process(line, 0);
+        expect(processor.state).toBe("InText");
+      });
+
+      it("transitions InTool → Idle on content_block_stop", () => {
+        const processor = new ClaudeStreamProcessor();
+        processor.process(
+          JSON.stringify({
+            type: "stream_event",
+            event: { type: "content_block_start", content_block: { type: "tool_use", name: "bash", id: "t1" } },
+          }),
+          0,
+        );
+        processor.process(JSON.stringify({ type: "stream_event", event: { type: "content_block_stop" } }), 1);
+        expect(processor.state).toBe("Idle");
+      });
+
+      it("transitions InText → Idle on content_block_stop", () => {
+        const processor = new ClaudeStreamProcessor();
+        processor.process(
+          JSON.stringify({
+            type: "stream_event",
+            event: { type: "content_block_delta", delta: { type: "text_delta", text: "hi" } },
+          }),
+          0,
+        );
+        processor.process(JSON.stringify({ type: "stream_event", event: { type: "content_block_stop" } }), 1);
+        expect(processor.state).toBe("Idle");
+      });
     });
   });
 
-  // ── 11. parseRateLimitInfo edge cases (via any cast) ─────────────────────────
+  // ── 11. parseRateLimitInfo (exported function) ────────────────────────────────
 
-  describe("parseRateLimitInfo (internal)", () => {
-    // biome-ignore lint/suspicious/noExplicitAny: intentional private method access for testing
-    const pri = (v: unknown) => (engine as any).parseRateLimitInfo(v);
-
+  describe("parseRateLimitInfo (exported function)", () => {
     it("returns undefined for null", () => {
-      expect(pri(null)).toBeUndefined();
+      expect(parseRateLimitInfo(null)).toBeUndefined();
     });
 
     it("returns undefined for non-object", () => {
-      expect(pri("string")).toBeUndefined();
+      expect(parseRateLimitInfo("string")).toBeUndefined();
     });
 
     it("returns undefined for empty object (no recognized fields)", () => {
-      expect(pri({})).toBeUndefined();
+      expect(parseRateLimitInfo({})).toBeUndefined();
     });
 
     it("parses resetsAt as numeric string", () => {
-      const result = pri({ resetsAt: "1234567890" });
+      const result = parseRateLimitInfo({ resetsAt: "1234567890" });
       expect(result?.resetsAt).toBe(1234567890);
     });
 
     it("parses all known fields", () => {
-      const result = pri({
+      const result = parseRateLimitInfo({
         status: "ok",
         resetsAt: 9999,
         rateLimitType: "daily",
