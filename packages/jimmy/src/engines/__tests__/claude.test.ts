@@ -1,7 +1,7 @@
 import type { ChildProcess } from "node:child_process";
 import { EventEmitter } from "node:events";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { EngineRunOpts, StreamDelta } from "../../shared/types.js";
+import type { EngineRateLimitInfo, EngineResult, EngineRunOpts, StreamDelta } from "../../shared/types.js";
 import { ClaudeEngine } from "../claude.js";
 import { ClaudeStreamProcessor, parseRateLimitInfo } from "../claude-stream-processor.js";
 
@@ -513,8 +513,16 @@ describe("ClaudeEngine", () => {
 
     it("resolves with error when result is_error=true (direct buildEngineResultFromResultEvent)", () => {
       // Test the rate-limit-rejected path directly to avoid retry-loop timeout
-      // biome-ignore lint/suspicious/noExplicitAny: intentional private method access for testing
-      const build = (engine as any).buildEngineResultFromResultEvent.bind(engine);
+      const build = (
+        engine as unknown as {
+          buildEngineResultFromResultEvent: (
+            resultEvent: Record<string, unknown>,
+            finalText: string,
+            fallbackSessionId: string | undefined,
+            rateLimit: EngineRateLimitInfo | undefined,
+          ) => EngineResult;
+        }
+      ).buildEngineResultFromResultEvent.bind(engine);
       const rateLimit = { status: "rejected", rateLimitType: "daily" };
       const result = build(
         { type: "result", result: "Usage limit hit", session_id: "s-rl2", is_error: true },
