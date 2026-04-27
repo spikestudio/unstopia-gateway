@@ -95,7 +95,7 @@ export async function handleCronRequest(
     const _parsed = await readJsonBody(req, res);
     if (!_parsed.ok) return true;
     const body = _parsed.body as UpdateCronJobBody;
-    jobs[idx] = { ...jobs[idx], ...body, id: params.id };
+    jobs[idx] = { ...jobs[idx], ...body, id: params.id } as CronJob;
     saveJobs(jobs);
     reloadScheduler(jobs);
     json(res, jobs[idx]);

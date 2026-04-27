@@ -9,7 +9,7 @@
  * Runtime validation is NOT performed here — types are compile-time only.
  */
 
-import type { CronJob, JsonObject } from "../../shared/types.js";
+import type { CronJob, JsonObject, Target } from "../../shared/types.js";
 
 // ── Sessions ─────────────────────────────────────────────────────────────────
 
@@ -34,7 +34,7 @@ export interface UpdateSessionBody {
 
 /** POST /api/sessions/bulk-delete */
 export interface BulkDeleteBody {
-  ids?: unknown;
+  ids?: string[];
 }
 
 /** POST /api/sessions/:id/message */
@@ -67,11 +67,11 @@ export interface CrossRequestBody {
 
 /** PATCH /api/org/employees/:name */
 export interface PatchEmployeeBody {
-  alwaysNotify?: unknown;
+  alwaysNotify?: boolean;
 }
 
-/** PUT /api/org/departments/:name/board */
-export interface PutBoardBody extends Record<string, unknown> {}
+/** PUT /api/org/departments/:name/board — arbitrary board state, shape varies by department */
+export type PutBoardBody = Record<string, unknown>;
 
 // ── Cron ─────────────────────────────────────────────────────────────────────
 
@@ -89,8 +89,8 @@ export interface CreateCronJobBody {
   delivery?: CronJob["delivery"];
 }
 
-/** PUT /api/cron/:id — partial update, merged with existing job */
-export interface UpdateCronJobBody extends Record<string, unknown> {}
+/** PUT /api/cron/:id — partial update merged with existing job (any subset of CreateCronJobBody) */
+export type UpdateCronJobBody = Partial<CreateCronJobBody>;
 
 // ── Connectors ───────────────────────────────────────────────────────────────
 
@@ -103,34 +103,34 @@ export interface IncomingAttachmentEntry {
 
 /** POST /api/connectors/:id/incoming */
 export interface IncomingMessageBody {
-  sessionKey?: unknown;
-  channel?: unknown;
-  thread?: unknown;
-  user?: unknown;
-  userId?: unknown;
-  text?: unknown;
-  messageId?: unknown;
-  attachments?: unknown;
+  sessionKey?: string;
+  channel?: string;
+  thread?: string;
+  user?: string;
+  userId?: string;
+  text?: string;
+  messageId?: string;
+  attachments?: IncomingAttachmentEntry[];
   replyContext?: JsonObject;
   transportMeta?: JsonObject;
 }
 
 /** POST /api/connectors/:id/proxy */
 export interface ProxyActionBody {
-  action?: unknown;
-  target?: unknown;
-  text?: unknown;
-  emoji?: unknown;
-  channelId?: unknown;
-  threadTs?: unknown;
-  status?: unknown;
+  action?: string;
+  target?: Target;
+  text?: string;
+  emoji?: string;
+  channelId?: string;
+  threadTs?: string;
+  status?: string;
 }
 
 /** POST /api/connectors/:name/send */
 export interface SendMessageBody {
-  channel?: unknown;
-  text?: unknown;
-  thread?: unknown;
+  channel?: string;
+  text?: string;
+  thread?: string;
 }
 
 // ── Misc ─────────────────────────────────────────────────────────────────────
@@ -160,13 +160,23 @@ export interface InstanceInfo {
 
 /** POST /api/onboarding */
 export interface OnboardingBody {
-  portalName?: unknown;
-  operatorName?: unknown;
-  language?: unknown;
+  portalName?: string;
+  operatorName?: string;
+  language?: string;
 }
 
-/** PUT /api/config — top-level config update body */
-export interface PutConfigBody extends Record<string, unknown> {}
+/** PUT /api/config — top-level config update (known top-level keys; values are validated at runtime) */
+export interface PutConfigBody {
+  gateway?: Record<string, unknown>;
+  engines?: Record<string, unknown>;
+  connectors?: Record<string, unknown>;
+  portal?: Record<string, unknown>;
+  mcp?: Record<string, unknown>;
+  [key: string]: unknown;
+}
 
 /** PUT /api/budgets — budget limits update body */
-export interface PutBudgetsBody extends Record<string, unknown> {}
+export interface PutBudgetsBody {
+  employees?: Record<string, number>;
+  [key: string]: unknown;
+}
