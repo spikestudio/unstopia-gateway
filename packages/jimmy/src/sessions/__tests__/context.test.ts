@@ -29,6 +29,7 @@ vi.mock("../../shared/paths.js", () => ({
 }));
 
 import { buildServiceRegistry } from "../../gateway/services.js";
+import type { JinnConfig, OrgHierarchy } from "../../shared/types.js";
 import { buildContext } from "../context.js";
 
 describe("buildContext", () => {
@@ -88,8 +89,8 @@ describe("buildContext", () => {
         logging: { file: false, stdout: false, level: "info" },
       };
 
-      const largeConfig = { ...baseConfig, context: { maxChars: 100_000 } } as never;
-      const tightConfig = { ...baseConfig, context: { maxChars: 500 } } as never;
+      const largeConfig = { ...baseConfig, context: { maxChars: 100_000 } } as unknown as JinnConfig;
+      const tightConfig = { ...baseConfig, context: { maxChars: 500 } } as unknown as JinnConfig;
 
       const largeResult = buildContext({
         source: "slack",
@@ -214,7 +215,7 @@ describe("buildContext", () => {
           },
           connectors: {},
           logging: { file: false, stdout: false, level: "info" },
-        } as never,
+        } as unknown as JinnConfig,
       });
 
       expect(result).toContain("## Current configuration");
@@ -235,7 +236,7 @@ describe("buildContext", () => {
           },
           connectors: {},
           logging: { file: false, stdout: false, level: "info" },
-        } as never,
+        } as unknown as JinnConfig,
       });
 
       expect(result).toContain("gpt-4o");
@@ -255,7 +256,7 @@ describe("buildContext", () => {
           },
           connectors: {},
           logging: { file: false, stdout: false, level: "info" },
-        } as never,
+        } as unknown as JinnConfig,
       });
 
       expect(result).toContain("gemini-2.0-flash");
@@ -329,7 +330,7 @@ describe("buildContext", () => {
           },
         },
         sorted: ["alice"],
-      } as unknown as import("../../shared/types.js").OrgHierarchy;
+      } as unknown as OrgHierarchy;
 
       const result = buildContext({
         source: "slack",
@@ -346,7 +347,7 @@ describe("buildContext", () => {
       const hierarchy = {
         nodes: {},
         sorted: [],
-      } as unknown as import("../../shared/types.js").OrgHierarchy;
+      } as unknown as OrgHierarchy;
 
       const result = buildContext({
         source: "slack",
@@ -402,7 +403,7 @@ describe("buildContext", () => {
 
     it("user-profile.md が 50 文字以上（isNew=false）のとき evolve メッセージが含まれる", () => {
       const longProfile = "This is a long user profile content that exceeds fifty characters in total length.";
-      vi.mocked(fs.readFileSync).mockReturnValue(longProfile as never);
+      vi.mocked(fs.readFileSync).mockReturnValue(longProfile as unknown as ReturnType<typeof fs.readFileSync>);
 
       const result = buildContext({
         source: "slack",
@@ -453,7 +454,7 @@ describe("buildContext", () => {
           },
         },
         sorted: ["bob", "alice"],
-      } as unknown as import("../../shared/types.js").OrgHierarchy;
+      } as unknown as OrgHierarchy;
 
       const result = buildContext({
         source: "slack",
@@ -478,7 +479,7 @@ describe("buildContext", () => {
           },
         },
         sorted: ["alice"],
-      } as unknown as import("../../shared/types.js").OrgHierarchy;
+      } as unknown as OrgHierarchy;
 
       const result = buildContext({
         source: "slack",
@@ -518,7 +519,7 @@ describe("buildContext", () => {
           },
         },
         sorted: ["alice", "charlie"],
-      } as unknown as import("../../shared/types.js").OrgHierarchy;
+      } as unknown as OrgHierarchy;
 
       const result = buildContext({
         source: "slack",
@@ -557,7 +558,9 @@ describe("buildContext", () => {
           persona: "",
         },
       };
-      vi.mocked(buildServiceRegistry).mockReturnValue(new Map([["design-review", externalService as never]]));
+      vi.mocked(buildServiceRegistry).mockReturnValue(
+        new Map([["design-review", externalService]]) as ReturnType<typeof buildServiceRegistry>,
+      );
 
       const result = buildContext({
         source: "slack",
@@ -583,7 +586,9 @@ describe("buildContext", () => {
           persona: "",
         },
       };
-      vi.mocked(buildServiceRegistry).mockReturnValue(new Map([["code-review", sameDepService as never]]));
+      vi.mocked(buildServiceRegistry).mockReturnValue(
+        new Map([["code-review", sameDepService]]) as ReturnType<typeof buildServiceRegistry>,
+      );
 
       const result = buildContext({
         source: "slack",
@@ -628,7 +633,9 @@ describe("buildContext", () => {
         }
         return [];
       }) as typeof fs.readdirSync);
-      vi.mocked(fs.statSync).mockReturnValue({ isDirectory: () => false, size: 2048 } as never);
+      vi.mocked(fs.statSync).mockReturnValue({ isDirectory: () => false, size: 2048 } as unknown as ReturnType<
+        typeof fs.statSync
+      >);
 
       const result = buildContext({
         source: "slack",
@@ -665,7 +672,9 @@ describe("buildContext", () => {
         }
         return "";
       }) as typeof fs.readFileSync);
-      vi.mocked(fs.statSync).mockReturnValue({ isDirectory: () => false, size: 1024 } as never);
+      vi.mocked(fs.statSync).mockReturnValue({ isDirectory: () => false, size: 1024 } as unknown as ReturnType<
+        typeof fs.statSync
+      >);
 
       const result = buildContext({
         source: "slack",
@@ -716,7 +725,9 @@ describe("buildContext", () => {
         return "";
       }) as typeof fs.readFileSync);
 
-      vi.mocked(fs.statSync).mockReturnValue({ isDirectory: () => false, size: 1024 } as never);
+      vi.mocked(fs.statSync).mockReturnValue({ isDirectory: () => false, size: 1024 } as unknown as ReturnType<
+        typeof fs.statSync
+      >);
 
       const result = buildContext({
         source: "slack",
@@ -747,7 +758,7 @@ describe("buildContext", () => {
           dave: { employee: makeEmp("dave", "Dave"), depth: 3, parentName: "charlie", directReports: [] }, // depth >= 3
         },
         sorted: ["alice", "bob", "charlie", "dave"],
-      } as unknown as import("../../shared/types.js").OrgHierarchy;
+      } as unknown as OrgHierarchy;
 
       const result = buildContext({
         source: "slack",
@@ -763,8 +774,12 @@ describe("buildContext", () => {
   describe("buildEnvironmentContext: ローカル環境セクション", () => {
     it("statSync がディレクトリを返すとき ## Local environment セクションが含まれる", () => {
       // statSync がディレクトリであることを示すように変更
-      vi.mocked(fs.statSync).mockReturnValue({ isDirectory: () => true, size: 0 } as never);
-      vi.mocked(fs.readdirSync).mockReturnValue(["file1.txt", "file2.txt"] as never);
+      vi.mocked(fs.statSync).mockReturnValue({ isDirectory: () => true, size: 0 } as unknown as ReturnType<
+        typeof fs.statSync
+      >);
+      vi.mocked(fs.readdirSync).mockReturnValue(["file1.txt", "file2.txt"] as unknown as ReturnType<
+        typeof fs.readdirSync
+      >);
 
       const result = buildContext({
         source: "slack",
@@ -780,7 +795,7 @@ describe("buildContext", () => {
       vi.mocked(fs.statSync).mockImplementation((() => {
         throw new Error("ENOENT");
       }) as typeof fs.statSync);
-      vi.mocked(fs.readdirSync).mockReturnValue([] as never);
+      vi.mocked(fs.readdirSync).mockReturnValue([] as unknown as ReturnType<typeof fs.readdirSync>);
 
       const result = buildContext({
         source: "slack",
@@ -838,7 +853,7 @@ describe("buildContext", () => {
           },
           connectors: {},
           logging: { file: false, stdout: false, level: "info" },
-        } as never,
+        } as unknown as JinnConfig,
       });
 
       expect(result).toContain("childEffortOverride");
@@ -859,7 +874,7 @@ describe("buildContext", () => {
           },
           connectors: {},
           logging: { file: false, stdout: false, level: "info" },
-        } as never,
+        } as unknown as JinnConfig,
       });
 
       expect(result).toContain("childEffortOverride");
@@ -880,7 +895,7 @@ describe("buildContext", () => {
           },
           connectors: {},
           logging: { file: false, stdout: false, level: "info" },
-        } as never,
+        } as unknown as JinnConfig,
       });
 
       expect(result).toContain("childEffortOverride");

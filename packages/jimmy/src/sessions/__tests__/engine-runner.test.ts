@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { Connector, Engine, JinnConfig, Session } from "../../shared/types.js";
+import type { Connector, Engine, IncomingMessage, JinnConfig, Session, Target } from "../../shared/types.js";
 
 // 外部依存を vi.mock で分離
 vi.mock("../../gateway/budgets.js", () => ({
@@ -135,7 +135,7 @@ function makeSession(overrides: Partial<Session> = {}): Session {
     sourceRef: "slack:C12345",
     connector: "slack",
     sessionKey: "slack:C12345",
-    replyContext: { channel: "C12345" } as never,
+    replyContext: { channel: "C12345" },
     messageId: null,
     transportMeta: null,
     employee: null,
@@ -153,16 +153,16 @@ function makeSession(overrides: Partial<Session> = {}): Session {
   };
 }
 
-function makeTarget() {
+function makeTarget(): Target {
   return { channel: "C12345", messageTs: undefined, thread: undefined };
 }
 
-function makeMsg() {
+function makeMsg(): IncomingMessage {
   return {
     connector: "slack",
     source: "slack",
     sessionKey: "slack:C12345",
-    replyContext: { channel: "C12345" } as never,
+    replyContext: { channel: "C12345" },
     messageId: undefined,
     channel: "C12345",
     thread: undefined,
@@ -199,10 +199,10 @@ describe("runSession", () => {
 
       await runSession(
         session,
-        makeMsg() as never,
+        makeMsg(),
         [],
         connector,
-        makeTarget() as never,
+        makeTarget(),
         engines,
         makeConfig(),
         () => new Map(),
@@ -222,10 +222,10 @@ describe("runSession", () => {
 
       await runSession(
         session,
-        makeMsg() as never,
+        makeMsg(),
         [],
         makeConnector(),
-        makeTarget() as never,
+        makeTarget(),
         engines,
         makeConfig(),
         () => new Map(),
@@ -260,10 +260,10 @@ describe("runSession", () => {
 
       await runSession(
         sessionWithId,
-        makeMsg() as never,
+        makeMsg(),
         [],
         makeConnector(),
-        makeTarget() as never,
+        makeTarget(),
         engines,
         config,
         () => new Map(),
@@ -296,10 +296,10 @@ describe("runSession", () => {
 
       await runSession(
         sessionWithId,
-        makeMsg() as never,
+        makeMsg(),
         [],
         connector,
-        makeTarget() as never,
+        makeTarget(),
         engines,
         config,
         () => new Map(),
@@ -322,10 +322,10 @@ describe("runSession", () => {
 
       await runSession(
         session,
-        { ...makeMsg(), source: "cron" } as never,
+        { ...makeMsg(), source: "cron" },
         [],
         connector,
-        makeTarget() as never,
+        makeTarget(),
         engines,
         makeConfig(),
         () => new Map(),
@@ -343,10 +343,10 @@ describe("runSession", () => {
 
       await runSession(
         session,
-        makeMsg() as never,
+        makeMsg(),
         [],
         connector,
-        makeTarget() as never,
+        makeTarget(),
         engines,
         makeConfig(),
         () => new Map(),
@@ -367,10 +367,10 @@ describe("runSession", () => {
 
       await runSession(
         session,
-        makeMsg() as never,
+        makeMsg(),
         [],
         connector,
-        makeTarget() as never,
+        makeTarget(),
         engines,
         makeConfig(),
         () => new Map(),
@@ -395,10 +395,10 @@ describe("runSession", () => {
 
       await runSession(
         session,
-        makeMsg() as never,
+        makeMsg(),
         [],
         makeConnector(),
-        makeTarget() as never,
+        makeTarget(),
         engines,
         makeConfig(),
         () => new Map(),
@@ -424,10 +424,10 @@ describe("runSession", () => {
 
       await runSession(
         session,
-        makeMsg() as never,
+        makeMsg(),
         [],
         makeConnector(),
-        makeTarget() as never,
+        makeTarget(),
         engines,
         makeConfig(),
         () => new Map(),
@@ -450,10 +450,10 @@ describe("runSession", () => {
 
       await runSession(
         session,
-        makeMsg() as never,
+        makeMsg(),
         [],
         connector,
-        makeTarget() as never,
+        makeTarget(),
         engines,
         makeConfig(),
         () => new Map(),
@@ -474,10 +474,10 @@ describe("runSession", () => {
 
       await runSession(
         session,
-        { ...makeMsg(), text: "test message" } as never,
+        { ...makeMsg(), text: "test message" },
         [],
         makeConnector(),
-        makeTarget() as never,
+        makeTarget(),
         engines,
         makeConfig(),
         () => new Map(),
@@ -498,10 +498,10 @@ describe("runSession", () => {
 
       await runSession(
         session,
-        makeMsg() as never,
+        makeMsg(),
         [],
         connector,
-        makeTarget() as never,
+        makeTarget(),
         engines,
         makeConfig(),
         () => new Map(),
@@ -520,10 +520,10 @@ describe("runSession", () => {
 
       await runSession(
         session,
-        { ...makeMsg(), source: "cron" } as never,
+        { ...makeMsg(), source: "cron" },
         [],
         connector,
-        makeTarget() as never,
+        makeTarget(),
         engines,
         makeConfig(),
         () => new Map(),
@@ -548,12 +548,12 @@ describe("runSession", () => {
 
       const syncSince = new Date(Date.now() - 60_000).toISOString();
       repos.sessions.updateSession(sessionId, {
-        transportMeta: { claudeSyncSince: syncSince } as never,
+        transportMeta: { claudeSyncSince: syncSince },
       });
       const session = makeSession({
         id: sessionId,
         engine: "claude",
-        transportMeta: { claudeSyncSince: syncSince } as never,
+        transportMeta: { claudeSyncSince: syncSince },
       });
 
       const mockEngine = makeEngine({ result: "Done", error: undefined, sessionId: "new-session" });
@@ -561,10 +561,10 @@ describe("runSession", () => {
 
       await runSession(
         session,
-        makeMsg() as never,
+        makeMsg(),
         [],
         makeConnector(),
-        makeTarget() as never,
+        makeTarget(),
         engines,
         makeConfig(),
         () => new Map(),
@@ -594,7 +594,7 @@ describe("runSession", () => {
       const session = makeSession({
         id: sessionId,
         engine: "claude",
-        transportMeta: { claudeSyncSince: syncSince } as never,
+        transportMeta: { claudeSyncSince: syncSince },
       });
 
       const mockEngine = makeEngine({ result: "Synced response" });
@@ -602,10 +602,10 @@ describe("runSession", () => {
 
       await runSession(
         session,
-        makeMsg() as never,
+        makeMsg(),
         [],
         makeConnector(),
-        makeTarget() as never,
+        makeTarget(),
         engines,
         makeConfig(),
         () => new Map(),
@@ -628,10 +628,10 @@ describe("runSession", () => {
 
       await runSession(
         session,
-        makeMsg() as never,
+        makeMsg(),
         [],
         makeConnector(),
-        makeTarget() as never,
+        makeTarget(),
         engines,
         makeConfig(),
         () => new Map(),
@@ -649,10 +649,10 @@ describe("runSession", () => {
 
       await runSession(
         session,
-        makeMsg() as never,
+        makeMsg(),
         [],
         makeConnector(),
-        makeTarget() as never,
+        makeTarget(),
         engines,
         makeConfig(),
         () => new Map(),
@@ -666,7 +666,7 @@ describe("runSession", () => {
     it("MCP servers が存在する場合 writeMcpConfigFile が呼ばれる", async () => {
       const { resolveMcpServers, writeMcpConfigFile } = await import("../../mcp/resolver.js");
       vi.mocked(resolveMcpServers).mockReturnValue({
-        mcpServers: { "test-server": { command: "test" } as never },
+        mcpServers: { "test-server": { command: "test" } as import("../../shared/types.js").McpServerConfig },
       });
 
       const session = makeSession({ engine: "claude" });
@@ -674,10 +674,10 @@ describe("runSession", () => {
 
       await runSession(
         session,
-        makeMsg() as never,
+        makeMsg(),
         [],
         makeConnector(),
-        makeTarget() as never,
+        makeTarget(),
         engines,
         makeConfig(),
         () => new Map(),
@@ -697,10 +697,10 @@ describe("runSession", () => {
 
       await runSession(
         session,
-        makeMsg() as never,
+        makeMsg(),
         [],
         makeConnector(),
-        makeTarget() as never,
+        makeTarget(),
         engines,
         makeConfig(), // budgets なし
         () => new Map(),
@@ -722,10 +722,10 @@ describe("runSession", () => {
 
       await runSession(
         session,
-        makeMsg() as never,
+        makeMsg(),
         [],
         makeConnector(),
-        makeTarget() as never,
+        makeTarget(),
         engines,
         config,
         () => new Map(),
@@ -740,7 +740,7 @@ describe("runSession", () => {
   describe("rate limit fallback: Claude → Codex 切替", () => {
     it("detectRateLimit=limited で strategy=fallback かつ fallback engine がある場合 fallback engine が使われる", async () => {
       const { detectRateLimit } = await import("../../shared/rateLimit.js");
-      vi.mocked(detectRateLimit).mockReturnValue({ limited: true as const, resetsAt: null as never });
+      vi.mocked(detectRateLimit).mockReturnValue({ limited: true as const, resetsAt: undefined });
 
       const session = makeSession({ engine: "claude" });
       const fallbackEngine = makeEngine({ result: "GPT fallback response" });
@@ -758,10 +758,10 @@ describe("runSession", () => {
 
       await runSession(
         session,
-        makeMsg() as never,
+        makeMsg(),
         [],
         connector,
-        makeTarget() as never,
+        makeTarget(),
         engines,
         config,
         () => new Map(),
@@ -781,7 +781,7 @@ describe("runSession", () => {
   describe("rate limit fallback: Codex engine ID の保持", () => {
     it("fallback engine が sessionId を返した場合 transportMeta.engineSessions.codex に保存される", async () => {
       const { detectRateLimit } = await import("../../shared/rateLimit.js");
-      vi.mocked(detectRateLimit).mockReturnValue({ limited: true as const, resetsAt: null as never });
+      vi.mocked(detectRateLimit).mockReturnValue({ limited: true as const, resetsAt: undefined });
 
       const repos = makeRepos();
       const { id: sessionId } = repos.sessions.createSession({
@@ -814,10 +814,10 @@ describe("runSession", () => {
 
       await runSession(
         session,
-        makeMsg() as never,
+        makeMsg(),
         [],
         makeConnector(),
-        makeTarget() as never,
+        makeTarget(),
         engines,
         config,
         () => new Map(),
@@ -834,7 +834,7 @@ describe("runSession", () => {
 
     it("fallback engine がない場合（engines Map に codex がない）でも rate limit wait path に入る", async () => {
       const { detectRateLimit, computeRateLimitDeadlineMs } = await import("../../shared/rateLimit.js");
-      vi.mocked(detectRateLimit).mockReturnValue({ limited: true as const, resetsAt: null as never });
+      vi.mocked(detectRateLimit).mockReturnValue({ limited: true as const, resetsAt: undefined });
       vi.mocked(computeRateLimitDeadlineMs).mockReturnValue(Date.now() - 1); // 即座に deadline 切れ
 
       const session = makeSession({ engine: "claude" });
@@ -849,10 +849,10 @@ describe("runSession", () => {
 
       await runSession(
         session,
-        makeMsg() as never,
+        makeMsg(),
         [],
         connector,
-        makeTarget() as never,
+        makeTarget(),
         engines,
         config,
         () => new Map(),
@@ -868,7 +868,7 @@ describe("runSession", () => {
   describe("rate limit fallback: engineSessionId が既存の場合の処理", () => {
     it("session に engineSessionId がある場合 claude engine session ID が engineSessions に保存される", async () => {
       const { detectRateLimit } = await import("../../shared/rateLimit.js");
-      vi.mocked(detectRateLimit).mockReturnValue({ limited: true as const, resetsAt: null as never });
+      vi.mocked(detectRateLimit).mockReturnValue({ limited: true as const, resetsAt: undefined });
 
       const repos = makeRepos();
       const { id: sessionId } = repos.sessions.createSession({
@@ -902,10 +902,10 @@ describe("runSession", () => {
 
       await runSession(
         session,
-        makeMsg() as never,
+        makeMsg(),
         [],
         makeConnector(),
-        makeTarget() as never,
+        makeTarget(),
         engines,
         config,
         () => new Map(),
@@ -922,13 +922,13 @@ describe("runSession", () => {
 
     it("fallback で既存の codex session がある場合 resume として使われる", async () => {
       const { detectRateLimit } = await import("../../shared/rateLimit.js");
-      vi.mocked(detectRateLimit).mockReturnValue({ limited: true as const, resetsAt: null as never });
+      vi.mocked(detectRateLimit).mockReturnValue({ limited: true as const, resetsAt: undefined });
 
       const session = makeSession({
         engine: "claude",
         transportMeta: {
           engineSessions: { codex: "existing-codex-session" },
-        } as never,
+        },
       });
 
       const fallbackEngine: Engine = {
@@ -954,10 +954,10 @@ describe("runSession", () => {
 
       await runSession(
         session,
-        makeMsg() as never,
+        makeMsg(),
         [],
         connector,
-        makeTarget() as never,
+        makeTarget(),
         engines,
         config,
         () => new Map(),
@@ -977,7 +977,7 @@ describe("runSession", () => {
     it("fallback engine 成功後に repos があれば notifyParentSession が呼ばれる", async () => {
       const { detectRateLimit } = await import("../../shared/rateLimit.js");
       const { notifyParentSession } = await import("../callbacks.js");
-      vi.mocked(detectRateLimit).mockReturnValue({ limited: true as const, resetsAt: null as never });
+      vi.mocked(detectRateLimit).mockReturnValue({ limited: true as const, resetsAt: undefined });
 
       const repos = makeRepos();
       const { id: sessionId } = repos.sessions.createSession({
@@ -1011,10 +1011,10 @@ describe("runSession", () => {
 
       await runSession(
         session,
-        makeMsg() as never,
+        makeMsg(),
         [],
         makeConnector(),
-        makeTarget() as never,
+        makeTarget(),
         engines,
         config,
         () => new Map(),
@@ -1032,7 +1032,7 @@ describe("runSession", () => {
         "../../shared/rateLimit.js"
       );
       // rate limit を検出し、即座に deadline を過ぎるようにする
-      vi.mocked(detectRateLimit).mockReturnValue({ limited: true as const, resetsAt: null as never });
+      vi.mocked(detectRateLimit).mockReturnValue({ limited: true as const, resetsAt: undefined });
       vi.mocked(computeNextRetryDelayMs).mockReturnValue({ delayMs: 100, resumeAt: undefined });
       vi.mocked(computeRateLimitDeadlineMs).mockReturnValue(Date.now() - 1); // 即座に deadline 切れ
 
@@ -1047,10 +1047,10 @@ describe("runSession", () => {
 
       await runSession(
         session,
-        makeMsg() as never,
+        makeMsg(),
         [],
         connector,
-        makeTarget() as never,
+        makeTarget(),
         engines,
         config,
         () => new Map(),
@@ -1084,10 +1084,10 @@ describe("runSession", () => {
 
       await runSession(
         session,
-        makeMsg() as never,
+        makeMsg(),
         [],
         connector,
-        makeTarget() as never,
+        makeTarget(),
         engines,
         makeConfig(),
         () => new Map(),
@@ -1115,10 +1115,10 @@ describe("runSession", () => {
 
       await runSession(
         session,
-        { ...makeMsg(), text: "a".repeat(7000) } as never,
+        { ...makeMsg(), text: "a".repeat(7000) },
         ["att.jpg"],
         connector,
-        makeTarget() as never,
+        makeTarget(),
         engines,
         {
           ...makeConfig(),
@@ -1141,7 +1141,7 @@ describe("runSession", () => {
       const { isLikelyNearClaudeUsageLimit, getClaudeExpectedResetAt } = await import("../../shared/usageAwareness.js");
       const { resolveEffort } = await import("../../shared/effort.js");
       vi.mocked(isLikelyNearClaudeUsageLimit).mockReturnValue(true);
-      vi.mocked(getClaudeExpectedResetAt).mockReturnValue(undefined as never); // リセット時刻なし
+      vi.mocked(getClaudeExpectedResetAt).mockReturnValue(undefined); // リセット時刻なし
       vi.mocked(resolveEffort).mockReturnValue("high");
 
       const session = makeSession({ engine: "claude" });
@@ -1160,10 +1160,10 @@ describe("runSession", () => {
       await runSession(
         session,
         // 長いテキストで "looks big" にする
-        { ...makeMsg(), text: "a".repeat(7000) } as never,
+        { ...makeMsg(), text: "a".repeat(7000) },
         ["attachment.jpg"], // attachments あり
         connector,
-        makeTarget() as never,
+        makeTarget(),
         engines,
         config,
         () => new Map(),
@@ -1185,10 +1185,10 @@ describe("runSession", () => {
 
       await runSession(
         session,
-        makeMsg() as never,
+        makeMsg(),
         ["/tmp/attachment1.jpg", "/tmp/attachment2.jpg"], // attachments
         makeConnector(),
-        makeTarget() as never,
+        makeTarget(),
         engines,
         makeConfig(),
         () => new Map(),
@@ -1202,7 +1202,7 @@ describe("runSession", () => {
     it("MCP config がある場合 cleanupMcpConfigFile が呼ばれる", async () => {
       const { resolveMcpServers, writeMcpConfigFile, cleanupMcpConfigFile } = await import("../../mcp/resolver.js");
       vi.mocked(resolveMcpServers).mockReturnValue({
-        mcpServers: { "test-server": { command: "test" } as never },
+        mcpServers: { "test-server": { command: "test" } as import("../../shared/types.js").McpServerConfig },
       });
       vi.mocked(writeMcpConfigFile).mockReturnValue("/tmp/mcp-config.json");
 
@@ -1211,10 +1211,10 @@ describe("runSession", () => {
 
       await runSession(
         session,
-        makeMsg() as never,
+        makeMsg(),
         [],
         makeConnector(),
-        makeTarget() as never,
+        makeTarget(),
         engines,
         makeConfig(),
         () => new Map(),
@@ -1240,10 +1240,10 @@ describe("runSession", () => {
 
       await runSession(
         session,
-        makeMsg() as never,
+        makeMsg(),
         [],
         connector,
-        makeTarget() as never,
+        makeTarget(),
         engines,
         makeConfig(),
         () => new Map(),
@@ -1278,10 +1278,10 @@ describe("runSession", () => {
 
       await runSession(
         session,
-        makeMsg() as never,
+        makeMsg(),
         [],
         makeConnector(),
-        makeTarget() as never,
+        makeTarget(),
         engines,
         makeConfig(),
         () => new Map(),
@@ -1305,10 +1305,10 @@ describe("runSession", () => {
 
       await runSession(
         session,
-        makeMsg() as never,
+        makeMsg(),
         [],
         connector,
-        makeTarget() as never,
+        makeTarget(),
         engines,
         makeConfig(),
         () => new Map(),
@@ -1337,10 +1337,10 @@ describe("runSession", () => {
 
       await runSession(
         session,
-        makeMsg() as never,
+        makeMsg(),
         [],
         makeConnector(),
-        makeTarget() as never,
+        makeTarget(),
         engines,
         makeConfig(),
         () => new Map(),
@@ -1362,10 +1362,10 @@ describe("runSession", () => {
 
       await runSession(
         session,
-        makeMsg() as never,
+        makeMsg(),
         [],
         makeConnector(),
-        makeTarget() as never,
+        makeTarget(),
         engines,
         makeConfig(),
         () => new Map(),
@@ -1384,10 +1384,10 @@ describe("runSession", () => {
 
       await runSession(
         session,
-        makeMsg() as never,
+        makeMsg(),
         [],
         connector,
-        makeTarget() as never,
+        makeTarget(),
         engines,
         makeConfig(),
         () => new Map(),
