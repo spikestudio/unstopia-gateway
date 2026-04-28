@@ -1,0 +1,42 @@
+name: フィードバック
+description: 仕様変更・規約追記・AI ミスパターンの記録
+labels: ["feedback"]
+body:
+  - type: dropdown
+    id: type
+    attributes:
+      label: 種別
+      options:
+        - 仕様変更（実装中に Epic 仕様書・設計を変更した）
+        - 規約追記（規約ドキュメントへの追記が必要になった）
+        - AI ミスパターン（AI が間違えたパターンの記録）
+    validations:
+      required: true
+  - type: input
+    id: task
+    attributes:
+      label: 関連 Task
+      description: "Task Issue の番号（#NNN）または Task ID"
+      placeholder: "#11 / TASK-001"
+  - type: textarea
+    id: problem
+    attributes:
+      label: 内容
+      description: 何が起きたか
+    validations:
+      required: true
+  - type: textarea
+    id: action
+    attributes:
+      label: 対応
+      description: どう対応したか（または対応予定）
+    validations:
+      required: true
+  - type: checkboxes
+    id: done
+    attributes:
+      label: 反映状況
+      options:
+        - label: Epic 仕様書・設計に反映済み
+        - label: 規約ドキュメントに反映済み
+        - label: CLAUDE.md に反映済み

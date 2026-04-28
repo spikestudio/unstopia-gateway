@@ -1,12 +1,11 @@
 <!-- 配置先: skills/aidd-{機能名}/SKILL.md
-     ガイドライン: aidd-framework/guides/skill-development-guide.md
+     ガイドライン: aidd-framework/guides/skill-guide.md
      リファレンス実装: aidd-framework/templates/skill-reference/ -->
 ---
 name: aidd-{機能名}
 description: >
   {成果物}を{観点}でチェックし、全問題を修正する。内部で {capability一覧} を起動する。
   {トリガー条件}場合は常にこのスキルを呼び出す。
-context: fork
 argument-hint: "[引数の説明]"
 ---
 <!-- description: 「何をするか + いつ使うか」形式。委譲先がある場合は明示 -->

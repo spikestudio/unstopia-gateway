@@ -1,0 +1,27 @@
+name: Task
+description: 実装タスクの作成
+labels: ["task"]
+body:
+  - type: input
+    id: task-doc
+    attributes:
+      label: Task ドキュメント
+      description: TASK-NNN-slug.md へのパス
+      placeholder: "docs/tasks/TASK-001-publisher-crud.md"
+    validations:
+      required: true
+  - type: input
+    id: epic-issue
+    attributes:
+      label: 親 Epic Issue
+      description: "Epic Issue の番号（#NNN）。作成後に Epic の sub-issue として紐付ける"
+      placeholder: "#10"
+    validations:
+      required: true
+  - type: textarea
+    id: summary
+    attributes:
+      label: 概要
+      description: Task の概要（詳細は Task ドキュメントを参照）
+    validations:
+      required: true
