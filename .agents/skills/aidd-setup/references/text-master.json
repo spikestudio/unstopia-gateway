@@ -1,0 +1,54 @@
+{
+  "errors": {
+    "validation": {
+      "required": "This field is required.",
+      "maxLength": "Must be {{max}} characters or fewer.",
+      "minLength": "Must be at least {{min}} characters.",
+      "pattern": "Invalid format."
+    },
+    "network": {
+      "timeout": "Request timed out. Please try again.",
+      "unauthorized": "Authentication failed.",
+      "forbidden": "You do not have permission to perform this action.",
+      "notFound": "The requested resource was not found.",
+      "serverError": "An unexpected error occurred. Please try again later."
+    },
+    "form": {
+      "submitFailed": "Failed to submit. Please check the form and try again."
+    }
+  },
+  "ui": {
+    "button": {
+      "submit": "Submit",
+      "cancel": "Cancel",
+      "save": "Save",
+      "delete": "Delete",
+      "edit": "Edit",
+      "back": "Back",
+      "next": "Next",
+      "confirm": "Confirm",
+      "close": "Close"
+    },
+    "label": {
+      "loading": "Loading...",
+      "noData": "No data available.",
+      "optional": "Optional",
+      "required": "Required"
+    },
+    "placeholder": {
+      "search": "Search...",
+      "select": "Select an option"
+    }
+  },
+  "validation": {
+    "password": {
+      "tooShort": "Password must be at least {{min}} characters.",
+      "tooLong": "Password must be {{max}} characters or fewer.",
+      "noMatch": "Passwords do not match."
+    },
+    "email": {
+      "invalid": "Please enter a valid email address.",
+      "alreadyInUse": "This email address is already in use."
+    }
+  }
+}

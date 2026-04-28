@@ -1,0 +1,28 @@
+{
+  "formatter": {
+    "enabled": true,
+    "lineWidth": 100,
+    "indentStyle": "space",
+    "indentWidth": 2
+  },
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "recommended": true,
+      "complexity": {
+        "noExcessiveCognitiveComplexity": {
+          "level": "error",
+          "options": { "maxAllowedComplexity": 15 }
+        },
+        "noExcessiveLinesPerFunction": {
+          "level": "error",
+          "options": { "maxLines": 50 }
+        },
+        "noExcessiveNestedBlockDepth": {
+          "level": "error",
+          "options": { "maxDepth": 4 }
+        }
+      }
+    }
+  }
+}

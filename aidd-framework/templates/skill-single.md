@@ -1,5 +1,5 @@
 <!-- 配置先: skills/aidd-{機能名}/SKILL.md
-     ガイドライン: aidd-framework/guides/skill-development-guide.md
+     ガイドライン: aidd-framework/guides/skill-guide.md
      リファレンス実装: aidd-framework/templates/skill-reference/ -->
 ---
 name: aidd-{機能名}
@@ -7,11 +7,10 @@ description: >
   {成果物}を{入力}から生成する。
   {N}ステップ（{ステップ概要}）で段階的に進め、各ステップでブリーフィング→承認ゲートを設ける。
   {トリガー条件}場合は常にこのスキルを呼び出す。
-context: fork
 argument-hint: "[引数の説明]"
 ---
 <!-- description は「何をするか + いつ使うか」形式。トリガー条件に「常に」を含める -->
-<!-- context: fork はパイプラインスキルで必須。横断スキルは省略（インライン実行） -->
+<!-- context は原則省略（インライン実行）。完全自己完結の単発タスクのみ context: fork を使用 -->
 
 # /aidd-{機能名} — {タイトル}
 

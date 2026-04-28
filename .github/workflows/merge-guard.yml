@@ -93,7 +93,7 @@ jobs:
             echo "::error::Missing required gate labels"
             echo ""
             echo "This PR cannot be merged until all gates are passed:"
-            printf '%b' "$MISSING"
+            printf '%s' "$MISSING"
             echo ""
             echo "Gates:"
             echo "  gate:reviewed  → /aidd-review epic PASS"
