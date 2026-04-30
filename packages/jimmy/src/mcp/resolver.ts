@@ -48,7 +48,7 @@ export function resolveMcpServers(globalMcp: McpGlobalConfig | undefined, employ
 /**
  * Build the map of all available (enabled) MCP servers from global config.
  */
-function buildAvailableServers(config: McpGlobalConfig): Record<string, McpServerConfig> {
+export function buildAvailableServers(config: McpGlobalConfig): Record<string, McpServerConfig> {
   const servers: Record<string, McpServerConfig> = {};
 
   // Browser automation via Playwright
@@ -168,7 +168,7 @@ export function cleanupMcpConfigFile(sessionId: string): void {
  * Resolve a value that may reference an environment variable.
  * Supports ${VAR_NAME} syntax.
  */
-function resolveEnvVar(value: string | undefined): string | undefined {
+export function resolveEnvVar(value: string | undefined): string | undefined {
   if (!value) return undefined;
   const match = value.match(/^\$\{(.+)\}$/);
   if (match) {

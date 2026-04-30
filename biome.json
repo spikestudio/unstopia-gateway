@@ -95,6 +95,16 @@
           }
         }
       }
+    },
+    {
+      "includes": ["packages/**/__tests__/**/*.ts", "packages/**/*.test.ts"],
+      "linter": {
+        "rules": {
+          "suspicious": {
+            "noTemplateCurlyInString": "off"
+          }
+        }
+      }
     }
   ]
 }
