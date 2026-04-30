@@ -40,9 +40,6 @@ export interface FallbackRunParams {
   employee: Pick<Employee, "cliFlags" | "alwaysNotify" | "effortLevel"> | undefined;
 }
 
-// ── Helper ────────────────────────────────────────────────────────────────────
-
-
 // ── Main export ───────────────────────────────────────────────────────────────
 
 /**
@@ -160,9 +157,9 @@ export async function switchToFallback(
     ...(unwrapSession(freshResult)?.transportMeta || nextMeta),
   } as Record<string, unknown>;
   freshMeta.engineSessions = nextEngineSessions;
-  deps.updateSession(session.id, { transportMeta: freshMeta as JsonObject });
 
   const completedResult = deps.updateSession(session.id, {
+    transportMeta: freshMeta as JsonObject,
     engineSessionId: fallbackResult.sessionId,
     status: fallbackResult.error ? "error" : "idle",
     lastActivity: new Date().toISOString(),

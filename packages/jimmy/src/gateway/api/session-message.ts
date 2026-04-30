@@ -143,6 +143,10 @@ export async function handlePostMessage(
   json(res, { status: "queued", sessionId: session.id });
 }
 
+/**
+ * Base deps for handlePostMessage. getEngine and getConfig MUST be overridden
+ * by the caller (sessions.ts) with live context values before use.
+ */
 export const defaultPostMessageDeps: PostMessageDeps = {
   getSession: defaultGetSession,
   insertMessage: defaultInsertMessage,
@@ -152,6 +156,6 @@ export const defaultPostMessageDeps: PostMessageDeps = {
   maybeRevertEngineOverride: defaultMaybeRevertEngineOverride,
   dispatchWebSessionRun: defaultDispatchWebSessionRun,
   resolveAttachmentPaths: defaultResolveAttachmentPaths,
-  getEngine: () => null,
-  getConfig: () => ({ engines: { default: "claude", claude: {} } }) as unknown as JinnConfig,
+  getEngine: () => null, // overridden in sessions.ts
+  getConfig: () => ({ engines: { default: "claude", claude: {} } }) as unknown as JinnConfig, // overridden in sessions.ts
 };

@@ -248,11 +248,11 @@ interface ErrorResponse {
 
 | メソッド | パス | 担当関数 | 対応 AC |
 |---------|------|---------|--------|
-| GET | `/api/sessions/:id/queue` | `getQueue` | AC-E026-16 |
-| DELETE | `/api/sessions/:id/queue` | `clearQueue` | AC-E026-16 |
-| DELETE | `/api/sessions/:id/queue/:itemId` | `cancelQueueItem` | AC-E026-16, 17 |
-| POST | `/api/sessions/:id/queue/pause` | `pauseQueue` | AC-E026-16, 18 |
-| POST | `/api/sessions/:id/queue/resume` | `resumeQueue` | AC-E026-16, 18 |
+| GET | `/api/sessions/:id/queue` | `handleGetQueue` | AC-E026-16 |
+| DELETE | `/api/sessions/:id/queue` | `handleClearQueue` | AC-E026-16 |
+| DELETE | `/api/sessions/:id/queue/:itemId` | `handleCancelQueueItem` | AC-E026-16, 17 |
+| POST | `/api/sessions/:id/queue/pause` | `handlePauseQueue` | AC-E026-16, 18 |
+| POST | `/api/sessions/:id/queue/resume` | `handleResumeQueue` | AC-E026-16, 18 |
 
 ```typescript
 // gateway/api/session-queue-handlers.ts — 公開インターフェース骨格
@@ -349,9 +349,9 @@ export async function resumeQueue(
 | POST | `/api/sessions` | （sessions.ts に残留） | AC-E026-20 |
 | POST | `/api/sessions/stub` | （sessions.ts に残留） | AC-E026-20 |
 | POST | `/api/sessions/bulk-delete` | （sessions.ts に残留） | AC-E026-20 |
-| GET | `/api/sessions/:id` | `getSession` | AC-E026-20 |
-| PUT | `/api/sessions/:id` | `updateSession` | AC-E026-20 |
-| DELETE | `/api/sessions/:id` | `deleteSession` | AC-E026-20, 21 |
+| GET | `/api/sessions/:id` | `getSessionHandler` | AC-E026-20 |
+| PUT | `/api/sessions/:id` | `updateSessionHandler` | AC-E026-20 |
+| DELETE | `/api/sessions/:id` | `deleteSessionHandler` | AC-E026-20, 21 |
 | POST | `/api/sessions/:id/stop` | `stopSession` | AC-E026-20 |
 | POST | `/api/sessions/:id/reset` | `resetSession` | AC-E026-20 |
 | POST | `/api/sessions/:id/duplicate` | `duplicateSession` | AC-E026-20 |

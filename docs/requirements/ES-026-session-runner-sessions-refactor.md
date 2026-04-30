@@ -152,6 +152,7 @@ branch カバレッジ向上にも貢献する。
 | API spec 骨格（モジュール分割仕様） | `docs/design/session-runner-sessions-refactor-api-spec.md` | 完了（Step 3） |
 | インフラ設計骨格 | 該当なし（インフラ変更なし） | スキップ |
 | バッチ/ジョブ設計骨格 | 該当なし（バッチ処理追加なし） | スキップ |
+| `session-resume.ts`（新規分離ファイル） | `gateway/api/session-resume.ts` | 完了（TASK-057 で session-runner.ts から分離、AC-E026-19 対応） |
 
 ## ゲート状態
 
