@@ -10,8 +10,7 @@ import {
   updateSession as defaultUpdateSession,
 } from "../../sessions/registry.js";
 import { logger } from "../../shared/logger.js";
-import type { Result } from "../../shared/result.js";
-import type { Engine, JinnConfig, Session } from "../../shared/types.js";
+import type { Engine, JinnConfig } from "../../shared/types.js";
 import { isInterruptibleEngine } from "../../shared/types.js";
 import {
   type getClaudeExpectedResetAt,
@@ -33,6 +32,7 @@ import {
   readJsonBody,
   resolveAttachmentPaths as defaultResolveAttachmentPaths,
   serverError,
+  unwrapSession,
 } from "./utils.js";
 
 export interface PostMessageDeps {
@@ -48,9 +48,6 @@ export interface PostMessageDeps {
   getConfig: () => JinnConfig;
 }
 
-function unwrapSession<E>(result: Result<Session | null, E>): Session | null {
-  return result.ok ? result.value : null;
-}
 
 export async function handlePostMessage(
   req: HttpRequest,

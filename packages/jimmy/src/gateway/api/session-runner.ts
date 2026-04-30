@@ -12,17 +12,12 @@ import { resolveEffort } from "../../shared/effort.js";
 import { logger } from "../../shared/logger.js";
 import { JINN_HOME } from "../../shared/paths.js";
 import { detectRateLimit } from "../../shared/rateLimit.js";
-import type { Result } from "../../shared/result.js";
 import type { Engine, JinnConfig, JsonObject, Session } from "../../shared/types.js";
 import { recordClaudeRateLimit } from "../../shared/usageAwareness.js";
 import type { ApiContext } from "../types.js";
+import { unwrapSession } from "./utils.js";
 import { defaultFallbackDeps, switchToFallback } from "./session-fallback.js";
 import { defaultRateLimitDeps, handleRateLimit, retryUntilDeadline } from "./session-rate-limit.js";
-
-/** Result<Session | null, E> から Session | null を取り出す。Err の場合は null を返す */
-function unwrapSession<E>(result: Result<Session | null, E>): Session | null {
-  return result.ok ? result.value : null;
-}
 
 // ── Transcript helpers ────────────────────────────────────────────────────────
 
@@ -110,7 +105,9 @@ export function loadRawTranscript(engineSessionId: string, reader?: TranscriptRe
         if (blocks.length > 0) {
           entries.push({ role: type as "user" | "assistant", content: blocks });
         }
-      } catch {}
+      } catch (e) {
+        logger.debug(`Skipping malformed JSONL line in transcript: ${e}`);
+      }
     }
     return entries;
   }
@@ -148,7 +145,9 @@ export function loadTranscriptMessages(engineSessionId: string, reader?: Transcr
         if (typeof content === "string" && content.trim()) {
           messages.push({ role: type, content: content.trim() });
         }
-      } catch {}
+      } catch (e) {
+        logger.debug(`Skipping malformed JSONL line in transcript: ${e}`);
+      }
     }
     return messages;
   }

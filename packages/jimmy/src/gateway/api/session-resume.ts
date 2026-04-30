@@ -5,14 +5,10 @@ import {
   updateSession,
 } from "../../sessions/registry.js";
 import { logger } from "../../shared/logger.js";
-import type { Result } from "../../shared/result.js";
-import type { Session } from "../../shared/types.js";
 import type { ApiContext } from "../types.js";
+import { unwrapSession } from "./utils.js";
 import { dispatchWebSessionRun, maybeRevertEngineOverride } from "./session-runner.js";
 
-function unwrapSession<E>(result: Result<Session | null, E>): Session | null {
-  return result.ok ? result.value : null;
-}
 
 export function resumePendingWebQueueItemsImpl(context: ApiContext): void {
   const pending = listAllPendingQueueItems();

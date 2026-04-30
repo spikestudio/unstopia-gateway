@@ -9,8 +9,6 @@ import {
   updateSession,
 } from "../../sessions/registry.js";
 import { logger } from "../../shared/logger.js";
-import type { Result } from "../../shared/result.js";
-import type { Session } from "../../shared/types.js";
 import { isInterruptibleEngine } from "../../shared/types.js";
 import type { ApiContext } from "../types.js";
 import type { BulkDeleteBody, CreateSessionBody, StubSessionBody } from "./api-types.js";
@@ -42,13 +40,11 @@ import {
   readJsonBody,
   resolveAttachmentPaths,
   serializeSession,
+  unwrapSession,
 } from "./utils.js";
 
 // ── Result unwrap helpers ────────────────────────────────────────────────────
 
-function unwrapSession<E>(result: Result<Session | null, E>): Session | null {
-  return result.ok ? result.value : null;
-}
 
 // ── Handler ─────────────────────────────────────────────────────────────────
 

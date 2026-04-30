@@ -19,13 +19,12 @@ import {
 } from "../../sessions/registry.js";
 import { logger } from "../../shared/logger.js";
 import { JINN_HOME } from "../../shared/paths.js";
-import type { Result } from "../../shared/result.js";
-import type { JsonObject, Session } from "../../shared/types.js";
+import type { JsonObject } from "../../shared/types.js";
 import { isInterruptibleEngine } from "../../shared/types.js";
 import type { ApiContext } from "../types.js";
 import type { UpdateSessionBody } from "./api-types.js";
 import { loadRawTranscript, loadTranscriptMessages } from "./session-runner.js";
-import { badRequest, json, notFound, readJsonBody, serializeSession, serverError } from "./utils.js";
+import { badRequest, json, notFound, readJsonBody, serializeSession, serverError, unwrapSession } from "./utils.js";
 
 export interface CrudDeps {
   getSession: typeof getSession;
@@ -37,9 +36,6 @@ export interface CrudDeps {
   duplicateSession: typeof duplicateSession;
 }
 
-function unwrapSession<E>(result: Result<Session | null, E>): Session | null {
-  return result.ok ? result.value : null;
-}
 
 export async function getSessionHandler(
   _req: HttpRequest,

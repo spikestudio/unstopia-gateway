@@ -5,8 +5,13 @@ import path from "node:path";
 import { getFile } from "../../sessions/registry.js";
 import { logger } from "../../shared/logger.js";
 import { FILES_DIR } from "../../shared/paths.js";
+import type { Result } from "../../shared/result.js";
 import type { Session } from "../../shared/types.js";
 import type { ApiContext } from "../types.js";
+
+export function unwrapSession<E>(result: Result<Session | null, E>): Session | null {
+  return result.ok ? result.value : null;
+}
 
 export function readBody(req: HttpRequest): Promise<string> {
   return new Promise((resolve, reject) => {

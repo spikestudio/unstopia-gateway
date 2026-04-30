@@ -12,9 +12,9 @@ import { resolveEffort } from "../../shared/effort.js";
 import { logger } from "../../shared/logger.js";
 import { JINN_HOME } from "../../shared/paths.js";
 import { computeNextRetryDelayMs } from "../../shared/rateLimit.js";
-import type { Result } from "../../shared/result.js";
 import type { Employee, Engine, JinnConfig, JsonObject, Session } from "../../shared/types.js";
 import type { ApiContext } from "../types.js";
+import { unwrapSession } from "./utils.js";
 
 // ── Interfaces ────────────────────────────────────────────────────────────────
 
@@ -42,9 +42,6 @@ export interface FallbackRunParams {
 
 // ── Helper ────────────────────────────────────────────────────────────────────
 
-function unwrapSession<E>(result: Result<Session | null, E>): Session | null {
-  return result.ok ? result.value : null;
-}
 
 // ── Main export ───────────────────────────────────────────────────────────────
 

@@ -9,10 +9,8 @@ import {
   getQueueItems as defaultGetQueueItems,
   getSession as defaultGetSession,
 } from "../../sessions/registry.js";
-import type { Result } from "../../shared/result.js";
-import type { Session } from "../../shared/types.js";
 import type { ApiContext } from "../types.js";
-import { json, notFound } from "./utils.js";
+import { json, notFound, unwrapSession } from "./utils.js";
 
 export interface QueueHandlerDeps {
   getSession: typeof getSession;
@@ -21,9 +19,6 @@ export interface QueueHandlerDeps {
   cancelAllPendingQueueItems: typeof cancelAllPendingQueueItems;
 }
 
-function unwrapSession<E>(result: Result<Session | null, E>): Session | null {
-  return result.ok ? result.value : null;
-}
 
 export function handleGetQueue(res: ServerResponse, _context: ApiContext, deps: QueueHandlerDeps, sessionId: string): void {
   const session = unwrapSession(deps.getSession(sessionId));
