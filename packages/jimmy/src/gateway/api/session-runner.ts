@@ -1,4 +1,4 @@
-import fs from "node:fs";
+import fs, { type Dirent } from "node:fs";
 import path from "node:path";
 import {
   notifyDiscordChannel,
@@ -31,6 +31,14 @@ function unwrapSession<E>(result: Result<Session | null, E>): Session | null {
 
 // ── Transcript helpers ────────────────────────────────────────────────────────
 
+export interface TranscriptReader {
+  existsSync(path: string): boolean;
+  readdirSync(path: string, options: { withFileTypes: true }): Dirent[];
+  readFileSync(path: string, encoding: "utf-8"): string;
+}
+
+const defaultReader: TranscriptReader = fs;
+
 export interface TranscriptContentBlock {
   type: "text" | "tool_use" | "tool_result" | "thinking";
   text?: string;
@@ -45,18 +53,19 @@ export interface TranscriptEntry {
   content: TranscriptContentBlock[];
 }
 
-export function loadRawTranscript(engineSessionId: string): TranscriptEntry[] {
+export function loadRawTranscript(engineSessionId: string, reader?: TranscriptReader): TranscriptEntry[] {
+  const r = reader ?? defaultReader;
   const claudeProjectsDir = path.join(process.env.HOME || process.env.USERPROFILE || "", ".claude", "projects");
-  if (!fs.existsSync(claudeProjectsDir)) return [];
+  if (!r.existsSync(claudeProjectsDir)) return [];
 
-  const projectDirs = fs.readdirSync(claudeProjectsDir, { withFileTypes: true });
+  const projectDirs = r.readdirSync(claudeProjectsDir, { withFileTypes: true });
   for (const dir of projectDirs) {
     if (!dir.isDirectory()) continue;
     const jsonlPath = path.join(claudeProjectsDir, dir.name, `${engineSessionId}.jsonl`);
-    if (!fs.existsSync(jsonlPath)) continue;
+    if (!r.existsSync(jsonlPath)) continue;
 
     const entries: TranscriptEntry[] = [];
-    const lines = fs.readFileSync(jsonlPath, "utf-8").trim().split("\n").filter(Boolean);
+    const lines = r.readFileSync(jsonlPath, "utf-8").trim().split("\n").filter(Boolean);
     for (const line of lines) {
       try {
         const obj = JSON.parse(line);
@@ -113,18 +122,19 @@ export function loadRawTranscript(engineSessionId: string): TranscriptEntry[] {
   return [];
 }
 
-export function loadTranscriptMessages(engineSessionId: string): Array<{ role: string; content: string }> {
+export function loadTranscriptMessages(engineSessionId: string, reader?: TranscriptReader): Array<{ role: string; content: string }> {
+  const r = reader ?? defaultReader;
   const claudeProjectsDir = path.join(process.env.HOME || process.env.USERPROFILE || "", ".claude", "projects");
-  if (!fs.existsSync(claudeProjectsDir)) return [];
+  if (!r.existsSync(claudeProjectsDir)) return [];
 
-  const projectDirs = fs.readdirSync(claudeProjectsDir, { withFileTypes: true });
+  const projectDirs = r.readdirSync(claudeProjectsDir, { withFileTypes: true });
   for (const dir of projectDirs) {
     if (!dir.isDirectory()) continue;
     const jsonlPath = path.join(claudeProjectsDir, dir.name, `${engineSessionId}.jsonl`);
-    if (!fs.existsSync(jsonlPath)) continue;
+    if (!r.existsSync(jsonlPath)) continue;
 
     const messages: Array<{ role: string; content: string }> = [];
-    const lines = fs.readFileSync(jsonlPath, "utf-8").trim().split("\n").filter(Boolean);
+    const lines = r.readFileSync(jsonlPath, "utf-8").trim().split("\n").filter(Boolean);
     for (const line of lines) {
       try {
         const obj = JSON.parse(line);
