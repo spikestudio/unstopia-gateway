@@ -32,7 +32,7 @@ interface JsonRpcResponse {
 
 // ─── Tool Definitions ───
 
-const TOOLS = [
+export const TOOLS = [
   {
     name: "send_message",
     description:
@@ -221,7 +221,7 @@ async function apiPut(path: string, body: unknown): Promise<unknown> {
 
 // ─── Tool Handlers ───
 
-async function handleTool(name: string, args: Record<string, unknown>): Promise<string> {
+export async function handleTool(name: string, args: Record<string, unknown>): Promise<string> {
   switch (name) {
     case "send_message": {
       const connector = (args.connector as string) || "slack";
@@ -323,12 +323,12 @@ async function handleTool(name: string, args: Record<string, unknown>): Promise<
 
 // ─── MCP Protocol Handler ───
 
-function sendResponse(response: JsonRpcResponse): void {
+export function sendResponse(response: JsonRpcResponse): void {
   const json = JSON.stringify(response);
   process.stdout.write(`${json}\n`);
 }
 
-async function handleRequest(request: JsonRpcRequest): Promise<void> {
+export async function handleRequest(request: JsonRpcRequest): Promise<void> {
   const { id, method, params } = request;
 
   switch (method) {
