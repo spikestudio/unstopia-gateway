@@ -35,10 +35,10 @@ branch カバレッジ向上にも貢献する。
 
 **受入基準:**
 
-- [ ] **AC-E026-01**: `session-rate-limit.ts`（または同等の命名ファイル）が `gateway/api/` 以下に存在し、レートリミット検出・待機・リトライの処理が同ファイルに集約されている。← S1
-- [ ] **AC-E026-02**: 抽出したレートリミット関数がモック可能な引数シグネチャを持ち（`detectRateLimit` 等の外部依存を注入可能）、`vi.mock` または依存注入でテストできる。← S1
-- [ ] **AC-E026-03**: レートリミット状態に入ったセッションが `status: "waiting"` に更新され、`notifyRateLimited` が呼び出されることをモックで検証するユニットテストが通過する。← S1
-- [ ] **AC-E026-04**: レートリミットが解除されてリトライが成功した場合に `notifyRateLimitResumed` が呼び出されることを検証するユニットテストが通過する。← S1
+- [x] **AC-E026-01**: `session-rate-limit.ts`（または同等の命名ファイル）が `gateway/api/` 以下に存在し、レートリミット検出・待機・リトライの処理が同ファイルに集約されている。← S1
+- [x] **AC-E026-02**: 抽出したレートリミット関数がモック可能な引数シグネチャを持ち（`detectRateLimit` 等の外部依存を注入可能）、`vi.mock` または依存注入でテストできる。← S1
+- [x] **AC-E026-03**: レートリミット状態に入ったセッションが `status: "waiting"` に更新され、`notifyRateLimited` が呼び出されることをモックで検証するユニットテストが通過する。← S1
+- [x] **AC-E026-04**: レートリミットが解除されてリトライが成功した場合に `notifyRateLimitResumed` が呼び出されることを検証するユニットテストが通過する。← S1
 
 **インターフェース:** `gateway/api/session-rate-limit.ts`（新規）
 
@@ -50,9 +50,9 @@ branch カバレッジ向上にも貢献する。
 
 **受入基準:**
 
-- [ ] **AC-E026-05**: `session-fallback.ts`（または同等の命名ファイル）が `gateway/api/` 以下に存在し、Claude → Codex フォールバック切り替え・`engineOverride` の書き込みロジックが同ファイルに集約されている。← S2
-- [ ] **AC-E026-06**: Claude がレートリミットかつ `strategy === "fallback"` の場合に Codex エンジンが呼び出され、`session.engine` が fallback エンジン名に更新されることをモックで検証するユニットテストが通過する。← S2
-- [ ] **AC-E026-07**: fallback エンジンが設定に存在しない場合（`engines.get(fallbackName)` が undefined）にフォールバックをスキップして通常のレートリミット待機に入ることをモックで検証するユニットテストが通過する。← S2（AI 補完: フォールバック不在の境界ケース。既存コードで `if (fallbackEngine)` のブランチがあるが未テスト）
+- [x] **AC-E026-05**: `session-fallback.ts`（または同等の命名ファイル）が `gateway/api/` 以下に存在し、Claude → Codex フォールバック切り替え・`engineOverride` の書き込みロジックが同ファイルに集約されている。← S2
+- [x] **AC-E026-06**: Claude がレートリミットかつ `strategy === "fallback"` の場合に Codex エンジンが呼び出され、`session.engine` が fallback エンジン名に更新されることをモックで検証するユニットテストが通過する。← S2
+- [x] **AC-E026-07**: fallback エンジンが設定に存在しない場合（`engines.get(fallbackName)` が undefined）にフォールバックをスキップして通常のレートリミット待機に入ることをモックで検証するユニットテストが通過する。← S2（AI 補完: フォールバック不在の境界ケース。既存コードで `if (fallbackEngine)` のブランチがあるが未テスト）
 
 **インターフェース:** `gateway/api/session-fallback.ts`（新規）
 
@@ -64,9 +64,9 @@ branch カバレッジ向上にも貢献する。
 
 **受入基準:**
 
-- [ ] **AC-E026-08**: `loadRawTranscript` と `loadTranscriptMessages` が、`fs.readFileSync` / `fs.readdirSync` 等のファイルシステム操作を直接呼び出さず、注入可能な抽象（関数引数または `FileSystemReader` 型インターフェース）経由でアクセスする。← S3
-- [ ] **AC-E026-09**: 存在する JSONL ファイルからエントリが正しくパースされることをインメモリのモック実装で検証するユニットテストが通過する。← S3
-- [ ] **AC-E026-10**: 対象ディレクトリが存在しない・ファイルが存在しない・JSON パースエラーが発生する各境界ケースで空配列が返ることをモックで検証するユニットテストが通過する。← S3（AI 補完: 既存コードには `if (!fs.existsSync(claudeProjectsDir)) return []` 等の境界ケースがあるが未テスト）
+- [x] **AC-E026-08**: `loadRawTranscript` と `loadTranscriptMessages` が、`fs.readFileSync` / `fs.readdirSync` 等のファイルシステム操作を直接呼び出さず、注入可能な抽象（関数引数または `FileSystemReader` 型インターフェース）経由でアクセスする。← S3
+- [x] **AC-E026-09**: 存在する JSONL ファイルからエントリが正しくパースされることをインメモリのモック実装で検証するユニットテストが通過する。← S3
+- [x] **AC-E026-10**: 対象ディレクトリが存在しない・ファイルが存在しない・JSON パースエラーが発生する各境界ケースで空配列が返ることをモックで検証するユニットテストが通過する。← S3（AI 補完: 既存コードには `if (!fs.existsSync(claudeProjectsDir)) return []` 等の境界ケースがあるが未テスト）
 
 **インターフェース:** `gateway/api/session-runner.ts`（既存・関数シグネチャ変更）または新規ファイル
 
@@ -78,11 +78,11 @@ branch カバレッジ向上にも貢献する。
 
 **受入基準:**
 
-- [ ] **AC-E026-11**: `session-message.ts`（または同等の命名ファイル）が `gateway/api/` 以下に存在し、POST メッセージ受信・割り込み判定・キュー登録・`dispatchWebSessionRun` 呼び出しの処理が同ファイルに集約されている。← S4
-- [ ] **AC-E026-12**: `message` フィールドが空の場合に 400 を返すことを検証するユニットテストが通過する。← S4
-- [ ] **AC-E026-13**: セッションが `status: "running"` かつ割り込み可能エンジンの場合に `engine.kill` が呼び出されることを検証するユニットテストが通過する。← S4
-- [ ] **AC-E026-14**: セッションが `status: "waiting"` の場合に `queuedText` 通知メッセージが挿入されて `session:notification` イベントが発火されることを検証するユニットテストが通過する。← S4（AI 補完: rate-limit 待機中のキュー通知は重要な UX 分岐。現在未テスト）
-- [ ] **AC-E026-15**: セッションが `status: "interrupted"` の場合にステータスが `running` にリセットされて `session:resumed` イベントが発火されることを検証するユニットテストが通過する。← S4（AI 補完: 再起動後の interrupted 状態復旧は重要な回復フロー。現在未テスト）
+- [x] **AC-E026-11**: `session-message.ts`（または同等の命名ファイル）が `gateway/api/` 以下に存在し、POST メッセージ受信・割り込み判定・キュー登録・`dispatchWebSessionRun` 呼び出しの処理が同ファイルに集約されている。← S4
+- [x] **AC-E026-12**: `message` フィールドが空の場合に 400 を返すことを検証するユニットテストが通過する。← S4
+- [x] **AC-E026-13**: セッションが `status: "running"` かつ割り込み可能エンジンの場合に `engine.kill` が呼び出されることを検証するユニットテストが通過する。← S4
+- [x] **AC-E026-14**: セッションが `status: "waiting"` の場合に `queuedText` 通知メッセージが挿入されて `session:notification` イベントが発火されることを検証するユニットテストが通過する。← S4（AI 補完: rate-limit 待機中のキュー通知は重要な UX 分岐。現在未テスト）
+- [x] **AC-E026-15**: セッションが `status: "interrupted"` の場合にステータスが `running` にリセットされて `session:resumed` イベントが発火されることを検証するユニットテストが通過する。← S4（AI 補完: 再起動後の interrupted 状態復旧は重要な回復フロー。現在未テスト）
 
 **インターフェース:** `gateway/api/session-message.ts`（新規）
 
@@ -94,9 +94,9 @@ branch カバレッジ向上にも貢献する。
 
 **受入基準:**
 
-- [ ] **AC-E026-16**: `session-queue-handlers.ts`（または同等の命名ファイル）が `gateway/api/` 以下に存在し、`GET /api/sessions/:id/queue`・`DELETE /api/sessions/:id/queue`・`DELETE /api/sessions/:id/queue/:itemId`・`POST /api/sessions/:id/queue/pause`・`POST /api/sessions/:id/queue/resume` の処理が同ファイルに集約されている。← S5
-- [ ] **AC-E026-17**: `DELETE /api/sessions/:id/queue/:itemId` で対象アイテムが存在しない・既に実行中の場合に 409 を返すことを検証するユニットテストが通過する。← S5
-- [ ] **AC-E026-18**: `POST /api/sessions/:id/queue/pause` および `resume` でそれぞれ `queue:updated` イベントが `paused: true` / `paused: false` で発火されることを検証するユニットテストが通過する。← S5（AI 補完: イベント発火は SSE 接続クライアントへの通知に直結。現在未テスト）
+- [x] **AC-E026-16**: `session-queue-handlers.ts`（または同等の命名ファイル）が `gateway/api/` 以下に存在し、`GET /api/sessions/:id/queue`・`DELETE /api/sessions/:id/queue`・`DELETE /api/sessions/:id/queue/:itemId`・`POST /api/sessions/:id/queue/pause`・`POST /api/sessions/:id/queue/resume` の処理が同ファイルに集約されている。← S5
+- [x] **AC-E026-17**: `DELETE /api/sessions/:id/queue/:itemId` で対象アイテムが存在しない・既に実行中の場合に 409 を返すことを検証するユニットテストが通過する。← S5
+- [x] **AC-E026-18**: `POST /api/sessions/:id/queue/pause` および `resume` でそれぞれ `queue:updated` イベントが `paused: true` / `paused: false` で発火されることを検証するユニットテストが通過する。← S5（AI 補完: イベント発火は SSE 接続クライアントへの通知に直結。現在未テスト）
 
 **インターフェース:** `gateway/api/session-queue-handlers.ts`（新規）
 
@@ -108,9 +108,9 @@ branch カバレッジ向上にも貢献する。
 
 **受入基準:**
 
-- [ ] **AC-E026-19**: 分割後の各ファイルが 500 行以下であること（`session-runner.ts`・`sessions.ts` を含む全ファイル）。← S6
-- [ ] **AC-E026-20**: セッション一覧取得（`GET /api/sessions`）・個別取得（`GET /api/sessions/:id`）・更新（`PATCH /api/sessions/:id`）・削除（`DELETE /api/sessions/:id`）の各エンドポイントが分割後も正常に動作し、既存テストが全 PASS する。← S6
-- [ ] **AC-E026-21**: 削除対象セッションが存在しない場合に 404 を返すことを検証するユニットテストが通過する。← S6（AI 補完: CRUD の 404 境界ケースは基本的な品質要件。現在未テスト）
+- [x] **AC-E026-19**: 分割後の各ファイルが 500 行以下であること（`session-runner.ts`・`sessions.ts` を含む全ファイル）。← S6
+- [x] **AC-E026-20**: セッション一覧取得（`GET /api/sessions`）・個別取得（`GET /api/sessions/:id`）・更新（`PATCH /api/sessions/:id`）・削除（`DELETE /api/sessions/:id`）の各エンドポイントが分割後も正常に動作し、既存テストが全 PASS する。← S6
+- [x] **AC-E026-21**: 削除対象セッションが存在しない場合に 404 を返すことを検証するユニットテストが通過する。← S6（AI 補完: CRUD の 404 境界ケースは基本的な品質要件。現在未テスト）
 
 **インターフェース:** `gateway/api/session-crud.ts`（新規、または既存 `sessions.ts` にリファクタリング）
 
@@ -122,8 +122,8 @@ branch カバレッジ向上にも貢献する。
 
 **受入基準:**
 
-- [ ] **AC-E026-22**: `gateway/api/` 以下の新規・既存ファイルの branch カバレッジが vitest レポートで 100% を達成する。← S7
-- [ ] **AC-E026-23**: 各テストファイルが `vi.mock` または依存注入を使用して外部依存（`registry.js`・`logger.js`・`engine`）を完全にモックしており、データベースやファイルシステムに依存しない純粋なユニットテストになっている。← S7
+- [x] **AC-E026-22**: `gateway/api/` 以下の新規・既存ファイルの branch カバレッジが vitest レポートで 100% を達成する。← S7
+- [x] **AC-E026-23**: 各テストファイルが `vi.mock` または依存注入を使用して外部依存（`registry.js`・`logger.js`・`engine`）を完全にモックしており、データベースやファイルシステムに依存しない純粋なユニットテストになっている。← S7
 
 **インターフェース:** `gateway/api/__tests__/`（新規テストディレクトリ）
 
@@ -135,8 +135,8 @@ branch カバレッジ向上にも貢献する。
 
 **受入基準:**
 
-- [ ] **AC-E026-24**: `pnpm build` がエラーなく完了する（型エラー・インポートエラーなし）。← S8
-- [ ] **AC-E026-25**: `pnpm test` が全テスト PASS する（既存テストの破損なし・新規テストも全 PASS）。← S8
+- [x] **AC-E026-24**: `pnpm build` がエラーなく完了する（型エラー・インポートエラーなし）。← S8
+- [x] **AC-E026-25**: `pnpm test` が全テスト PASS する（既存テストの破損なし・新規テストも全 PASS）。← S8
 
 **インターフェース:** CI パイプライン
 
