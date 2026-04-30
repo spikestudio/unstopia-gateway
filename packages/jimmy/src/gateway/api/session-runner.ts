@@ -1,35 +1,28 @@
-import fs from "node:fs";
+import fs, { type Dirent } from "node:fs";
 import path from "node:path";
-import {
-  notifyDiscordChannel,
-  notifyParentSession,
-  notifyRateLimited,
-  notifyRateLimitResumed,
-} from "../../sessions/callbacks.js";
+import { notifyParentSession } from "../../sessions/callbacks.js";
 import { buildContext } from "../../sessions/context.js";
-import {
-  cancelQueueItem,
-  getMessages,
-  getSession,
-  insertMessage,
-  listAllPendingQueueItems,
-  updateSession,
-} from "../../sessions/registry.js";
+import { getMessages, getSession, insertMessage, updateSession } from "../../sessions/registry.js";
 import { resolveEffort } from "../../shared/effort.js";
 import { logger } from "../../shared/logger.js";
 import { JINN_HOME } from "../../shared/paths.js";
-import { computeNextRetryDelayMs, computeRateLimitDeadlineMs, detectRateLimit } from "../../shared/rateLimit.js";
-import type { Result } from "../../shared/result.js";
+import { detectRateLimit } from "../../shared/rateLimit.js";
 import type { Engine, JinnConfig, JsonObject, Session } from "../../shared/types.js";
 import { recordClaudeRateLimit } from "../../shared/usageAwareness.js";
 import type { ApiContext } from "../types.js";
-
-/** Result<Session | null, E> から Session | null を取り出す。Err の場合は null を返す */
-function unwrapSession<E>(result: Result<Session | null, E>): Session | null {
-  return result.ok ? result.value : null;
-}
+import { defaultFallbackDeps, switchToFallback } from "./session-fallback.js";
+import { defaultRateLimitDeps, handleRateLimit, retryUntilDeadline } from "./session-rate-limit.js";
+import { unwrapSession } from "./utils.js";
 
 // ── Transcript helpers ────────────────────────────────────────────────────────
+
+export interface TranscriptReader {
+  existsSync(path: string): boolean;
+  readdirSync(path: string, options: { withFileTypes: true }): Dirent[];
+  readFileSync(path: string, encoding: "utf-8"): string;
+}
+
+const defaultReader: TranscriptReader = fs;
 
 export interface TranscriptContentBlock {
   type: "text" | "tool_use" | "tool_result" | "thinking";
@@ -45,18 +38,19 @@ export interface TranscriptEntry {
   content: TranscriptContentBlock[];
 }
 
-export function loadRawTranscript(engineSessionId: string): TranscriptEntry[] {
+export function loadRawTranscript(engineSessionId: string, reader?: TranscriptReader): TranscriptEntry[] {
+  const r = reader ?? defaultReader;
   const claudeProjectsDir = path.join(process.env.HOME || process.env.USERPROFILE || "", ".claude", "projects");
-  if (!fs.existsSync(claudeProjectsDir)) return [];
+  if (!r.existsSync(claudeProjectsDir)) return [];
 
-  const projectDirs = fs.readdirSync(claudeProjectsDir, { withFileTypes: true });
+  const projectDirs = r.readdirSync(claudeProjectsDir, { withFileTypes: true });
   for (const dir of projectDirs) {
     if (!dir.isDirectory()) continue;
     const jsonlPath = path.join(claudeProjectsDir, dir.name, `${engineSessionId}.jsonl`);
-    if (!fs.existsSync(jsonlPath)) continue;
+    if (!r.existsSync(jsonlPath)) continue;
 
     const entries: TranscriptEntry[] = [];
-    const lines = fs.readFileSync(jsonlPath, "utf-8").trim().split("\n").filter(Boolean);
+    const lines = r.readFileSync(jsonlPath, "utf-8").trim().split("\n").filter(Boolean);
     for (const line of lines) {
       try {
         const obj = JSON.parse(line);
@@ -106,25 +100,31 @@ export function loadRawTranscript(engineSessionId: string): TranscriptEntry[] {
         if (blocks.length > 0) {
           entries.push({ role: type as "user" | "assistant", content: blocks });
         }
-      } catch {}
+      } catch (e) {
+        logger.debug(`Skipping malformed JSONL line in transcript: ${e}`);
+      }
     }
     return entries;
   }
   return [];
 }
 
-export function loadTranscriptMessages(engineSessionId: string): Array<{ role: string; content: string }> {
+export function loadTranscriptMessages(
+  engineSessionId: string,
+  reader?: TranscriptReader,
+): Array<{ role: string; content: string }> {
+  const r = reader ?? defaultReader;
   const claudeProjectsDir = path.join(process.env.HOME || process.env.USERPROFILE || "", ".claude", "projects");
-  if (!fs.existsSync(claudeProjectsDir)) return [];
+  if (!r.existsSync(claudeProjectsDir)) return [];
 
-  const projectDirs = fs.readdirSync(claudeProjectsDir, { withFileTypes: true });
+  const projectDirs = r.readdirSync(claudeProjectsDir, { withFileTypes: true });
   for (const dir of projectDirs) {
     if (!dir.isDirectory()) continue;
     const jsonlPath = path.join(claudeProjectsDir, dir.name, `${engineSessionId}.jsonl`);
-    if (!fs.existsSync(jsonlPath)) continue;
+    if (!r.existsSync(jsonlPath)) continue;
 
     const messages: Array<{ role: string; content: string }> = [];
-    const lines = fs.readFileSync(jsonlPath, "utf-8").trim().split("\n").filter(Boolean);
+    const lines = r.readFileSync(jsonlPath, "utf-8").trim().split("\n").filter(Boolean);
     for (const line of lines) {
       try {
         const obj = JSON.parse(line);
@@ -143,7 +143,9 @@ export function loadTranscriptMessages(engineSessionId: string): Array<{ role: s
         if (typeof content === "string" && content.trim()) {
           messages.push({ role: type, content: content.trim() });
         }
-      } catch {}
+      } catch (e) {
+        logger.debug(`Skipping malformed JSONL line in transcript: ${e}`);
+      }
     }
     return messages;
   }
@@ -373,324 +375,39 @@ export async function runWebSession(
       recordClaudeRateLimit(rateLimit.resetsAt);
       const strategy = config.sessions?.rateLimitStrategy ?? "fallback";
 
-      // Optional fallback: switch to GPT (Codex) while Claude resets
       if (currentSession.engine === "claude" && strategy === "fallback") {
         const fallbackName = config.sessions?.fallbackEngine ?? "codex";
         const fallbackEngine = context.sessionManager.getEngine(fallbackName);
-        if (fallbackEngine) {
-          const { resumeAt } = computeNextRetryDelayMs(rateLimit.resetsAt);
-          const until = resumeAt ?? new Date(Date.now() + 6 * 60 * 60_000);
-          const syncSince = new Date().toISOString();
-
-          const resumeText = resumeAt
-            ? resumeAt.toLocaleString("en-GB", {
-                weekday: "short",
-                day: "2-digit",
-                month: "short",
-                hour: "2-digit",
-                minute: "2-digit",
-              })
-            : null;
-
-          const notificationText = `⚠️ Claude usage limit reached${resumeText ? `. Resets ${resumeText}` : ""}. Switching to GPT for now.`;
-          insertMessage(currentSession.id, "notification", notificationText);
-          context.emit("session:notification", { sessionId: currentSession.id, message: notificationText });
-
-          const nextMeta = { ...(currentSession.transportMeta || {}) } as Record<string, unknown>;
-          const engineSessionsRaw = nextMeta.engineSessions;
-          const engineSessions =
-            engineSessionsRaw && typeof engineSessionsRaw === "object" && !Array.isArray(engineSessionsRaw)
-              ? { ...(engineSessionsRaw as Record<string, unknown>) }
-              : {};
-          if (currentSession.engineSessionId) {
-            engineSessions.claude = currentSession.engineSessionId;
-          }
-          nextMeta.engineSessions = engineSessions;
-          nextMeta.engineOverride = {
-            originalEngine: "claude",
-            originalEngineSessionId: currentSession.engineSessionId,
-            until: until.toISOString(),
-            syncSince,
-          };
-
-          updateSession(currentSession.id, {
-            engine: fallbackName,
-            transportMeta: nextMeta as JsonObject,
-            status: "running",
-            lastActivity: new Date().toISOString(),
-            lastError: resumeAt
-              ? `Claude usage limit — using GPT until ${resumeAt.toISOString()}`
-              : "Claude usage limit — using GPT temporarily",
-          });
-
-          notifyDiscordChannel(
-            `⚠️ Claude usage limit reached. Session ${currentSession.id}${currentSession.employee ? ` (${currentSession.employee})` : ""} switching to GPT.`,
-          );
-
-          const fallbackConfig = config.engines.codex;
-          const fallbackEffort = resolveEffort(fallbackConfig, currentSession, employee);
-          const codexResume = typeof engineSessions.codex === "string" ? (engineSessions.codex as string) : undefined;
-          const history = getMessages(currentSession.id)
-            .filter((m) => m.role === "user" || m.role === "assistant")
-            .map((m) => `${m.role.toUpperCase()}: ${m.content}`);
-          const historyText = history.slice(-12).join("\n\n");
-          const fallbackPrompt = codexResume
-            ? prompt
-            : `Continue this conversation and respond to the last USER message.\n\nConversation so far:\n\n${historyText}`;
-          const fallbackResult = await fallbackEngine.run({
-            prompt: fallbackPrompt,
-            resumeSessionId: codexResume,
-            systemPrompt,
-            cwd: JINN_HOME,
-            bin: fallbackConfig.bin,
-            model: currentSession.model ?? fallbackConfig.model,
-            effortLevel: fallbackEffort,
-            cliFlags: employee?.cliFlags,
-            sessionId: currentSession.id,
-            onStream: (delta) => {
-              context.emit("session:delta", {
-                sessionId: currentSession.id,
-                type: delta.type,
-                content: delta.content,
-                toolName: delta.toolName,
-              });
-            },
-          });
-
-          if (fallbackResult.result) {
-            insertMessage(currentSession.id, "assistant", fallbackResult.result);
-          }
-
-          // Persist Codex thread id so future fallbacks can resume it
-          const nextEngineSessions = { ...engineSessions };
-          if (fallbackResult.sessionId) {
-            nextEngineSessions.codex = fallbackResult.sessionId;
-          }
-          const metaAfter = { ...(unwrapSession(getSession(currentSession.id))?.transportMeta || nextMeta) } as Record<
-            string,
-            unknown
-          >;
-          metaAfter.engineSessions = nextEngineSessions;
-          updateSession(currentSession.id, { transportMeta: metaAfter as JsonObject });
-
-          const completedFallbackResult = updateSession(currentSession.id, {
-            engineSessionId: fallbackResult.sessionId,
-            status: fallbackResult.error ? "error" : "idle",
-            lastActivity: new Date().toISOString(),
-            lastError: fallbackResult.error ?? null,
-          });
-          const completedFallback = completedFallbackResult.ok ? completedFallbackResult.value : null;
-          if (completedFallback) {
-            notifyParentSession(
-              completedFallback,
-              {
-                result: fallbackResult.result,
-                error: fallbackResult.error ?? null,
-                cost: fallbackResult.cost,
-                durationMs: fallbackResult.durationMs,
-              },
-              { alwaysNotify: employee?.alwaysNotify },
-            );
-          }
-
-          context.emit("session:completed", {
-            sessionId: currentSession.id,
-            employee: currentSession.employee || config.portal?.portalName || "Jinn",
-            title: currentSession.title,
-            result: fallbackResult.result,
-            error: fallbackResult.error || null,
-            cost: fallbackResult.cost,
-            durationMs: fallbackResult.durationMs,
-          });
-
-          return;
-        }
-      }
-
-      // Otherwise: wait until reset and retry automatically
-      const { delayMs, resumeAt } = computeNextRetryDelayMs(rateLimit.resetsAt);
-      const deadlineMs = computeRateLimitDeadlineMs(
-        rateLimit.resetsAt,
-        rateLimit.resetsAt ? 30 * 60_000 : 6 * 60 * 60_000,
-      );
-
-      const resumeText = resumeAt
-        ? resumeAt.toLocaleString("en-GB", {
-            weekday: "short",
-            day: "2-digit",
-            month: "short",
-            hour: "2-digit",
-            minute: "2-digit",
-          })
-        : null;
-
-      logger.info(
-        `Web session ${currentSession.id} hit Claude usage limit — will auto-retry ${resumeAt ? `at ${resumeAt.toISOString()}` : `in ${Math.round(delayMs / 1000)}s`}`,
-      );
-
-      notifyDiscordChannel(
-        `⚠️ Claude usage limit reached. Session ${currentSession.id}${currentSession.employee ? ` (${currentSession.employee})` : ""} paused${resumeText ? ` until ${resumeText}` : ""}.`,
-      );
-
-      const notificationText = `⏳ Claude usage limit reached${resumeText ? `. Resets ${resumeText}` : ""} — I'll continue automatically.`;
-      insertMessage(currentSession.id, "notification", notificationText);
-      context.emit("session:notification", { sessionId: currentSession.id, message: notificationText });
-
-      const waitingSessionResult = updateSession(currentSession.id, {
-        ...(result.sessionId?.trim() ? { engineSessionId: result.sessionId } : {}),
-        status: "waiting",
-        lastActivity: new Date().toISOString(),
-        lastError: resumeAt
-          ? `Claude usage limit — resumes ${resumeAt.toISOString()}`
-          : "Claude usage limit — waiting for reset",
-      });
-      const waitingSession = (waitingSessionResult.ok ? waitingSessionResult.value : null) ?? {
-        ...currentSession,
-        status: "waiting" as const,
-      };
-
-      notifyRateLimited(
-        waitingSession as Session,
-        resumeAt ? resumeAt.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }) : undefined,
-      );
-
-      context.emit("session:rate-limited", {
-        sessionId: currentSession.id,
-        employee: currentSession.employee,
-        error: result.error,
-        resetsAt: rateLimit.resetsAt ?? null,
-      });
-
-      // Keep lastActivity fresh while waiting (UI / status endpoints)
-      const heartbeat = setInterval(() => {
-        updateSession(currentSession.id, { status: "waiting", lastActivity: new Date().toISOString() });
-      }, 60_000);
-
-      try {
-        let attempt = 0;
-        let nextDelayMs = delayMs;
-
-        while (Date.now() < deadlineMs) {
-          await new Promise<void>((r) => setTimeout(r, nextDelayMs));
-          attempt++;
-
-          const current = unwrapSession(getSession(currentSession.id));
-          if (!current || current.status === "error") {
-            logger.info(`Web session ${currentSession.id} stopped while waiting for usage reset`);
-            return;
-          }
-
-          logger.info(`Web session ${currentSession.id} retrying after usage limit (attempt ${attempt})`);
-
-          const retryResult = await engine.run({
-            prompt,
-            resumeSessionId: current.engineSessionId ?? undefined,
-            systemPrompt,
-            cwd: JINN_HOME,
-            bin: engineConfig.bin,
-            model: current.model ?? engineConfig.model,
-            effortLevel,
-            cliFlags: employee?.cliFlags,
-            sessionId: currentSession.id,
-            onStream: (delta) => {
-              context.emit("session:delta", {
-                sessionId: currentSession.id,
-                type: delta.type,
-                content: delta.content,
-                toolName: delta.toolName,
-              });
-            },
-          });
-
-          const retryInterrupted = retryResult.error?.startsWith("Interrupted");
-          const retryRateLimit = !retryInterrupted ? detectRateLimit(retryResult) : { limited: false as const };
-
-          if (retryRateLimit.limited) {
-            recordClaudeRateLimit(retryRateLimit.resetsAt);
-            logger.info(`Web session ${currentSession.id} still rate limited (attempt ${attempt})`);
-            const next = computeNextRetryDelayMs(retryRateLimit.resetsAt);
-            nextDelayMs = next.delayMs;
-            updateSession(currentSession.id, {
-              ...(retryResult.sessionId?.trim() ? { engineSessionId: retryResult.sessionId } : {}),
-              status: "waiting",
-              lastActivity: new Date().toISOString(),
-              lastError: next.resumeAt
-                ? `Claude usage limit — resumes ${next.resumeAt.toISOString()}`
-                : "Claude usage limit — waiting for reset",
-            });
-            continue;
-          }
-
-          if (retryResult.result) {
-            insertMessage(currentSession.id, "assistant", retryResult.result);
-          }
-
-          const completedAfterRetryResult = updateSession(currentSession.id, {
-            ...(retryResult.sessionId?.trim() ? { engineSessionId: retryResult.sessionId } : {}),
-            status: retryResult.error ? "error" : "idle",
-            lastActivity: new Date().toISOString(),
-            lastError: retryResult.error ?? null,
-          });
-          const completedAfterRetry = completedAfterRetryResult.ok ? completedAfterRetryResult.value : null;
-
-          if (completedAfterRetry) {
-            notifyRateLimitResumed(completedAfterRetry);
-            notifyDiscordChannel(
-              `✅ Claude usage limit cleared. Session ${currentSession.id}${currentSession.employee ? ` (${currentSession.employee})` : ""} resumed.`,
-            );
-            notifyParentSession(
-              completedAfterRetry,
-              {
-                result: retryResult.result,
-                error: retryResult.error ?? null,
-                cost: retryResult.cost,
-                durationMs: retryResult.durationMs,
-              },
-              { alwaysNotify: employee?.alwaysNotify },
-            );
-          }
-
-          context.emit("session:completed", {
-            sessionId: currentSession.id,
-            employee: currentSession.employee || config.portal?.portalName || "Jinn",
-            title: currentSession.title,
-            result: retryResult.result,
-            error: retryResult.error || null,
-            cost: retryResult.cost,
-            durationMs: retryResult.durationMs,
-          });
-
-          logger.info(`Web session ${currentSession.id} resumed after usage reset`);
-          return;
-        }
-
-        // Exhausted waiting window
-        notifyDiscordChannel(
-          `❌ Claude usage limit did not clear in time. Session ${currentSession.id}${currentSession.employee ? ` (${currentSession.employee})` : ""} has been stopped.`,
+        const handled = await switchToFallback(
+          defaultFallbackDeps,
+          currentSession,
+          fallbackEngine ?? null,
+          fallbackName,
+          { prompt, systemPrompt, rateLimit, fallbackEngineConfig: config.engines.codex, employee },
+          config,
+          context,
         );
-        const erroredSessionResult = updateSession(currentSession.id, {
-          status: "error",
-          lastActivity: new Date().toISOString(),
-          lastError: "Claude usage limit did not clear in time",
-        });
-        const erroredSession = erroredSessionResult.ok ? erroredSessionResult.value : null;
-        if (erroredSession) {
-          notifyParentSession(
-            erroredSession,
-            { error: "Claude usage limit did not clear in time" },
-            { alwaysNotify: employee?.alwaysNotify },
-          );
-        }
-        context.emit("session:completed", {
-          sessionId: currentSession.id,
-          result: null,
-          error: "Claude usage limit did not clear in time",
-        });
-        logger.warn(`Web session ${currentSession.id} exhausted usage limit retries`);
-        return;
-      } finally {
-        clearInterval(heartbeat);
+        if (handled) return;
       }
+
+      const { delayMs, deadlineMs } = await handleRateLimit(
+        defaultRateLimitDeps,
+        currentSession,
+        { limited: true, resetsAt: rateLimit.resetsAt },
+        result.error,
+        context,
+      );
+      await retryUntilDeadline(
+        defaultRateLimitDeps,
+        currentSession,
+        deadlineMs,
+        delayMs,
+        engine,
+        { prompt, systemPrompt, engineConfig, effortLevel, employee, attachments },
+        config,
+        context,
+      );
+      return;
     }
 
     // Persist the assistant response
@@ -759,43 +476,5 @@ export async function runWebSession(
       error: errMsg,
     });
     logger.error(`Web session ${currentSession.id} error: ${errMsg}`);
-  }
-}
-
-// ── resumePendingWebQueueItems ────────────────────────────────────────────────
-
-export function resumePendingWebQueueItemsImpl(context: ApiContext): void {
-  const pending = listAllPendingQueueItems();
-  if (pending.length === 0) return;
-
-  let resumed = 0;
-  for (const item of pending) {
-    let session = unwrapSession(getSession(item.sessionId));
-    if (!session) {
-      cancelQueueItem(item.id);
-      continue;
-    }
-    if (session.source !== "web") continue;
-    session = maybeRevertEngineOverride(session);
-
-    const config = context.getConfig();
-    const engine = context.sessionManager.getEngine(session.engine);
-    if (!engine) {
-      cancelQueueItem(item.id);
-      updateSession(session.id, {
-        status: "error",
-        lastActivity: new Date().toISOString(),
-        lastError: `Engine "${session.engine}" not available`,
-      });
-      continue;
-    }
-
-    updateSession(session.id, { status: "running", lastActivity: new Date().toISOString(), lastError: null });
-    dispatchWebSessionRun(session, item.prompt, engine, config, context, { queueItemId: item.id });
-    resumed++;
-  }
-
-  if (resumed > 0) {
-    logger.info(`Re-dispatched ${resumed} pending web queue item(s) after gateway restart`);
   }
 }
