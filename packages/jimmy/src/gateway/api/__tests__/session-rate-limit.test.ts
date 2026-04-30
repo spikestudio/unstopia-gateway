@@ -1,8 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Engine, JinnConfig, Session } from "../../../shared/types.js";
 import type { ApiContext } from "../../types.js";
-import { handleRateLimit, retryUntilDeadline } from "../session-rate-limit.js";
 import type { RateLimitDeps, RetryRunParams } from "../session-rate-limit.js";
+import { handleRateLimit, retryUntilDeadline } from "../session-rate-limit.js";
 
 const makeSession = (overrides: Partial<Session> = {}): Session =>
   ({
@@ -67,7 +67,11 @@ describe("handleRateLimit", () => {
     const deps = makeDeps();
     const context = makeContext();
     await handleRateLimit(deps, makeSession(), { limited: true }, undefined, context);
-    expect(deps.insertMessage).toHaveBeenCalledWith("s1", "notification", expect.stringContaining("Claude usage limit"));
+    expect(deps.insertMessage).toHaveBeenCalledWith(
+      "s1",
+      "notification",
+      expect.stringContaining("Claude usage limit"),
+    );
   });
 
   it("should emit session:notification event", async () => {
@@ -119,7 +123,9 @@ describe("handleRateLimit", () => {
     const deps = makeDeps({
       updateSession: vi.fn().mockReturnValue({ ok: false, error: { type: "not_found" } }),
     });
-    await expect(handleRateLimit(deps, makeSession(), { limited: true }, undefined, makeContext())).resolves.not.toThrow();
+    await expect(
+      handleRateLimit(deps, makeSession(), { limited: true }, undefined, makeContext()),
+    ).resolves.not.toThrow();
     expect(deps.notifyRateLimited).toHaveBeenCalled();
   });
 });
@@ -144,7 +150,16 @@ describe("retryUntilDeadline", () => {
     const session = makeSession({ status: "waiting", engineSessionId: "e1" });
     const deadlineMs = Date.now() + 60_000;
 
-    const promise = retryUntilDeadline(deps, session, deadlineMs, 1_000, engine, makeRunParams(), makeConfig(), makeContext());
+    const promise = retryUntilDeadline(
+      deps,
+      session,
+      deadlineMs,
+      1_000,
+      engine,
+      makeRunParams(),
+      makeConfig(),
+      makeContext(),
+    );
     await vi.advanceTimersByTimeAsync(1_001);
     await promise;
 
@@ -158,7 +173,16 @@ describe("retryUntilDeadline", () => {
     const session = makeSession({ status: "waiting" });
     const deadlineMs = Date.now() + 60_000;
 
-    const promise = retryUntilDeadline(deps, session, deadlineMs, 1_000, engine, makeRunParams(), makeConfig(), context);
+    const promise = retryUntilDeadline(
+      deps,
+      session,
+      deadlineMs,
+      1_000,
+      engine,
+      makeRunParams(),
+      makeConfig(),
+      context,
+    );
     await vi.advanceTimersByTimeAsync(1_001);
     await promise;
 
@@ -182,7 +206,16 @@ describe("retryUntilDeadline", () => {
     const session = makeSession({ status: "waiting" });
     const deadlineMs = Date.now() - 1;
 
-    await retryUntilDeadline(deps, session, deadlineMs, 1_000, makeEngine(), makeRunParams(), makeConfig(), makeContext());
+    await retryUntilDeadline(
+      deps,
+      session,
+      deadlineMs,
+      1_000,
+      makeEngine(),
+      makeRunParams(),
+      makeConfig(),
+      makeContext(),
+    );
 
     expect(deps.notifyDiscordChannel).toHaveBeenCalledWith(expect.stringContaining("did not clear in time"));
   });
@@ -208,7 +241,16 @@ describe("retryUntilDeadline", () => {
     const session = makeSession({ status: "waiting" });
     const deadlineMs = Date.now() + 300_000;
 
-    const promise = retryUntilDeadline(deps, session, deadlineMs, 1_000, engine, makeRunParams(), makeConfig(), makeContext());
+    const promise = retryUntilDeadline(
+      deps,
+      session,
+      deadlineMs,
+      1_000,
+      engine,
+      makeRunParams(),
+      makeConfig(),
+      makeContext(),
+    );
     await vi.advanceTimersByTimeAsync(300_000);
     await promise;
 
@@ -224,7 +266,16 @@ describe("retryUntilDeadline", () => {
     const session = makeSession({ status: "waiting" });
     const deadlineMs = Date.now() + 60_000;
 
-    const promise = retryUntilDeadline(deps, session, deadlineMs, 1_000, engine, makeRunParams(), makeConfig(), makeContext());
+    const promise = retryUntilDeadline(
+      deps,
+      session,
+      deadlineMs,
+      1_000,
+      engine,
+      makeRunParams(),
+      makeConfig(),
+      makeContext(),
+    );
     await vi.advanceTimersByTimeAsync(1_001);
     await promise;
 
@@ -239,7 +290,16 @@ describe("retryUntilDeadline", () => {
     const session = makeSession({ status: "waiting" });
     const deadlineMs = Date.now() + 60_000;
 
-    const promise = retryUntilDeadline(deps, session, deadlineMs, 1_000, engine, makeRunParams(), makeConfig(), makeContext());
+    const promise = retryUntilDeadline(
+      deps,
+      session,
+      deadlineMs,
+      1_000,
+      engine,
+      makeRunParams(),
+      makeConfig(),
+      makeContext(),
+    );
     await vi.advanceTimersByTimeAsync(1_001);
     await promise;
 
@@ -253,7 +313,16 @@ describe("retryUntilDeadline", () => {
     const session = makeSession({ status: "waiting" });
     const deadlineMs = Date.now() + 60_000;
 
-    const promise = retryUntilDeadline(deps, session, deadlineMs, 1_000, engine, makeRunParams(), makeConfig(), makeContext());
+    const promise = retryUntilDeadline(
+      deps,
+      session,
+      deadlineMs,
+      1_000,
+      engine,
+      makeRunParams(),
+      makeConfig(),
+      makeContext(),
+    );
     await vi.advanceTimersByTimeAsync(1_001);
     await promise;
 
@@ -267,7 +336,16 @@ describe("retryUntilDeadline", () => {
     const session = makeSession({ status: "waiting" });
     const deadlineMs = Date.now() - 1; // 既に期限切れ
 
-    await retryUntilDeadline(deps, session, deadlineMs, 1_000, makeEngine(), makeRunParams(), makeConfig(), makeContext());
+    await retryUntilDeadline(
+      deps,
+      session,
+      deadlineMs,
+      1_000,
+      makeEngine(),
+      makeRunParams(),
+      makeConfig(),
+      makeContext(),
+    );
 
     expect(deps.notifyParentSession).toHaveBeenCalledWith(
       expect.objectContaining({ id: "s1" }),

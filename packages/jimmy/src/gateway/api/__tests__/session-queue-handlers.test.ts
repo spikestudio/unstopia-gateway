@@ -1,5 +1,6 @@
 import type { ServerResponse } from "node:http";
 import { describe, expect, it, vi } from "vitest";
+import type { Session } from "../../../shared/types.js";
 import type { ApiContext } from "../../types.js";
 import type { QueueHandlerDeps } from "../session-queue-handlers.js";
 import {
@@ -9,7 +10,6 @@ import {
   handlePauseQueue,
   handleResumeQueue,
 } from "../session-queue-handlers.js";
-import type { Session } from "../../../shared/types.js";
 
 const makeSession = (overrides: Partial<Session> = {}): Session =>
   ({
@@ -131,7 +131,10 @@ describe("handlePauseQueue", () => {
   it("should emit queue:updated with paused: true", () => {
     const context = makeContext();
     handlePauseQueue(makeRes(), context, makeDeps(), "s1");
-    expect(context.emit).toHaveBeenCalledWith("queue:updated", expect.objectContaining({ paused: true, sessionId: "s1" }));
+    expect(context.emit).toHaveBeenCalledWith(
+      "queue:updated",
+      expect.objectContaining({ paused: true, sessionId: "s1" }),
+    );
   });
 
   it("should call pauseQueue on the session manager", () => {
@@ -154,7 +157,10 @@ describe("handleResumeQueue", () => {
   it("should emit queue:updated with paused: false", () => {
     const context = makeContext();
     handleResumeQueue(makeRes(), context, makeDeps(), "s1");
-    expect(context.emit).toHaveBeenCalledWith("queue:updated", expect.objectContaining({ paused: false, sessionId: "s1" }));
+    expect(context.emit).toHaveBeenCalledWith(
+      "queue:updated",
+      expect.objectContaining({ paused: false, sessionId: "s1" }),
+    );
   });
 
   it("should call resumeQueue on the session manager", () => {

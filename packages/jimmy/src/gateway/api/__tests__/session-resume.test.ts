@@ -50,9 +50,11 @@ describe("resumePendingWebQueueItemsImpl", () => {
 
   it("should cancel queue item when session not found", () => {
     const deps = makeDeps({
-      listAllPendingQueueItems: vi.fn().mockReturnValue([
-        { id: "qi1", sessionId: "s1", prompt: "hello", sessionKey: "sk1", createdAt: 0, status: "pending" } as never,
-      ]),
+      listAllPendingQueueItems: vi
+        .fn()
+        .mockReturnValue([
+          { id: "qi1", sessionId: "s1", prompt: "hello", sessionKey: "sk1", createdAt: 0, status: "pending" } as never,
+        ]),
       getSession: vi.fn().mockReturnValue({ ok: true, value: null }),
     });
     resumePendingWebQueueItemsImpl(makeContext(), deps);
@@ -62,9 +64,11 @@ describe("resumePendingWebQueueItemsImpl", () => {
 
   it("should skip non-web sessions", () => {
     const deps = makeDeps({
-      listAllPendingQueueItems: vi.fn().mockReturnValue([
-        { id: "qi1", sessionId: "s1", prompt: "hello", sessionKey: "sk1", createdAt: 0, status: "pending" } as never,
-      ]),
+      listAllPendingQueueItems: vi
+        .fn()
+        .mockReturnValue([
+          { id: "qi1", sessionId: "s1", prompt: "hello", sessionKey: "sk1", createdAt: 0, status: "pending" } as never,
+        ]),
       getSession: vi.fn().mockReturnValue({ ok: true, value: makeSession({ source: "discord" }) }),
     });
     resumePendingWebQueueItemsImpl(makeContext(), deps);
@@ -73,9 +77,11 @@ describe("resumePendingWebQueueItemsImpl", () => {
 
   it("should cancel and error session when engine not available", () => {
     const deps = makeDeps({
-      listAllPendingQueueItems: vi.fn().mockReturnValue([
-        { id: "qi1", sessionId: "s1", prompt: "hello", sessionKey: "sk1", createdAt: 0, status: "pending" } as never,
-      ]),
+      listAllPendingQueueItems: vi
+        .fn()
+        .mockReturnValue([
+          { id: "qi1", sessionId: "s1", prompt: "hello", sessionKey: "sk1", createdAt: 0, status: "pending" } as never,
+        ]),
       getSession: vi.fn().mockReturnValue({ ok: true, value: makeSession({ source: "web" }) }),
     });
     const context = makeContext();
@@ -87,9 +93,11 @@ describe("resumePendingWebQueueItemsImpl", () => {
 
   it("should dispatch web session run for valid pending web sessions", () => {
     const deps = makeDeps({
-      listAllPendingQueueItems: vi.fn().mockReturnValue([
-        { id: "qi1", sessionId: "s1", prompt: "hello", sessionKey: "sk1", createdAt: 0, status: "pending" } as never,
-      ]),
+      listAllPendingQueueItems: vi
+        .fn()
+        .mockReturnValue([
+          { id: "qi1", sessionId: "s1", prompt: "hello", sessionKey: "sk1", createdAt: 0, status: "pending" } as never,
+        ]),
       getSession: vi.fn().mockReturnValue({ ok: true, value: makeSession({ source: "web" }) }),
     });
     resumePendingWebQueueItemsImpl(makeContext(), deps);

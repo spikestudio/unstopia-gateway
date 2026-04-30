@@ -1,17 +1,6 @@
 import type { IncomingMessage as HttpRequest, ServerResponse } from "node:http";
+import { forkEngineSession, type forkEngineSession as forkEngineSessionType } from "../../sessions/fork.js";
 import {
-  forkEngineSession,
-  type forkEngineSession as forkEngineSessionType,
-} from "../../sessions/fork.js";
-import {
-  type deleteSession,
-  type duplicateSession,
-  type getMessages,
-  type getSession,
-  type insertMessage,
-  type listSessions,
-  type updateSession,
-  type UpdateSessionFields,
   deleteSession as defaultDeleteSession,
   duplicateSession as defaultDuplicateSession,
   getMessages as defaultGetMessages,
@@ -19,6 +8,14 @@ import {
   insertMessage as defaultInsertMessage,
   listSessions as defaultListSessions,
   updateSession as defaultUpdateSession,
+  type deleteSession,
+  type duplicateSession,
+  type getMessages,
+  type getSession,
+  type insertMessage,
+  type listSessions,
+  type UpdateSessionFields,
+  type updateSession,
 } from "../../sessions/registry.js";
 import { logger } from "../../shared/logger.js";
 import { JINN_HOME } from "../../shared/paths.js";
@@ -40,7 +37,6 @@ export interface CrudDeps {
   forkEngineSession: typeof forkEngineSessionType;
 }
 
-
 export async function getSessionHandler(
   _req: HttpRequest,
   res: ServerResponse,
@@ -50,7 +46,10 @@ export async function getSessionHandler(
   url: URL,
 ): Promise<void> {
   const session = unwrapSession(deps.getSession(sessionId));
-  if (!session) { notFound(res); return; }
+  if (!session) {
+    notFound(res);
+    return;
+  }
 
   let messages = deps.getMessages(sessionId);
 
@@ -80,7 +79,10 @@ export async function updateSessionHandler(
   sessionId: string,
 ): Promise<void> {
   const session = unwrapSession(deps.getSession(sessionId));
-  if (!session) { notFound(res); return; }
+  if (!session) {
+    notFound(res);
+    return;
+  }
 
   const _parsed = await readJsonBody(req, res);
   if (!_parsed.ok) return;
@@ -107,7 +109,10 @@ export async function updateSessionHandler(
 
   const updatedResult = deps.updateSession(sessionId, updates);
   const updated = updatedResult.ok ? updatedResult.value : null;
-  if (!updated) { notFound(res); return; }
+  if (!updated) {
+    notFound(res);
+    return;
+  }
 
   context.emit("session:updated", { sessionId });
   json(res, serializeSession(updated, context));
@@ -120,7 +125,10 @@ export function deleteSessionHandler(
   sessionId: string,
 ): void {
   const session = unwrapSession(deps.getSession(sessionId));
-  if (!session) { notFound(res); return; }
+  if (!session) {
+    notFound(res);
+    return;
+  }
 
   const engine = context.sessionManager.getEngine(session.engine);
   if (engine && isInterruptibleEngine(engine) && engine.isAlive(sessionId)) {
@@ -129,21 +137,22 @@ export function deleteSessionHandler(
   }
 
   const deleted = deps.deleteSession(sessionId);
-  if (!deleted) { notFound(res); return; }
+  if (!deleted) {
+    notFound(res);
+    return;
+  }
 
   logger.info(`Session deleted: ${sessionId}`);
   context.emit("session:deleted", { sessionId });
   json(res, { status: "deleted" });
 }
 
-export function stopSession(
-  res: ServerResponse,
-  context: ApiContext,
-  deps: CrudDeps,
-  sessionId: string,
-): void {
+export function stopSession(res: ServerResponse, context: ApiContext, deps: CrudDeps, sessionId: string): void {
   const session = unwrapSession(deps.getSession(sessionId));
-  if (!session) { notFound(res); return; }
+  if (!session) {
+    notFound(res);
+    return;
+  }
 
   const engine = context.sessionManager.getEngine(session.engine);
   if (engine && isInterruptibleEngine(engine) && engine.isAlive(sessionId)) {
@@ -155,14 +164,12 @@ export function stopSession(
   json(res, { status: "stopped", sessionId });
 }
 
-export function resetSession(
-  res: ServerResponse,
-  context: ApiContext,
-  deps: CrudDeps,
-  sessionId: string,
-): void {
+export function resetSession(res: ServerResponse, context: ApiContext, deps: CrudDeps, sessionId: string): void {
   const session = unwrapSession(deps.getSession(sessionId));
-  if (!session) { notFound(res); return; }
+  if (!session) {
+    notFound(res);
+    return;
+  }
 
   const engine = context.sessionManager.getEngine(session.engine);
   if (engine && isInterruptibleEngine(engine) && engine.isAlive(sessionId)) {
@@ -179,7 +186,9 @@ export function resetSession(
     lastError: null,
     transportMeta: meta as JsonObject,
   });
-  logger.info(`Session ${sessionId} reset via API (cleared engineSessions, engineOverride, engineSessionId, lastError)`);
+  logger.info(
+    `Session ${sessionId} reset via API (cleared engineSessions, engineOverride, engineSessionId, lastError)`,
+  );
   context.emit("session:updated", { sessionId });
   json(res, { status: "reset", sessionId });
 }
@@ -191,7 +200,10 @@ export async function duplicateSessionHandler(
   sessionId: string,
 ): Promise<void> {
   const source = unwrapSession(deps.getSession(sessionId));
-  if (!source) { notFound(res); return; }
+  if (!source) {
+    notFound(res);
+    return;
+  }
   if (!source.engineSessionId) {
     res.writeHead(400, { "Content-Type": "application/json" });
     res.end(JSON.stringify({ error: "Session has no engine session ID — cannot duplicate" }));
@@ -207,14 +219,23 @@ export async function duplicateSessionHandler(
     deps.updateSession(newSession.id, { engineSessionId: forkResult.engineSessionId });
 
     const result = unwrapSession(deps.getSession(newSession.id));
-    if (!result) { serverError(res, "Failed to retrieve duplicated session"); return; }
+    if (!result) {
+      serverError(res, "Failed to retrieve duplicated session");
+      return;
+    }
 
-    logger.info(`Session duplicated: ${sessionId} → ${newSession.id} (engine: ${forkResult.engineSessionId}, ${messageCount} messages)`);
+    logger.info(
+      `Session duplicated: ${sessionId} → ${newSession.id} (engine: ${forkResult.engineSessionId}, ${messageCount} messages)`,
+    );
     context.emit("session:created", { sessionId: newSession.id });
     json(res, serializeSession(result, context));
   } catch (err) {
     if (newSessionId) {
-      try { deps.deleteSession(newSessionId); } catch { /* best effort */ }
+      try {
+        deps.deleteSession(newSessionId);
+      } catch {
+        /* best effort */
+      }
     }
     const errMsg = err instanceof Error ? err.message : String(err);
     logger.error(`Failed to duplicate session ${sessionId}: ${errMsg}`);
@@ -223,25 +244,24 @@ export async function duplicateSessionHandler(
   }
 }
 
-export function getChildren(
-  res: ServerResponse,
-  context: ApiContext,
-  deps: CrudDeps,
-  sessionId: string,
-): void {
+export function getChildren(res: ServerResponse, context: ApiContext, deps: CrudDeps, sessionId: string): void {
   const children = deps.listSessions().filter((s) => s.parentSessionId === sessionId);
-  json(res, children.map((child) => serializeSession(child, context)));
+  json(
+    res,
+    children.map((child) => serializeSession(child, context)),
+  );
 }
 
-export function getTranscript(
-  res: ServerResponse,
-  _context: ApiContext,
-  deps: CrudDeps,
-  sessionId: string,
-): void {
+export function getTranscript(res: ServerResponse, _context: ApiContext, deps: CrudDeps, sessionId: string): void {
   const session = unwrapSession(deps.getSession(sessionId));
-  if (!session) { notFound(res); return; }
-  if (!session.engineSessionId) { json(res, []); return; }
+  if (!session) {
+    notFound(res);
+    return;
+  }
+  if (!session.engineSessionId) {
+    json(res, []);
+    return;
+  }
   json(res, loadRawTranscript(session.engineSessionId));
 }
 

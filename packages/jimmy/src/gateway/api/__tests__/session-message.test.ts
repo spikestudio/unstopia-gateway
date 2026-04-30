@@ -28,7 +28,11 @@ const makeEngine = (overrides: Partial<InterruptibleEngine> = {}): Interruptible
     ...overrides,
   }) as unknown as InterruptibleEngine;
 
-const makeDeps = (session: Session | null = makeSession(), engineOverride: InterruptibleEngine | null = makeEngine(), overrides: Partial<PostMessageDeps> = {}): PostMessageDeps => ({
+const makeDeps = (
+  session: Session | null = makeSession(),
+  engineOverride: InterruptibleEngine | null = makeEngine(),
+  overrides: Partial<PostMessageDeps> = {},
+): PostMessageDeps => ({
   getSession: vi.fn().mockReturnValue({ ok: true, value: session }),
   insertMessage: vi.fn(),
   updateSession: vi.fn().mockReturnValue({ ok: true, value: session }),
@@ -38,7 +42,9 @@ const makeDeps = (session: Session | null = makeSession(), engineOverride: Inter
   dispatchWebSessionRun: vi.fn(),
   resolveAttachmentPaths: vi.fn().mockReturnValue([]),
   getEngine: vi.fn().mockReturnValue(engineOverride),
-  getConfig: vi.fn().mockReturnValue({ engines: { default: "claude", claude: {} }, sessions: {} } as unknown as JinnConfig),
+  getConfig: vi
+    .fn()
+    .mockReturnValue({ engines: { default: "claude", claude: {} }, sessions: {} } as unknown as JinnConfig),
   ...overrides,
 });
 
@@ -55,24 +61,30 @@ const makeContext = (): ApiContext =>
     },
   }) as unknown as ApiContext;
 
-const makeRes = (): ServerResponse => ({
-  writeHead: vi.fn(),
-  end: vi.fn(),
-}) as unknown as ServerResponse;
+const makeRes = (): ServerResponse =>
+  ({
+    writeHead: vi.fn(),
+    end: vi.fn(),
+  }) as unknown as ServerResponse;
 
-const makeReq = (body: object) => ({
-  headers: { "content-type": "application/json" },
-  on: vi.fn().mockImplementation((event: string, cb: (d?: Buffer) => void) => {
-    if (event === "data") cb(Buffer.from(JSON.stringify(body)));
-    if (event === "end") cb();
-  }),
-}) as never;
+const makeReq = (body: object) =>
+  ({
+    headers: { "content-type": "application/json" },
+    on: vi.fn().mockImplementation((event: string, cb: (d?: Buffer) => void) => {
+      if (event === "data") cb(Buffer.from(JSON.stringify(body)));
+      if (event === "end") cb();
+    }),
+  }) as never;
 
 // ── handlePostMessage ─────────────────────────────────────────────────────────
 
 describe("handlePostMessage", () => {
-  beforeEach(() => { vi.useFakeTimers(); });
-  afterEach(() => { vi.useRealTimers(); });
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
 
   it("should return 404 when session not found", async () => {
     const deps = makeDeps(null);
@@ -170,7 +182,13 @@ describe("handlePostMessage", () => {
     const engine = makeEngine({ isAlive: vi.fn().mockReturnValue(true) });
     const session = makeSession({ status: "running" });
     const deps = makeDeps(session, engine);
-    await handlePostMessage(makeReq({ message: "child done", role: "notification" }), makeRes(), makeContext(), deps, "s1");
+    await handlePostMessage(
+      makeReq({ message: "child done", role: "notification" }),
+      makeRes(),
+      makeContext(),
+      deps,
+      "s1",
+    );
     expect(engine.kill).not.toHaveBeenCalled();
   });
 

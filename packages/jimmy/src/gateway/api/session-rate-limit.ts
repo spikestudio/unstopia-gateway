@@ -1,31 +1,31 @@
-import { logger } from "../../shared/logger.js";
-import { JINN_HOME } from "../../shared/paths.js";
 import {
-  type detectRateLimit,
-  computeNextRetryDelayMs,
-  computeRateLimitDeadlineMs,
-} from "../../shared/rateLimit.js";
-import type { Employee, Engine, JinnConfig, Session } from "../../shared/types.js";
-import { recordClaudeRateLimit } from "../../shared/usageAwareness.js";
-import {
-  type notifyDiscordChannel,
-  type notifyParentSession,
-  type notifyRateLimited,
-  type notifyRateLimitResumed,
   notifyDiscordChannel as defaultNotifyDiscordChannel,
   notifyParentSession as defaultNotifyParentSession,
   notifyRateLimited as defaultNotifyRateLimited,
   notifyRateLimitResumed as defaultNotifyRateLimitResumed,
+  type notifyDiscordChannel,
+  type notifyParentSession,
+  type notifyRateLimited,
+  type notifyRateLimitResumed,
 } from "../../sessions/callbacks.js";
 import {
-  type getSession,
-  type insertMessage,
-  type updateSession,
   getSession as defaultGetSession,
   insertMessage as defaultInsertMessage,
   updateSession as defaultUpdateSession,
+  type getSession,
+  type insertMessage,
+  type updateSession,
 } from "../../sessions/registry.js";
-import { detectRateLimit as defaultDetectRateLimit } from "../../shared/rateLimit.js";
+import { logger } from "../../shared/logger.js";
+import { JINN_HOME } from "../../shared/paths.js";
+import {
+  computeNextRetryDelayMs,
+  computeRateLimitDeadlineMs,
+  detectRateLimit as defaultDetectRateLimit,
+  type detectRateLimit,
+} from "../../shared/rateLimit.js";
+import type { Employee, Engine, JinnConfig, Session } from "../../shared/types.js";
+import { recordClaudeRateLimit } from "../../shared/usageAwareness.js";
 import type { ApiContext } from "../types.js";
 
 export interface RateLimitDeps {

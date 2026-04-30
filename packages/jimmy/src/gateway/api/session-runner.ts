@@ -2,12 +2,7 @@ import fs, { type Dirent } from "node:fs";
 import path from "node:path";
 import { notifyParentSession } from "../../sessions/callbacks.js";
 import { buildContext } from "../../sessions/context.js";
-import {
-  getMessages,
-  getSession,
-  insertMessage,
-  updateSession,
-} from "../../sessions/registry.js";
+import { getMessages, getSession, insertMessage, updateSession } from "../../sessions/registry.js";
 import { resolveEffort } from "../../shared/effort.js";
 import { logger } from "../../shared/logger.js";
 import { JINN_HOME } from "../../shared/paths.js";
@@ -15,9 +10,9 @@ import { detectRateLimit } from "../../shared/rateLimit.js";
 import type { Engine, JinnConfig, JsonObject, Session } from "../../shared/types.js";
 import { recordClaudeRateLimit } from "../../shared/usageAwareness.js";
 import type { ApiContext } from "../types.js";
-import { unwrapSession } from "./utils.js";
 import { defaultFallbackDeps, switchToFallback } from "./session-fallback.js";
 import { defaultRateLimitDeps, handleRateLimit, retryUntilDeadline } from "./session-rate-limit.js";
+import { unwrapSession } from "./utils.js";
 
 // ── Transcript helpers ────────────────────────────────────────────────────────
 
@@ -114,7 +109,10 @@ export function loadRawTranscript(engineSessionId: string, reader?: TranscriptRe
   return [];
 }
 
-export function loadTranscriptMessages(engineSessionId: string, reader?: TranscriptReader): Array<{ role: string; content: string }> {
+export function loadTranscriptMessages(
+  engineSessionId: string,
+  reader?: TranscriptReader,
+): Array<{ role: string; content: string }> {
   const r = reader ?? defaultReader;
   const claudeProjectsDir = path.join(process.env.HOME || process.env.USERPROFILE || "", ".claude", "projects");
   if (!r.existsSync(claudeProjectsDir)) return [];
@@ -480,4 +478,3 @@ export async function runWebSession(
     logger.error(`Web session ${currentSession.id} error: ${errMsg}`);
   }
 }
-

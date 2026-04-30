@@ -3,8 +3,7 @@ import { describe, expect, it } from "vitest";
 import type { TranscriptReader } from "../session-runner.js";
 import { loadRawTranscript, loadTranscriptMessages } from "../session-runner.js";
 
-const makeDir = (name: string, isDir = true): Dirent =>
-  ({ name, isDirectory: () => isDir }) as unknown as Dirent;
+const makeDir = (name: string, isDir = true): Dirent => ({ name, isDirectory: () => isDir }) as unknown as Dirent;
 
 const makeReader = (files: Record<string, string>, dirs: string[] = ["proj1"]): TranscriptReader => ({
   existsSync: (p: string) => {
@@ -18,17 +17,15 @@ const makeReader = (files: Record<string, string>, dirs: string[] = ["proj1"]): 
   },
 });
 
-const makeLine = (type: "user" | "assistant", content: string) =>
-  JSON.stringify({ type, message: { content } });
+const makeLine = (type: "user" | "assistant", content: string) => JSON.stringify({ type, message: { content } });
 
 // ── loadRawTranscript ─────────────────────────────────────────────────────────
 
 describe("loadRawTranscript", () => {
   it("should return entries from a valid JSONL file", () => {
-    const reader = makeReader(
-      { "sess1.jsonl": [makeLine("user", "hello"), makeLine("assistant", "hi")].join("\n") },
-      ["proj1"],
-    );
+    const reader = makeReader({ "sess1.jsonl": [makeLine("user", "hello"), makeLine("assistant", "hi")].join("\n") }, [
+      "proj1",
+    ]);
     const result = loadRawTranscript("sess1", reader);
     expect(result).toHaveLength(2);
     expect(result[0].role).toBe("user");
@@ -62,10 +59,9 @@ describe("loadRawTranscript", () => {
   });
 
   it("should skip non-user/assistant entries (e.g. system)", () => {
-    const lines = [
-      JSON.stringify({ type: "system", message: { content: "ignored" } }),
-      makeLine("user", "kept"),
-    ].join("\n");
+    const lines = [JSON.stringify({ type: "system", message: { content: "ignored" } }), makeLine("user", "kept")].join(
+      "\n",
+    );
     const reader = makeReader({ "sess1.jsonl": lines });
     expect(loadRawTranscript("sess1", reader)).toHaveLength(1);
   });

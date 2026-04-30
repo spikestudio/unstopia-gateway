@@ -1,36 +1,36 @@
 import type { IncomingMessage as HttpRequest, ServerResponse } from "node:http";
 import {
-  type enqueueQueueItem,
-  type insertMessage,
-  type getSession,
-  type updateSession,
   enqueueQueueItem as defaultEnqueueQueueItem,
-  insertMessage as defaultInsertMessage,
   getSession as defaultGetSession,
+  insertMessage as defaultInsertMessage,
   updateSession as defaultUpdateSession,
+  type enqueueQueueItem,
+  type getSession,
+  type insertMessage,
+  type updateSession,
 } from "../../sessions/registry.js";
 import { logger } from "../../shared/logger.js";
 import type { Engine, JinnConfig } from "../../shared/types.js";
 import { isInterruptibleEngine } from "../../shared/types.js";
 import {
-  type getClaudeExpectedResetAt,
   getClaudeExpectedResetAt as defaultGetClaudeExpectedResetAt,
+  type getClaudeExpectedResetAt,
 } from "../../shared/usageAwareness.js";
 import type { ApiContext } from "../types.js";
 import type { EnqueueMessageBody } from "./api-types.js";
 import {
-  type dispatchWebSessionRun,
-  type maybeRevertEngineOverride,
   dispatchWebSessionRun as defaultDispatchWebSessionRun,
   maybeRevertEngineOverride as defaultMaybeRevertEngineOverride,
+  type dispatchWebSessionRun,
+  type maybeRevertEngineOverride,
 } from "./session-runner.js";
 import {
-  type resolveAttachmentPaths,
   badRequest,
+  resolveAttachmentPaths as defaultResolveAttachmentPaths,
   json,
   notFound,
   readJsonBody,
-  resolveAttachmentPaths as defaultResolveAttachmentPaths,
+  type resolveAttachmentPaths,
   serverError,
   unwrapSession,
 } from "./utils.js";
@@ -48,7 +48,6 @@ export interface PostMessageDeps {
   getConfig: () => JinnConfig;
 }
 
-
 export async function handlePostMessage(
   req: HttpRequest,
   res: ServerResponse,
@@ -57,7 +56,10 @@ export async function handlePostMessage(
   sessionId: string,
 ): Promise<void> {
   let session = unwrapSession(deps.getSession(sessionId));
-  if (!session) { notFound(res); return; }
+  if (!session) {
+    notFound(res);
+    return;
+  }
 
   session = deps.maybeRevertEngineOverride(session);
 

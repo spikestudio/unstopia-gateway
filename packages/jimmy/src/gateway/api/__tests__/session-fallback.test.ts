@@ -52,12 +52,28 @@ const makeRunParams = (overrides: Partial<FallbackRunParams> = {}): FallbackRunP
 
 describe("switchToFallback", () => {
   it("should return false when fallbackEngine is null", async () => {
-    const result = await switchToFallback(makeDeps(), makeSession(), null, "codex", makeRunParams(), makeConfig(), makeContext());
+    const result = await switchToFallback(
+      makeDeps(),
+      makeSession(),
+      null,
+      "codex",
+      makeRunParams(),
+      makeConfig(),
+      makeContext(),
+    );
     expect(result).toBe(false);
   });
 
   it("should return false when fallbackEngine is undefined", async () => {
-    const result = await switchToFallback(makeDeps(), makeSession(), undefined, "codex", makeRunParams(), makeConfig(), makeContext());
+    const result = await switchToFallback(
+      makeDeps(),
+      makeSession(),
+      undefined,
+      "codex",
+      makeRunParams(),
+      makeConfig(),
+      makeContext(),
+    );
     expect(result).toBe(false);
   });
 
@@ -69,7 +85,15 @@ describe("switchToFallback", () => {
   });
 
   it("should return true on successful fallback", async () => {
-    const result = await switchToFallback(makeDeps(), makeSession(), makeEngine(), "codex", makeRunParams(), makeConfig(), makeContext());
+    const result = await switchToFallback(
+      makeDeps(),
+      makeSession(),
+      makeEngine(),
+      "codex",
+      makeRunParams(),
+      makeConfig(),
+      makeContext(),
+    );
     expect(result).toBe(true);
   });
 
@@ -88,7 +112,11 @@ describe("switchToFallback", () => {
   it("should insert notification message before running fallback", async () => {
     const deps = makeDeps();
     await switchToFallback(deps, makeSession(), makeEngine(), "codex", makeRunParams(), makeConfig(), makeContext());
-    expect(deps.insertMessage).toHaveBeenCalledWith("s1", "notification", expect.stringContaining("Claude usage limit reached"));
+    expect(deps.insertMessage).toHaveBeenCalledWith(
+      "s1",
+      "notification",
+      expect.stringContaining("Claude usage limit reached"),
+    );
   });
 
   it("should emit session:notification event", async () => {
@@ -117,7 +145,15 @@ describe("switchToFallback", () => {
 
   it("should call fallbackEngine.run with correct prompt and systemPrompt", async () => {
     const engine = makeEngine();
-    await switchToFallback(makeDeps(), makeSession(), engine, "codex", makeRunParams({ prompt: "test prompt", systemPrompt: "sys" }), makeConfig(), makeContext());
+    await switchToFallback(
+      makeDeps(),
+      makeSession(),
+      engine,
+      "codex",
+      makeRunParams({ prompt: "test prompt", systemPrompt: "sys" }),
+      makeConfig(),
+      makeContext(),
+    );
     expect(engine.run).toHaveBeenCalledWith(expect.objectContaining({ systemPrompt: "sys" }));
   });
 
