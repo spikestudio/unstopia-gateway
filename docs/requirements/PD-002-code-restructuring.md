@@ -3,8 +3,9 @@
 
 | 項目 | 内容 |
 |------|------|
-| ステータス | 承認済み |
+| ステータス | 完了 |
 | 日付 | 2026-04-25 |
+| 完了日 | 2026-04-28 |
 | 例外承認 Issue | — |
 
 ## 1. ビジョンと背景
@@ -154,11 +155,11 @@ graph LR
 
 ## 9. 成功基準
 
-- [ ] `gateway/api.ts` が 500 行以下のファイルに分割されている（期限: Phase 2 完了時点）
-- [ ] `npx madge --circular src/` でゼロ循環依存を達成する（期限: Phase 2 完了時点）
-- [ ] `sessions/manager.ts` が 500 行以下になり、EngineRunner が独立モジュールとして存在する（期限: Phase 2 完了時点）
-- [ ] branch カバレッジが 40% 以上を達成する（期限: Phase 2 完了時点）
-- [ ] `pnpm build && pnpm test` が全て PASS する（既存動作を維持する）（期限: Phase 2 完了時点）
+- [x] `gateway/api.ts` が 500 行以下のファイルに分割されている（実績: 39行）
+- [x] `npx madge --circular src/` でゼロ循環依存を達成する（実績: ゼロ件）
+- [x] `sessions/manager.ts` が 500 行以下になり、EngineRunner が独立モジュールとして存在する（実績: 273行）
+- [x] branch カバレッジが 40% 以上を達成する（実績: 44.31%）
+- [x] `pnpm build && pnpm test` が全て PASS する（既存動作を維持する）
 
 ## 10. Impact Mapping
 
