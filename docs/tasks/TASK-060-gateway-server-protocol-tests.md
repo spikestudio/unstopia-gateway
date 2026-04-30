@@ -7,7 +7,7 @@
 | Epic 仕様書 | ES-027 |
 | Story | S1 |
 | Complexity | M |
-| PR | #TBD |
+| PR | #177 |
 
 ## 責務
 
@@ -35,19 +35,19 @@
 
 **機能面（AC-ID 参照）:**
 
-- [ ] **AC-E027-01**: `initialize` リクエストを送信すると、`protocolVersion: "2024-11-05"`・`capabilities.tools: {}`・`serverInfo.name: "jinn-gateway"` を含む JSON-RPC レスポンスが返る
-- [ ] **AC-E027-02**: `tools/list` リクエストを送信すると、12 個のツール定義（name・description・inputSchema を含む）が `result.tools` 配列に返る
-- [ ] **AC-E027-03**: `tools/call` リクエストで有効なツール名と引数を送信すると、`result.content[0].type === "text"` のレスポンスが返る
-- [ ] **AC-E027-04**: `notifications/initialized` を送信すると、`sendResponse` が呼ばれない（stdout への書き込みが発生しない）
-- [ ] **AC-E027-05**: 未知のメソッドを送信すると、`error.code: -32601`（Method not found）を含む JSON-RPC エラーレスポンスが返る
+- [x] **AC-E027-01**: `initialize` リクエストを送信すると、`protocolVersion: "2024-11-05"`・`capabilities.tools: {}`・`serverInfo.name: "jinn-gateway"` を含む JSON-RPC レスポンスが返る
+- [x] **AC-E027-02**: `tools/list` リクエストを送信すると、12 個のツール定義（name・description・inputSchema を含む）が `result.tools` 配列に返る
+- [x] **AC-E027-03**: `tools/call` リクエストで有効なツール名と引数を送信すると、`result.content[0].type === "text"` のレスポンスが返る
+- [x] **AC-E027-04**: `notifications/initialized` を送信すると、`sendResponse` が呼ばれない（stdout への書き込みが発生しない）
+- [x] **AC-E027-05**: 未知のメソッドを送信すると、`error.code: -32601`（Method not found）を含む JSON-RPC エラーレスポンスが返る
 - [ ] Epic 仕様書の AC チェックボックス更新（AC-E027-01〜05）
 
 ### 品質面
 
-- [ ] ユニットテストが追加・通過している（vitest）
-- [ ] コードレビューが承認されている
-- [ ] CI パイプラインがグリーン
-- [ ] リンター/静的解析がクリーン（biome-ignore 禁止）
+- [x] ユニットテストが追加・通過している（vitest）
+- [x] コードレビューが承認されている
+- [x] CI パイプラインがグリーン
+- [x] リンター/静的解析がクリーン（biome-ignore 禁止）
 
 ## テスト方針
 

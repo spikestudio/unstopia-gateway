@@ -7,7 +7,7 @@
 | Epic 仕様書 | ES-027 |
 | Story | S3, S4 |
 | Complexity | L |
-| PR | #TBD |
+| PR | #177 |
 
 ## 責務
 
@@ -35,27 +35,27 @@
 
 **機能面（AC-ID 参照）:**
 
-- [ ] **AC-E027-18**: `globalMcp` が `undefined` のとき `resolveMcpServers` は `{ mcpServers: {} }` を返す
-- [ ] **AC-E027-19**: `employee.mcp === false` のとき `resolveMcpServers` は全サーバーを除外した `{ mcpServers: {} }` を返す
-- [ ] **AC-E027-20**: `employee.mcp` が文字列配列のとき `resolveMcpServers` は指定サーバーのみを返す
-- [ ] **AC-E027-21**: `employee.mcp` が指定されていないとき（デフォルト）`resolveMcpServers` は有効な全サーバーを返す
-- [ ] **AC-E027-22**: `config.browser.enabled !== false`（デフォルト）かつ `provider: "playwright"` のとき `browser` サーバーが `@anthropic-ai/mcp-server-playwright` として登録される
-- [ ] **AC-E027-23**: `config.browser.provider === "puppeteer"` のとき `browser` サーバーが `@anthropic-ai/mcp-server-puppeteer` として登録される
-- [ ] **AC-E027-24**: `config.browser.enabled === false` のとき `browser` サーバーが登録されない
-- [ ] **AC-E027-25**: `config.search.enabled === true` かつ `apiKey` が解決できるとき `search` サーバーが `BRAVE_API_KEY` 付きで登録される
-- [ ] **AC-E027-26**: `config.search.enabled === true` かつ `apiKey` が未設定（解決不可）のとき `search` サーバーが登録されず警告ログが出力される
-- [ ] **AC-E027-27**: `config.fetch.enabled === true` のとき `fetch` サーバーが `@anthropic-ai/mcp-server-fetch` として登録される
-- [ ] **AC-E027-28**: `config.gateway.enabled !== false`（デフォルト）のとき `gateway` サーバーが `node` コマンドで登録される
-- [ ] **AC-E027-29**: `config.custom` にエントリが存在し `enabled !== false` かつ URL ベースのとき `type: "sse"` が付与されて登録される
-- [ ] **AC-E027-30**: `config.custom` のエントリが `enabled === false` のとき登録されない
+- [x] **AC-E027-18**: `globalMcp` が `undefined` のとき `resolveMcpServers` は `{ mcpServers: {} }` を返す
+- [x] **AC-E027-19**: `employee.mcp === false` のとき `resolveMcpServers` は全サーバーを除外した `{ mcpServers: {} }` を返す
+- [x] **AC-E027-20**: `employee.mcp` が文字列配列のとき `resolveMcpServers` は指定サーバーのみを返す
+- [x] **AC-E027-21**: `employee.mcp` が指定されていないとき（デフォルト）`resolveMcpServers` は有効な全サーバーを返す
+- [x] **AC-E027-22**: `config.browser.enabled !== false`（デフォルト）かつ `provider: "playwright"` のとき `browser` サーバーが `@anthropic-ai/mcp-server-playwright` として登録される
+- [x] **AC-E027-23**: `config.browser.provider === "puppeteer"` のとき `browser` サーバーが `@anthropic-ai/mcp-server-puppeteer` として登録される
+- [x] **AC-E027-24**: `config.browser.enabled === false` のとき `browser` サーバーが登録されない
+- [x] **AC-E027-25**: `config.search.enabled === true` かつ `apiKey` が解決できるとき `search` サーバーが `BRAVE_API_KEY` 付きで登録される
+- [x] **AC-E027-26**: `config.search.enabled === true` かつ `apiKey` が未設定（解決不可）のとき `search` サーバーが登録されず警告ログが出力される
+- [x] **AC-E027-27**: `config.fetch.enabled === true` のとき `fetch` サーバーが `@anthropic-ai/mcp-server-fetch` として登録される
+- [x] **AC-E027-28**: `config.gateway.enabled !== false`（デフォルト）のとき `gateway` サーバーが `node` コマンドで登録される
+- [x] **AC-E027-29**: `config.custom` にエントリが存在し `enabled !== false` かつ URL ベースのとき `type: "sse"` が付与されて登録される
+- [x] **AC-E027-30**: `config.custom` のエントリが `enabled === false` のとき登録されない
 - [ ] Epic 仕様書の AC チェックボックス更新（AC-E027-18〜30）
 
 ### 品質面
 
-- [ ] ユニットテストが追加・通過している（vitest）
-- [ ] コードレビューが承認されている
-- [ ] CI パイプラインがグリーン
-- [ ] リンター/静的解析がクリーン（biome-ignore 禁止）
+- [x] ユニットテストが追加・通過している（vitest）
+- [x] コードレビューが承認されている
+- [x] CI パイプラインがグリーン
+- [x] リンター/静的解析がクリーン（biome-ignore 禁止）
 
 ## テスト方針
 

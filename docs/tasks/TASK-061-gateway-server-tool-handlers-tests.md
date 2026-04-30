@@ -7,7 +7,7 @@
 | Epic 仕様書 | ES-027 |
 | Story | S2 |
 | Complexity | L |
-| PR | #TBD |
+| PR | #177 |
 
 ## 責務
 
@@ -35,26 +35,26 @@
 
 **機能面（AC-ID 参照）:**
 
-- [ ] **AC-E027-06**: `send_message` ツールを呼び出すと、`/api/connectors/{connector}/send` に `channel`・`text` が POST される
-- [ ] **AC-E027-07**: `list_sessions` ツールを `status` フィルター付きで呼び出すと、`/api/sessions` のレスポンスから該当ステータスのセッションのみが返る
-- [ ] **AC-E027-08**: `get_session` ツールを呼び出すと、`/api/sessions/{sessionId}` の結果が返る
-- [ ] **AC-E027-09**: `create_child_session` ツールを呼び出すと、`/api/sessions` に `employee`・`prompt` が POST される
-- [ ] **AC-E027-10**: `send_to_session` ツールを呼び出すと、`/api/sessions/{sessionId}/message` に `message` が POST される
-- [ ] **AC-E027-11**: `list_employees` ツールを呼び出すと、`/api/org` の結果が返る
-- [ ] **AC-E027-12**: `get_employee` ツールを呼び出すと、`/api/org/employees/{name}` の結果が返る
-- [ ] **AC-E027-13**: `update_board` ツールを呼び出すと、`/api/org/departments/{department}/board` に `board` が PUT される
-- [ ] **AC-E027-14**: `get_board` ツールを呼び出すと、`/api/org/departments/{department}/board` の結果が返る
-- [ ] **AC-E027-15**: `list_cron_jobs` ツールを呼び出すと、`/api/cron` の結果が返る
-- [ ] **AC-E027-16**: `trigger_cron_job` ツールを `jobId` で呼び出すと、`/api/cron` から一致するジョブを検索し `triggered: true` が返る
-- [ ] **AC-E027-17**: `update_cron_job` ツールを呼び出すと、`/api/cron/{jobId}` に指定フィールドが PUT される
+- [x] **AC-E027-06**: `send_message` ツールを呼び出すと、`/api/connectors/{connector}/send` に `channel`・`text` が POST される
+- [x] **AC-E027-07**: `list_sessions` ツールを `status` フィルター付きで呼び出すと、`/api/sessions` のレスポンスから該当ステータスのセッションのみが返る
+- [x] **AC-E027-08**: `get_session` ツールを呼び出すと、`/api/sessions/{sessionId}` の結果が返る
+- [x] **AC-E027-09**: `create_child_session` ツールを呼び出すと、`/api/sessions` に `employee`・`prompt` が POST される
+- [x] **AC-E027-10**: `send_to_session` ツールを呼び出すと、`/api/sessions/{sessionId}/message` に `message` が POST される
+- [x] **AC-E027-11**: `list_employees` ツールを呼び出すと、`/api/org` の結果が返る
+- [x] **AC-E027-12**: `get_employee` ツールを呼び出すと、`/api/org/employees/{name}` の結果が返る
+- [x] **AC-E027-13**: `update_board` ツールを呼び出すと、`/api/org/departments/{department}/board` に `board` が PUT される
+- [x] **AC-E027-14**: `get_board` ツールを呼び出すと、`/api/org/departments/{department}/board` の結果が返る
+- [x] **AC-E027-15**: `list_cron_jobs` ツールを呼び出すと、`/api/cron` の結果が返る
+- [x] **AC-E027-16**: `trigger_cron_job` ツールを `jobId` で呼び出すと、`/api/cron` から一致するジョブを検索し `triggered: true` が返る
+- [x] **AC-E027-17**: `update_cron_job` ツールを呼び出すと、`/api/cron/{jobId}` に指定フィールドが PUT される
 - [ ] Epic 仕様書の AC チェックボックス更新（AC-E027-06〜17）
 
 ### 品質面
 
-- [ ] ユニットテストが追加・通過している（vitest）
-- [ ] コードレビューが承認されている
-- [ ] CI パイプラインがグリーン
-- [ ] リンター/静的解析がクリーン（biome-ignore 禁止）
+- [x] ユニットテストが追加・通過している（vitest）
+- [x] コードレビューが承認されている
+- [x] CI パイプラインがグリーン
+- [x] リンター/静的解析がクリーン（biome-ignore 禁止）
 
 ## テスト方針
 

@@ -7,7 +7,7 @@
 | Epic 仕様書 | ES-027 |
 | Story | S7 |
 | Complexity | S |
-| PR | #TBD |
+| PR | #177 |
 
 ## 責務
 
@@ -34,19 +34,19 @@
 
 **機能面（AC-ID 参照）:**
 
-- [ ] **AC-E027-38**: `resolveEnvVar` に `${VAR_NAME}` 形式の文字列を渡すと、環境変数 `VAR_NAME` の値が返る
-- [ ] **AC-E027-39**: `resolveEnvVar` に `$VAR_NAME` 形式の文字列を渡すと、環境変数 `VAR_NAME` の値が返る
-- [ ] **AC-E027-40**: `resolveEnvVar` に `${VAR_NAME}` 形式で環境変数が未設定のとき `undefined` が返る
-- [ ] **AC-E027-41**: `resolveEnvVar` にプレーンな文字列（`$` なし）を渡すと、その文字列がそのまま返る
-- [ ] **AC-E027-42**: `resolveEnvVar` に `undefined` を渡すと `undefined` が返る
+- [x] **AC-E027-38**: `resolveEnvVar` に `${VAR_NAME}` 形式の文字列を渡すと、環境変数 `VAR_NAME` の値が返る
+- [x] **AC-E027-39**: `resolveEnvVar` に `$VAR_NAME` 形式の文字列を渡すと、環境変数 `VAR_NAME` の値が返る
+- [x] **AC-E027-40**: `resolveEnvVar` に `${VAR_NAME}` 形式で環境変数が未設定のとき `undefined` が返る
+- [x] **AC-E027-41**: `resolveEnvVar` にプレーンな文字列（`$` なし）を渡すと、その文字列がそのまま返る
+- [x] **AC-E027-42**: `resolveEnvVar` に `undefined` を渡すと `undefined` が返る
 - [ ] Epic 仕様書の AC チェックボックス更新（AC-E027-38〜42）
 
 ### 品質面
 
-- [ ] ユニットテストが追加・通過している（vitest）
-- [ ] コードレビューが承認されている
-- [ ] CI パイプラインがグリーン
-- [ ] リンター/静的解析がクリーン（biome-ignore 禁止）
+- [x] ユニットテストが追加・通過している（vitest）
+- [x] コードレビューが承認されている
+- [x] CI パイプラインがグリーン
+- [x] リンター/静的解析がクリーン（biome-ignore 禁止）
 
 ## テスト方針
 

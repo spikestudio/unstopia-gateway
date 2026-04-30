@@ -7,7 +7,7 @@
 | Epic 仕様書 | ES-027 |
 | Story | S6 |
 | Complexity | M |
-| PR | #TBD |
+| PR | #177 |
 
 ## 責務
 
@@ -35,18 +35,18 @@
 
 **機能面（AC-ID 参照）:**
 
-- [ ] **AC-E027-34**: 存在しないツール名で `tools/call` を呼び出すと、`result.isError: true` かつエラーメッセージを含む `content[0].text` が返る
-- [ ] **AC-E027-35**: ツールハンドラーが例外をスローしたとき、`result.isError: true` かつ例外メッセージが `content[0].text` に含まれる
-- [ ] **AC-E027-36**: gateway API が非 2xx レスポンスを返したとき、ツール呼び出しが `result.isError: true` のレスポンスを返す
-- [ ] **AC-E027-37**: `trigger_cron_job` で存在しない jobId を指定すると `error: "Job not found"` を含む JSON が返る
+- [x] **AC-E027-34**: 存在しないツール名で `tools/call` を呼び出すと、`result.isError: true` かつエラーメッセージを含む `content[0].text` が返る
+- [x] **AC-E027-35**: ツールハンドラーが例外をスローしたとき、`result.isError: true` かつ例外メッセージが `content[0].text` に含まれる
+- [x] **AC-E027-36**: gateway API が非 2xx レスポンスを返したとき、ツール呼び出しが `result.isError: true` のレスポンスを返す
+- [x] **AC-E027-37**: `trigger_cron_job` で存在しない jobId を指定すると `error: "Job not found"` を含む JSON が返る
 - [ ] Epic 仕様書の AC チェックボックス更新（AC-E027-34〜37）
 
 ### 品質面
 
-- [ ] ユニットテストが追加・通過している（vitest）
-- [ ] コードレビューが承認されている
-- [ ] CI パイプラインがグリーン
-- [ ] リンター/静的解析がクリーン（biome-ignore 禁止）
+- [x] ユニットテストが追加・通過している（vitest）
+- [x] コードレビューが承認されている
+- [x] CI パイプラインがグリーン
+- [x] リンター/静的解析がクリーン（biome-ignore 禁止）
 
 ## テスト方針
 

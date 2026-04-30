@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { handleRequest, handleTool, sendResponse, TOOLS } from "../gateway-server.js";
+import { handleRequest, handleTool, TOOLS } from "../gateway-server.js";
 
 describe("gateway-server: MCP プロトコルハンドリング", () => {
   let writeSpy: ReturnType<typeof vi.spyOn>;
@@ -63,10 +63,8 @@ describe("gateway-server: MCP プロトコルハンドリング", () => {
 
   // AC-E027-04: notifications/initialized — no response
   it("should not call sendResponse for notifications/initialized", async () => {
-    const sendSpy = vi.spyOn({ sendResponse }, "sendResponse");
     await handleRequest({ jsonrpc: "2.0", id: 4, method: "notifications/initialized" });
     expect(writeSpy).not.toHaveBeenCalled();
-    sendSpy.mockRestore();
   });
 
   // AC-E027-05: unknown method → -32601

@@ -7,7 +7,7 @@
 | Epic 仕様書 | ES-027 |
 | Story | S5 |
 | Complexity | S |
-| PR | #TBD |
+| PR | #177 |
 
 ## 責務
 
@@ -34,17 +34,17 @@
 
 **機能面（AC-ID 参照）:**
 
-- [ ] **AC-E027-31**: `writeMcpConfigFile` を呼び出すと `JINN_HOME/tmp/mcp/{sessionId}.json` が生成され、内容は渡した `ResolvedMcpConfig` と一致する
-- [ ] **AC-E027-32**: `cleanupMcpConfigFile` を呼び出すと `JINN_HOME/tmp/mcp/{sessionId}.json` が削除される
-- [ ] **AC-E027-33**: `cleanupMcpConfigFile` を存在しないセッションIDで呼び出してもエラーが発生しない（サイレント無視）
+- [x] **AC-E027-31**: `writeMcpConfigFile` を呼び出すと `JINN_HOME/tmp/mcp/{sessionId}.json` が生成され、内容は渡した `ResolvedMcpConfig` と一致する
+- [x] **AC-E027-32**: `cleanupMcpConfigFile` を呼び出すと `JINN_HOME/tmp/mcp/{sessionId}.json` が削除される
+- [x] **AC-E027-33**: `cleanupMcpConfigFile` を存在しないセッションIDで呼び出してもエラーが発生しない（サイレント無視）
 - [ ] Epic 仕様書の AC チェックボックス更新（AC-E027-31〜33）
 
 ### 品質面
 
-- [ ] ユニットテストが追加・通過している（vitest）
-- [ ] コードレビューが承認されている
-- [ ] CI パイプラインがグリーン
-- [ ] リンター/静的解析がクリーン（biome-ignore 禁止）
+- [x] ユニットテストが追加・通過している（vitest）
+- [x] コードレビューが承認されている
+- [x] CI パイプラインがグリーン
+- [x] リンター/静的解析がクリーン（biome-ignore 禁止）
 
 ## テスト方針
 
