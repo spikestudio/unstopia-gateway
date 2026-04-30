@@ -278,6 +278,8 @@ describe("buildAvailableServers (via resolveMcpServers)", () => {
     } as never;
     const result = resolveMcpServers(config);
     // Falls back to original value when unresolvable
-    expect((result.mcpServers.myserver as { env?: Record<string, string> }).env?.TOKEN).toBe("${UNSET_CUSTOM_TOKEN_XYZ}");
+    expect((result.mcpServers.myserver as { env?: Record<string, string> }).env?.TOKEN).toBe(
+      "${UNSET_CUSTOM_TOKEN_XYZ}",
+    );
   });
 });

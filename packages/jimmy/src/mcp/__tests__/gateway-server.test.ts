@@ -111,8 +111,26 @@ describe("gateway-server: ツールハンドラー（全12ツール）", () => {
     mockFetch.mockResolvedValue({
       ok: true,
       json: async () => [
-        { id: "s1", employee: "alice", status: "running", engine: "claude", source: "slack", title: null, lastActivity: null, lastError: null },
-        { id: "s2", employee: "bob", status: "idle", engine: "claude", source: "slack", title: null, lastActivity: null, lastError: null },
+        {
+          id: "s1",
+          employee: "alice",
+          status: "running",
+          engine: "claude",
+          source: "slack",
+          title: null,
+          lastActivity: null,
+          lastError: null,
+        },
+        {
+          id: "s2",
+          employee: "bob",
+          status: "idle",
+          engine: "claude",
+          source: "slack",
+          title: null,
+          lastActivity: null,
+          lastError: null,
+        },
       ],
     });
     const result = await handleTool("list_sessions", { status: "running" });
