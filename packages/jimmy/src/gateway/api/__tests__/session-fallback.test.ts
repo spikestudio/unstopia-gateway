@@ -51,77 +51,77 @@ const makeRunParams = (overrides: Partial<FallbackRunParams> = {}): FallbackRunP
 // ── switchToFallback ──────────────────────────────────────────────────────────
 
 describe("switchToFallback", () => {
-  it("returns false when fallbackEngine is null", async () => {
+  it("should return false when fallbackEngine is null", async () => {
     const result = await switchToFallback(makeDeps(), makeSession(), null, "codex", makeRunParams(), makeConfig(), makeContext());
     expect(result).toBe(false);
   });
 
-  it("returns false when fallbackEngine is undefined", async () => {
+  it("should return false when fallbackEngine is undefined", async () => {
     const result = await switchToFallback(makeDeps(), makeSession(), undefined, "codex", makeRunParams(), makeConfig(), makeContext());
     expect(result).toBe(false);
   });
 
-  it("does not call engine.run when fallbackEngine is null", async () => {
+  it("should not call engine.run when fallbackEngine is null", async () => {
     const deps = makeDeps();
     await switchToFallback(deps, makeSession(), null, "codex", makeRunParams(), makeConfig(), makeContext());
     expect(deps.insertMessage).not.toHaveBeenCalled();
     expect(deps.updateSession).not.toHaveBeenCalled();
   });
 
-  it("returns true on successful fallback", async () => {
+  it("should return true on successful fallback", async () => {
     const result = await switchToFallback(makeDeps(), makeSession(), makeEngine(), "codex", makeRunParams(), makeConfig(), makeContext());
     expect(result).toBe(true);
   });
 
-  it("updates session engine to fallbackName", async () => {
+  it("should update session engine to fallbackName", async () => {
     const deps = makeDeps();
     await switchToFallback(deps, makeSession(), makeEngine(), "codex", makeRunParams(), makeConfig(), makeContext());
     expect(deps.updateSession).toHaveBeenCalledWith("s1", expect.objectContaining({ engine: "codex" }));
   });
 
-  it("calls notifyDiscordChannel with rate limit message", async () => {
+  it("should call notifyDiscordChannel with rate limit message", async () => {
     const deps = makeDeps();
     await switchToFallback(deps, makeSession(), makeEngine(), "codex", makeRunParams(), makeConfig(), makeContext());
     expect(deps.notifyDiscordChannel).toHaveBeenCalledWith(expect.stringContaining("Claude usage limit reached"));
   });
 
-  it("inserts notification message before running fallback", async () => {
+  it("should insert notification message before running fallback", async () => {
     const deps = makeDeps();
     await switchToFallback(deps, makeSession(), makeEngine(), "codex", makeRunParams(), makeConfig(), makeContext());
     expect(deps.insertMessage).toHaveBeenCalledWith("s1", "notification", expect.stringContaining("Claude usage limit reached"));
   });
 
-  it("emits session:notification event", async () => {
+  it("should emit session:notification event", async () => {
     const context = makeContext();
     await switchToFallback(makeDeps(), makeSession(), makeEngine(), "codex", makeRunParams(), makeConfig(), context);
     expect(context.emit).toHaveBeenCalledWith("session:notification", expect.objectContaining({ sessionId: "s1" }));
   });
 
-  it("emits session:completed event after fallback runs", async () => {
+  it("should emit session:completed event after fallback runs", async () => {
     const context = makeContext();
     await switchToFallback(makeDeps(), makeSession(), makeEngine(), "codex", makeRunParams(), makeConfig(), context);
     expect(context.emit).toHaveBeenCalledWith("session:completed", expect.objectContaining({ sessionId: "s1" }));
   });
 
-  it("inserts assistant message when fallback returns result", async () => {
+  it("should insert assistant message when fallback returns result", async () => {
     const deps = makeDeps();
     await switchToFallback(deps, makeSession(), makeEngine(), "codex", makeRunParams(), makeConfig(), makeContext());
     expect(deps.insertMessage).toHaveBeenCalledWith("s1", "assistant", "fallback response");
   });
 
-  it("calls notifyParentSession after fallback completes", async () => {
+  it("should call notifyParentSession after fallback completes", async () => {
     const deps = makeDeps();
     await switchToFallback(deps, makeSession(), makeEngine(), "codex", makeRunParams(), makeConfig(), makeContext());
     expect(deps.notifyParentSession).toHaveBeenCalled();
   });
 
-  it("calls fallbackEngine.run with correct prompt and systemPrompt", async () => {
+  it("should call fallbackEngine.run with correct prompt and systemPrompt", async () => {
     const engine = makeEngine();
     await switchToFallback(makeDeps(), makeSession(), engine, "codex", makeRunParams({ prompt: "test prompt", systemPrompt: "sys" }), makeConfig(), makeContext());
     expect(engine.run).toHaveBeenCalledWith(expect.objectContaining({ systemPrompt: "sys" }));
   });
 
-  it("uses conversation history in fallback prompt when no codex session", async () => {
+  it("should use conversation history in fallback prompt when no codex session", async () => {
     const deps = makeDeps({
       getMessages: vi.fn().mockReturnValue([
         { role: "user", content: "hi", timestamp: Date.now() },
@@ -135,7 +135,7 @@ describe("switchToFallback", () => {
     expect(call.prompt).toContain("Continue this conversation");
   });
 
-  it("sets session status to error when fallback engine returns error", async () => {
+  it("should set session status to error when fallback engine returns error", async () => {
     const engine = { run: vi.fn().mockResolvedValue({ error: "codex failed", sessionId: "c1" }) } as unknown as Engine;
     const deps = makeDeps();
     await switchToFallback(deps, makeSession(), engine, "codex", makeRunParams(), makeConfig(), makeContext());

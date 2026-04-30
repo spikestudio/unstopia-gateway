@@ -49,35 +49,35 @@ const makeConfig = (): JinnConfig =>
 // ── handleRateLimit ───────────────────────────────────────────────────────────
 
 describe("handleRateLimit", () => {
-  it("updates session to waiting status", async () => {
+  it("should update session to waiting status", async () => {
     const deps = makeDeps();
     const context = makeContext();
     await handleRateLimit(deps, makeSession(), { limited: true }, undefined, context);
     expect(deps.updateSession).toHaveBeenCalledWith("s1", expect.objectContaining({ status: "waiting" }));
   });
 
-  it("calls notifyRateLimited with the waiting session", async () => {
+  it("should call notifyRateLimited with the waiting session", async () => {
     const deps = makeDeps();
     const context = makeContext();
     await handleRateLimit(deps, makeSession(), { limited: true }, undefined, context);
     expect(deps.notifyRateLimited).toHaveBeenCalled();
   });
 
-  it("inserts notification message", async () => {
+  it("should insert notification message", async () => {
     const deps = makeDeps();
     const context = makeContext();
     await handleRateLimit(deps, makeSession(), { limited: true }, undefined, context);
     expect(deps.insertMessage).toHaveBeenCalledWith("s1", "notification", expect.stringContaining("Claude usage limit"));
   });
 
-  it("emits session:notification event", async () => {
+  it("should emit session:notification event", async () => {
     const deps = makeDeps();
     const context = makeContext();
     await handleRateLimit(deps, makeSession(), { limited: true }, undefined, context);
     expect(context.emit).toHaveBeenCalledWith("session:notification", expect.objectContaining({ sessionId: "s1" }));
   });
 
-  it("emits session:rate-limited event", async () => {
+  it("should emit session:rate-limited event", async () => {
     const deps = makeDeps();
     const context = makeContext();
     await handleRateLimit(deps, makeSession({ employee: "alice" }), { limited: true }, "some error", context);
@@ -87,13 +87,13 @@ describe("handleRateLimit", () => {
     );
   });
 
-  it("notifies Discord channel", async () => {
+  it("should notify Discord channel", async () => {
     const deps = makeDeps();
     await handleRateLimit(deps, makeSession(), { limited: true }, undefined, makeContext());
     expect(deps.notifyDiscordChannel).toHaveBeenCalledWith(expect.stringContaining("Claude usage limit reached"));
   });
 
-  it("returns computed delayMs and deadlineMs", async () => {
+  it("should return computed delayMs and deadlineMs", async () => {
     const deps = makeDeps({
       computeNextRetryDelayMs: vi.fn().mockReturnValue({ delayMs: 30_000, resumeAt: undefined }),
       computeRateLimitDeadlineMs: vi.fn().mockReturnValue(999_999),
@@ -102,7 +102,7 @@ describe("handleRateLimit", () => {
     expect(result).toEqual({ delayMs: 30_000, deadlineMs: 999_999 });
   });
 
-  it("formats resumeAt in lastError when resetsAt is provided", async () => {
+  it("should format resumeAt in lastError when resetsAt is provided", async () => {
     const resetsAt = Math.floor((Date.now() + 60 * 60_000) / 1000);
     const resumeAt = new Date(resetsAt * 1000);
     const deps = makeDeps({
@@ -115,7 +115,7 @@ describe("handleRateLimit", () => {
     );
   });
 
-  it("falls back to session spread when updateSession returns err", async () => {
+  it("should fall back to session spread when updateSession returns err", async () => {
     const deps = makeDeps({
       updateSession: vi.fn().mockReturnValue({ ok: false, error: { type: "not_found" } }),
     });
@@ -138,7 +138,7 @@ describe("retryUntilDeadline", () => {
   const makeEngine = (result: object = { result: "done", sessionId: "e1" }): Engine =>
     ({ run: vi.fn().mockResolvedValue(result) }) as unknown as Engine;
 
-  it("calls notifyRateLimitResumed on successful retry", async () => {
+  it("should call notifyRateLimitResumed on successful retry", async () => {
     const deps = makeDeps();
     const engine = makeEngine({ result: "done", sessionId: "e1" });
     const session = makeSession({ status: "waiting", engineSessionId: "e1" });
@@ -151,7 +151,7 @@ describe("retryUntilDeadline", () => {
     expect(deps.notifyRateLimitResumed).toHaveBeenCalled();
   });
 
-  it("emits session:completed on successful retry", async () => {
+  it("should emit session:completed on successful retry", async () => {
     const deps = makeDeps();
     const context = makeContext();
     const engine = makeEngine({ result: "done", sessionId: "e1" });
@@ -165,7 +165,7 @@ describe("retryUntilDeadline", () => {
     expect(context.emit).toHaveBeenCalledWith("session:completed", expect.objectContaining({ sessionId: "s1" }));
   });
 
-  it("sets status to error when deadline is already exceeded", async () => {
+  it("should set status to error when deadline is already exceeded", async () => {
     const deps = makeDeps();
     const engine = makeEngine();
     const session = makeSession({ status: "waiting" });
@@ -177,7 +177,7 @@ describe("retryUntilDeadline", () => {
     expect(engine.run).not.toHaveBeenCalled();
   });
 
-  it("notifies Discord when deadline is already exceeded", async () => {
+  it("should notify Discord when deadline is already exceeded", async () => {
     const deps = makeDeps();
     const session = makeSession({ status: "waiting" });
     const deadlineMs = Date.now() - 1;
@@ -187,7 +187,7 @@ describe("retryUntilDeadline", () => {
     expect(deps.notifyDiscordChannel).toHaveBeenCalledWith(expect.stringContaining("did not clear in time"));
   });
 
-  it("continues loop when still rate limited on retry", async () => {
+  it("should continue loop when still rate limited on retry", async () => {
     let callCount = 0;
     const engine = {
       run: vi.fn().mockImplementation(async () => {
@@ -216,7 +216,7 @@ describe("retryUntilDeadline", () => {
     expect(deps.notifyRateLimitResumed).toHaveBeenCalled();
   });
 
-  it("stops early when session is no longer found", async () => {
+  it("should stop early when session is no longer found", async () => {
     const deps = makeDeps({
       getSession: vi.fn().mockReturnValue({ ok: true, value: null }),
     });
@@ -231,7 +231,7 @@ describe("retryUntilDeadline", () => {
     expect(engine.run).not.toHaveBeenCalled();
   });
 
-  it("stops early when session status is error", async () => {
+  it("should stop early when session status is error", async () => {
     const deps = makeDeps({
       getSession: vi.fn().mockReturnValue({ ok: true, value: makeSession({ status: "error" }) }),
     });
@@ -246,7 +246,7 @@ describe("retryUntilDeadline", () => {
     expect(engine.run).not.toHaveBeenCalled();
   });
 
-  it("calls notifyRateLimitResumed even when engine returns non-rate-limit error", async () => {
+  it("should call notifyRateLimitResumed even when engine returns non-rate-limit error", async () => {
     // rate limit はクリアされたが engine 自体がエラーを返した場合も resumed 通知は送る（元コードの挙動に準拠）
     const deps = makeDeps();
     const engine = makeEngine({ error: "some unrelated error", sessionId: "e1" });
@@ -260,7 +260,7 @@ describe("retryUntilDeadline", () => {
     expect(deps.notifyRateLimitResumed).toHaveBeenCalled();
   });
 
-  it("calls notifyParentSession on timeout if session is found", async () => {
+  it("should call notifyParentSession on timeout if session is found", async () => {
     const deps = makeDeps({
       updateSession: vi.fn().mockReturnValue({ ok: true, value: makeSession({ status: "error" }) }),
     });

@@ -74,35 +74,35 @@ describe("handlePostMessage", () => {
   beforeEach(() => { vi.useFakeTimers(); });
   afterEach(() => { vi.useRealTimers(); });
 
-  it("returns 404 when session not found", async () => {
+  it("should return 404 when session not found", async () => {
     const deps = makeDeps(null);
     const res = makeRes();
     await handlePostMessage(makeReq({ message: "hi" }), res, makeContext(), deps, "s1");
     expect(res.writeHead).toHaveBeenCalledWith(404, expect.anything());
   });
 
-  it("returns 400 when message is missing (AC-E026-12)", async () => {
+  it("should return 400 when message is missing (AC-E026-12)", async () => {
     const deps = makeDeps();
     const res = makeRes();
     await handlePostMessage(makeReq({}), res, makeContext(), deps, "s1");
     expect(res.writeHead).toHaveBeenCalledWith(400, expect.anything());
   });
 
-  it("returns 400 when message is empty string", async () => {
+  it("should return 400 when message is empty string", async () => {
     const deps = makeDeps();
     const res = makeRes();
     await handlePostMessage(makeReq({ message: "" }), res, makeContext(), deps, "s1");
     expect(res.writeHead).toHaveBeenCalledWith(400, expect.anything());
   });
 
-  it("returns 500 when engine is not available", async () => {
+  it("should return 500 when engine is not available", async () => {
     const deps = makeDeps(makeSession(), null);
     const res = makeRes();
     await handlePostMessage(makeReq({ message: "hi" }), res, makeContext(), deps, "s1");
     expect(res.writeHead).toHaveBeenCalledWith(500, expect.anything());
   });
 
-  it("inserts message and returns queued status", async () => {
+  it("should insert message and returns queued status", async () => {
     const deps = makeDeps();
     const res = makeRes();
     await handlePostMessage(makeReq({ message: "hello" }), res, makeContext(), deps, "s1");
@@ -110,14 +110,14 @@ describe("handlePostMessage", () => {
     expect(res.writeHead).toHaveBeenCalledWith(200, expect.anything());
   });
 
-  it("calls dispatchWebSessionRun after enqueueing", async () => {
+  it("should call dispatchWebSessionRun after enqueueing", async () => {
     const deps = makeDeps();
     await handlePostMessage(makeReq({ message: "hello" }), makeRes(), makeContext(), deps, "s1");
     expect(deps.dispatchWebSessionRun).toHaveBeenCalled();
     expect(deps.enqueueQueueItem).toHaveBeenCalledWith("s1", "sk1", "hello");
   });
 
-  it("kills engine when status is running and engine is interruptible (AC-E026-13)", async () => {
+  it("should kill engine when status is running and engine is interruptible (AC-E026-13)", async () => {
     const engine = makeEngine({ isAlive: vi.fn().mockReturnValue(true) });
     const session = makeSession({ status: "running" });
     const deps = makeDeps(session, engine);
@@ -127,7 +127,7 @@ describe("handlePostMessage", () => {
     expect(engine.kill).toHaveBeenCalledWith("s1", "Interrupted: new message received");
   });
 
-  it("emits session:interrupted after engine kill", async () => {
+  it("should emit session:interrupted after engine kill", async () => {
     const engine = makeEngine({ isAlive: vi.fn().mockReturnValue(true) });
     const session = makeSession({ status: "running" });
     const deps = makeDeps(session, engine);
@@ -138,7 +138,7 @@ describe("handlePostMessage", () => {
     expect(context.emit).toHaveBeenCalledWith("session:interrupted", expect.objectContaining({ sessionId: "s1" }));
   });
 
-  it("emits session:queued when running but not interruptible", async () => {
+  it("should emit session:queued when running but not interruptible", async () => {
     const engine = makeEngine(); // isAlive = false → not interruptible in this context
     const session = makeSession({ status: "running" });
     const deps = makeDeps(session, engine);
@@ -148,7 +148,7 @@ describe("handlePostMessage", () => {
     expect(engine.kill).not.toHaveBeenCalled();
   });
 
-  it("inserts queuedText notification when status is waiting (AC-E026-14)", async () => {
+  it("should insert queuedText notification when status is waiting (AC-E026-14)", async () => {
     const session = makeSession({ status: "waiting" });
     const deps = makeDeps(session);
     const context = makeContext();
@@ -157,7 +157,7 @@ describe("handlePostMessage", () => {
     expect(context.emit).toHaveBeenCalledWith("session:notification", expect.objectContaining({ sessionId: "s1" }));
   });
 
-  it("resets status to running when interrupted (AC-E026-15)", async () => {
+  it("should reset status to running when interrupted (AC-E026-15)", async () => {
     const session = makeSession({ status: "interrupted" });
     const deps = makeDeps(session);
     const context = makeContext();
@@ -166,7 +166,7 @@ describe("handlePostMessage", () => {
     expect(context.emit).toHaveBeenCalledWith("session:resumed", { sessionId: "s1" });
   });
 
-  it("does not kill engine for notification role messages", async () => {
+  it("should not kill engine for notification role messages", async () => {
     const engine = makeEngine({ isAlive: vi.fn().mockReturnValue(true) });
     const session = makeSession({ status: "running" });
     const deps = makeDeps(session, engine);
@@ -174,7 +174,7 @@ describe("handlePostMessage", () => {
     expect(engine.kill).not.toHaveBeenCalled();
   });
 
-  it("emits session:notification for notification role messages", async () => {
+  it("should emit session:notification for notification role messages", async () => {
     const deps = makeDeps();
     const context = makeContext();
     await handlePostMessage(makeReq({ message: "ping", role: "notification" }), makeRes(), context, deps, "s1");

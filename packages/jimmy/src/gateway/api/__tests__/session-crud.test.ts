@@ -89,21 +89,21 @@ const makeUrl = (search = ""): URL => new URL(`http://localhost/api/sessions/s1$
 // ── getSessionHandler ─────────────────────────────────────────────────────────
 
 describe("getSessionHandler", () => {
-  it("returns 404 when session not found", async () => {
+  it("should return 404 when session not found", async () => {
     const deps = makeDeps({ getSession: vi.fn().mockReturnValue({ ok: true, value: null }) });
     const res = makeRes();
     await getSessionHandler({} as never, res, makeContext(), deps, "s1", makeUrl());
     expect(res.writeHead).toHaveBeenCalledWith(404, expect.anything());
   });
 
-  it("returns session with messages", async () => {
+  it("should return session with messages", async () => {
     const deps = makeDeps({ getMessages: vi.fn().mockReturnValue([{ role: "user", content: "hi" }]) });
     const res = makeRes();
     await getSessionHandler({} as never, res, makeContext(), deps, "s1", makeUrl());
     expect(res.writeHead).toHaveBeenCalledWith(200, expect.anything());
   });
 
-  it("applies last=N filter when specified", async () => {
+  it("should apply last=N filter when specified", async () => {
     const messages = Array.from({ length: 10 }, (_, i) => ({ role: "user", content: `msg${i}`, id: `${i}`, timestamp: Date.now(), sessionId: "s1" }));
     const deps = makeDeps({ getMessages: vi.fn().mockReturnValue(messages) });
     const res = makeRes();
@@ -116,7 +116,7 @@ describe("getSessionHandler", () => {
 // ── updateSessionHandler ──────────────────────────────────────────────────────
 
 describe("updateSessionHandler", () => {
-  it("returns 404 when session not found", async () => {
+  it("should return 404 when session not found", async () => {
     const deps = makeDeps({ getSession: vi.fn().mockReturnValue({ ok: true, value: null }) });
     const res = makeRes();
     const req = { headers: {}, on: vi.fn().mockImplementation((e, cb) => { if (e === "data") {}; if (e === "end") cb(); }), } as never;
@@ -124,7 +124,7 @@ describe("updateSessionHandler", () => {
     expect(res.writeHead).toHaveBeenCalledWith(404, expect.anything());
   });
 
-  it("returns 400 when title is not a string", async () => {
+  it("should return 400 when title is not a string", async () => {
     const deps = makeDeps();
     const res = makeRes();
     const req = {
@@ -138,7 +138,7 @@ describe("updateSessionHandler", () => {
     expect(res.writeHead).toHaveBeenCalledWith(400, expect.anything());
   });
 
-  it("returns 400 when title is empty string", async () => {
+  it("should return 400 when title is empty string", async () => {
     const deps = makeDeps();
     const res = makeRes();
     const req = {
@@ -156,34 +156,34 @@ describe("updateSessionHandler", () => {
 // ── deleteSessionHandler ──────────────────────────────────────────────────────
 
 describe("deleteSessionHandler", () => {
-  it("returns 404 when session not found (AC-E026-21)", () => {
+  it("should return 404 when session not found (AC-E026-21)", () => {
     const deps = makeDeps({ getSession: vi.fn().mockReturnValue({ ok: true, value: null }) });
     const res = makeRes();
     deleteSessionHandler(res, makeContext(), deps, "s1");
     expect(res.writeHead).toHaveBeenCalledWith(404, expect.anything());
   });
 
-  it("calls deleteSession when session exists", () => {
+  it("should call deleteSession when session exists", () => {
     const deps = makeDeps();
     const res = makeRes();
     deleteSessionHandler(res, makeContext(), deps, "s1");
     expect(deps.deleteSession).toHaveBeenCalledWith("s1");
   });
 
-  it("emits session:deleted event on success", () => {
+  it("should emit session:deleted event on success", () => {
     const context = makeContext();
     deleteSessionHandler(makeRes(), context, makeDeps(), "s1");
     expect(context.emit).toHaveBeenCalledWith("session:deleted", { sessionId: "s1" });
   });
 
-  it("returns 404 when deleteSession returns falsy", () => {
+  it("should return 404 when deleteSession returns falsy", () => {
     const deps = makeDeps({ deleteSession: vi.fn().mockReturnValue(false) });
     const res = makeRes();
     deleteSessionHandler(res, makeContext(), deps, "s1");
     expect(res.writeHead).toHaveBeenCalledWith(404, expect.anything());
   });
 
-  it("kills live engine process before deleting", () => {
+  it("should kill live engine process before deleting", () => {
     const engine = makeEngine();
     engine.isAlive.mockReturnValue(true);
     const context = {
@@ -209,7 +209,7 @@ describe("updateSessionHandler success", () => {
     }),
   }) as never;
 
-  it("emits session:updated and returns updated session", async () => {
+  it("should emit session:updated and returns updated session", async () => {
     const context = makeContext();
     const res = makeRes();
     await updateSessionHandler(makeBodyReq({ title: "New Title" }), res, context, makeDeps(), "s1");
@@ -217,21 +217,21 @@ describe("updateSessionHandler success", () => {
     expect(res.writeHead).toHaveBeenCalledWith(200, expect.anything());
   });
 
-  it("returns 404 when updateSession returns ok:false", async () => {
+  it("should return 404 when updateSession returns ok:false", async () => {
     const deps = makeDeps({ updateSession: vi.fn().mockReturnValue({ ok: false, error: { type: "not_found" } }) });
     const res = makeRes();
     await updateSessionHandler(makeBodyReq({ title: "New Title" }), res, makeContext(), deps, "s1");
     expect(res.writeHead).toHaveBeenCalledWith(404, expect.anything());
   });
 
-  it("returns 404 when updateSession returns null", async () => {
+  it("should return 404 when updateSession returns null", async () => {
     const deps = makeDeps({ updateSession: vi.fn().mockReturnValue({ ok: true, value: null }) });
     const res = makeRes();
     await updateSessionHandler(makeBodyReq({ title: "New Title" }), res, makeContext(), deps, "s1");
     expect(res.writeHead).toHaveBeenCalledWith(404, expect.anything());
   });
 
-  it("returns 400 when no valid fields provided", async () => {
+  it("should return 400 when no valid fields provided", async () => {
     const res = makeRes();
     await updateSessionHandler(makeBodyReq({ unknownField: "x" }), res, makeContext(), makeDeps(), "s1");
     expect(res.writeHead).toHaveBeenCalledWith(400, expect.anything());
@@ -241,7 +241,7 @@ describe("updateSessionHandler success", () => {
 // ── getSessionHandler ─────────────────────────────────────────────────────────
 
 describe("getSessionHandler backfill", () => {
-  it("returns session with messages (200)", async () => {
+  it("should return session with messages (200)", async () => {
     const deps = makeDeps({
       getMessages: vi.fn().mockReturnValue([{ id: "m1", role: "user", content: "hi", timestamp: 0, sessionId: "s1" }]),
     });
@@ -250,7 +250,7 @@ describe("getSessionHandler backfill", () => {
     expect(res.writeHead).toHaveBeenCalledWith(200, expect.anything());
   });
 
-  it("does not slice messages when lastN equals message count", async () => {
+  it("should not slice messages when lastN equals message count", async () => {
     const msgs = [1, 2, 3].map((i) => ({ id: `m${i}`, role: "user", content: `msg${i}`, timestamp: 0, sessionId: "s1" }));
     const deps = makeDeps({ getMessages: vi.fn().mockReturnValue(msgs) });
     const res = makeRes();
@@ -260,7 +260,7 @@ describe("getSessionHandler backfill", () => {
     expect(body.messages).toHaveLength(3);
   });
 
-  it("returns session when messages exist (original test)", async () => {
+  it("should return session when messages exist (original test)", async () => {
     const deps = makeDeps({
       getMessages: vi.fn().mockReturnValue([{ id: "m1", role: "user", content: "hi", timestamp: 0, sessionId: "s1" }]),
     });
@@ -269,7 +269,7 @@ describe("getSessionHandler backfill", () => {
     expect(res.writeHead).toHaveBeenCalledWith(200, expect.anything());
   });
 
-  it("backfills from transcript when DB has no messages and engineSessionId is set", async () => {
+  it("should backfill from transcript when DB has no messages and engineSessionId is set", async () => {
     // getMessages returns [] first, then [message] after backfill
     let callCount = 0;
     const deps = makeDeps({
@@ -294,20 +294,20 @@ const makeNonInterruptibleEngine = () => ({
 // ── stopSession ───────────────────────────────────────────────────────────────
 
 describe("stopSession", () => {
-  it("returns 404 when session not found", () => {
+  it("should return 404 when session not found", () => {
     const deps = makeDeps({ getSession: vi.fn().mockReturnValue({ ok: true, value: null }) });
     const res = makeRes();
     stopSession(res, makeContext(), deps, "s1");
     expect(res.writeHead).toHaveBeenCalledWith(404, expect.anything());
   });
 
-  it("updates session to idle and emits session:stopped", () => {
+  it("should update session to idle and emits session:stopped", () => {
     const context = makeContext();
     stopSession(makeRes(), context, makeDeps(), "s1");
     expect(context.emit).toHaveBeenCalledWith("session:stopped", { sessionId: "s1" });
   });
 
-  it("kills engine when alive", () => {
+  it("should kill engine when alive", () => {
     const engine = makeEngine();
     engine.isAlive.mockReturnValue(true);
     const context = {
@@ -321,7 +321,7 @@ describe("stopSession", () => {
     expect(engine.kill).toHaveBeenCalledWith("s1", "Interrupted by user");
   });
 
-  it("does not kill non-interruptible engine", () => {
+  it("should not kill non-interruptible engine", () => {
     const engine = makeNonInterruptibleEngine();
     const context = {
       emit: vi.fn(),
@@ -334,7 +334,7 @@ describe("stopSession", () => {
     expect(engine.run).not.toHaveBeenCalled();
   });
 
-  it("falls back to sourceRef when sessionKey is absent", () => {
+  it("should fall back to sourceRef when sessionKey is absent", () => {
     const deps = makeDeps({
       getSession: vi.fn().mockReturnValue({ ok: true, value: makeSession({ sessionKey: undefined, sourceRef: "web:ref" }) }),
     });
@@ -343,7 +343,7 @@ describe("stopSession", () => {
     expect(context.emit).toHaveBeenCalledWith("session:stopped", { sessionId: "s1" });
   });
 
-  it("falls back to session.id when both sessionKey and sourceRef are absent", () => {
+  it("should fall back to session.id when both sessionKey and sourceRef are absent", () => {
     const deps = makeDeps({
       getSession: vi.fn().mockReturnValue({ ok: true, value: makeSession({ sessionKey: undefined, sourceRef: undefined }) }),
     });
@@ -356,20 +356,20 @@ describe("stopSession", () => {
 // ── resetSession ──────────────────────────────────────────────────────────────
 
 describe("resetSession", () => {
-  it("returns 404 when session not found", () => {
+  it("should return 404 when session not found", () => {
     const deps = makeDeps({ getSession: vi.fn().mockReturnValue({ ok: true, value: null }) });
     const res = makeRes();
     resetSession(res, makeContext(), deps, "s1");
     expect(res.writeHead).toHaveBeenCalledWith(404, expect.anything());
   });
 
-  it("emits session:updated after reset", () => {
+  it("should emit session:updated after reset", () => {
     const context = makeContext();
     resetSession(makeRes(), context, makeDeps(), "s1");
     expect(context.emit).toHaveBeenCalledWith("session:updated", { sessionId: "s1" });
   });
 
-  it("kills engine when alive", () => {
+  it("should kill engine when alive", () => {
     const engine = makeEngine();
     engine.isAlive.mockReturnValue(true);
     const context = {
@@ -383,7 +383,7 @@ describe("resetSession", () => {
     expect(engine.kill).toHaveBeenCalledWith("s1", "Interrupted by reset");
   });
 
-  it("does not kill non-interruptible engine", () => {
+  it("should not kill non-interruptible engine", () => {
     const engine = makeNonInterruptibleEngine();
     const context = {
       emit: vi.fn(),
@@ -396,7 +396,7 @@ describe("resetSession", () => {
     expect(context.emit).toHaveBeenCalledWith("session:updated", { sessionId: "s1" });
   });
 
-  it("falls back to session.id when sessionKey and sourceRef are absent", () => {
+  it("should fall back to session.id when sessionKey and sourceRef are absent", () => {
     const deps = makeDeps({
       getSession: vi.fn().mockReturnValue({ ok: true, value: makeSession({ sessionKey: undefined, sourceRef: undefined }) }),
     });
@@ -409,21 +409,21 @@ describe("resetSession", () => {
 // ── duplicateSessionHandler ───────────────────────────────────────────────────
 
 describe("duplicateSessionHandler", () => {
-  it("returns 404 when session not found", async () => {
+  it("should return 404 when session not found", async () => {
     const deps = makeDeps({ getSession: vi.fn().mockReturnValue({ ok: true, value: null }) });
     const res = makeRes();
     await duplicateSessionHandler(res, makeContext(), deps, "s1");
     expect(res.writeHead).toHaveBeenCalledWith(404, expect.anything());
   });
 
-  it("returns 400 when session has no engineSessionId", async () => {
+  it("should return 400 when session has no engineSessionId", async () => {
     const deps = makeDeps({ getSession: vi.fn().mockReturnValue({ ok: true, value: makeSession({ engineSessionId: undefined }) }) });
     const res = makeRes();
     await duplicateSessionHandler(res, makeContext(), deps, "s1");
     expect(res.writeHead).toHaveBeenCalledWith(400, expect.anything());
   });
 
-  it("returns 500 when fork throws", async () => {
+  it("should return 500 when fork throws", async () => {
     const deps = makeDeps({
       getSession: vi.fn().mockReturnValue({ ok: true, value: makeSession({ engineSessionId: "e1" }) }),
       duplicateSession: vi.fn().mockImplementation(() => { throw new Error("fork failed"); }),
@@ -433,7 +433,7 @@ describe("duplicateSessionHandler", () => {
     expect(res.writeHead).toHaveBeenCalledWith(500, expect.anything());
   });
 
-  it("returns 500 when updateSession throws and cleanup deleteSession also throws", async () => {
+  it("should return 500 when updateSession throws and cleanup deleteSession also throws", async () => {
     const deps = makeDeps({
       getSession: vi.fn().mockReturnValue({ ok: true, value: makeSession({ engineSessionId: "e1" }) }),
       duplicateSession: vi.fn().mockReturnValue({ session: makeSession({ id: "s2" }), messageCount: 0 }),
@@ -445,7 +445,7 @@ describe("duplicateSessionHandler", () => {
     expect(res.writeHead).toHaveBeenCalledWith(500, expect.anything());
   });
 
-  it("returns 500 when getSession after duplication returns null", async () => {
+  it("should return 500 when getSession after duplication returns null", async () => {
     let callCount = 0;
     const deps = makeDeps({
       getSession: vi.fn().mockImplementation(() => {
@@ -460,7 +460,7 @@ describe("duplicateSessionHandler", () => {
     expect(res.writeHead).toHaveBeenCalledWith(500, expect.anything());
   });
 
-  it("emits session:created and returns duplicated session on success", async () => {
+  it("should emit session:created and returns duplicated session on success", async () => {
     let callCount = 0;
     const deps = makeDeps({
       getSession: vi.fn().mockImplementation(() => {
@@ -477,7 +477,7 @@ describe("duplicateSessionHandler", () => {
     expect(context.emit).toHaveBeenCalledWith("session:created", { sessionId: "s2" });
   });
 
-  it("returns 500 when updateSession throws and deleteSession cleanup succeeds", async () => {
+  it("should return 500 when updateSession throws and deleteSession cleanup succeeds", async () => {
     // Covers the cleanup path where deleteSession doesn't throw (inner try succeeds)
     const deps = makeDeps({
       getSession: vi.fn().mockReturnValue({ ok: true, value: makeSession({ engineSessionId: "e1" }) }),
@@ -493,7 +493,7 @@ describe("duplicateSessionHandler", () => {
 // ── getChildren ───────────────────────────────────────────────────────────────
 
 describe("getChildren", () => {
-  it("returns child sessions filtered by parentSessionId", () => {
+  it("should return child sessions filtered by parentSessionId", () => {
     const child = makeSession({ id: "s2", parentSessionId: "s1" });
     const deps = makeDeps({ listSessions: vi.fn().mockReturnValue([child, makeSession({ id: "s3" })]) });
     const res = makeRes();
@@ -507,14 +507,14 @@ describe("getChildren", () => {
 // ── getTranscript ─────────────────────────────────────────────────────────────
 
 describe("getTranscript", () => {
-  it("returns 404 when session not found", () => {
+  it("should return 404 when session not found", () => {
     const deps = makeDeps({ getSession: vi.fn().mockReturnValue({ ok: true, value: null }) });
     const res = makeRes();
     getTranscript(res, makeContext(), deps, "s1");
     expect(res.writeHead).toHaveBeenCalledWith(404, expect.anything());
   });
 
-  it("returns empty array when no engineSessionId", () => {
+  it("should return empty array when no engineSessionId", () => {
     const deps = makeDeps({ getSession: vi.fn().mockReturnValue({ ok: true, value: makeSession({ engineSessionId: undefined }) }) });
     const res = makeRes();
     getTranscript(res, makeContext(), deps, "s1");
@@ -522,7 +522,7 @@ describe("getTranscript", () => {
     expect(body).toEqual([]);
   });
 
-  it("returns transcript entries when engineSessionId is present", () => {
+  it("should return transcript entries when engineSessionId is present", () => {
     const deps = makeDeps({
       getSession: vi.fn().mockReturnValue({ ok: true, value: makeSession({ engineSessionId: "e1" }) }),
     });
@@ -536,7 +536,7 @@ describe("getTranscript", () => {
 // ── Edge case coverage ────────────────────────────────────────────────────────
 
 describe("edge cases for full coverage", () => {
-  it("unwrapSession: returns null when getSession ok=false", async () => {
+  it("should unwrapSession: returns null when getSession ok=false", async () => {
     // Line 41: ternary false branch (result.ok = false → return null → notFound)
     const deps = makeDeps({ getSession: vi.fn().mockReturnValue({ ok: false, error: { type: "not_found" } }) });
     const res = makeRes();
@@ -544,7 +544,7 @@ describe("edge cases for full coverage", () => {
     expect(res.writeHead).toHaveBeenCalledWith(404, expect.anything());
   });
 
-  it("getSessionHandler: skips backfill when loadTranscriptMessages returns empty", async () => {
+  it("should getSessionHandler: skips backfill when loadTranscriptMessages returns empty", async () => {
     // Line 59: if (transcriptMessages.length > 0) false branch
     vi.mocked(loadTranscriptMessages).mockReturnValueOnce([]);
     const deps = makeDeps({
@@ -556,7 +556,7 @@ describe("edge cases for full coverage", () => {
     expect(deps.insertMessage).not.toHaveBeenCalled(); // backfill skipped
   });
 
-  it("updateSessionHandler: returns early when readJsonBody fails", async () => {
+  it("should updateSessionHandler: returns early when readJsonBody fails", async () => {
     // Line 86: if (!_parsed.ok) return
     const badReq = {
       headers: { "content-type": "application/json" },
@@ -571,7 +571,7 @@ describe("edge cases for full coverage", () => {
     expect(deps.updateSession).not.toHaveBeenCalled();
   });
 
-  it("duplicateSessionHandler: error message from non-Error throw", async () => {
+  it("should duplicateSessionHandler: error message from non-Error throw", async () => {
     // Line 219: err instanceof Error ? err.message : String(err) — false branch
     const deps = makeDeps({
       getSession: vi.fn().mockReturnValue({ ok: true, value: makeSession({ engineSessionId: "e1" }) }),

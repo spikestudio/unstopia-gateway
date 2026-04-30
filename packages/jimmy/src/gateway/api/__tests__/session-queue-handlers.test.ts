@@ -57,7 +57,7 @@ const makeRes = (): ServerResponse => {
 // ── handleGetQueue ────────────────────────────────────────────────────────────
 
 describe("handleGetQueue", () => {
-  it("returns queue items for a valid session", () => {
+  it("should return queue items for a valid session", () => {
     const items = [{ id: "qi1", prompt: "hi" }];
     const deps = makeDeps({ getQueueItems: vi.fn().mockReturnValue(items) });
     const res = makeRes();
@@ -65,7 +65,7 @@ describe("handleGetQueue", () => {
     expect(res.writeHead).toHaveBeenCalledWith(200, expect.anything());
   });
 
-  it("returns 404 when session not found", () => {
+  it("should return 404 when session not found", () => {
     const deps = makeDeps({ getSession: vi.fn().mockReturnValue({ ok: true, value: null }) });
     const res = makeRes();
     handleGetQueue(res, makeContext(), deps, "s1");
@@ -76,7 +76,7 @@ describe("handleGetQueue", () => {
 // ── handleClearQueue ──────────────────────────────────────────────────────────
 
 describe("handleClearQueue", () => {
-  it("calls clearQueue and cancelAllPendingQueueItems", () => {
+  it("should call clearQueue and cancelAllPendingQueueItems", () => {
     const deps = makeDeps();
     const queue = makeQueue();
     const context = makeContext(queue);
@@ -85,13 +85,13 @@ describe("handleClearQueue", () => {
     expect(deps.cancelAllPendingQueueItems).toHaveBeenCalledWith("sk1");
   });
 
-  it("emits queue:updated event", () => {
+  it("should emit queue:updated event", () => {
     const context = makeContext();
     handleClearQueue(makeRes(), context, makeDeps(), "s1");
     expect(context.emit).toHaveBeenCalledWith("queue:updated", expect.objectContaining({ sessionId: "s1" }));
   });
 
-  it("returns 404 when session not found", () => {
+  it("should return 404 when session not found", () => {
     const deps = makeDeps({ getSession: vi.fn().mockReturnValue({ ok: true, value: null }) });
     const res = makeRes();
     handleClearQueue(res, makeContext(), deps, "s1");
@@ -102,21 +102,21 @@ describe("handleClearQueue", () => {
 // ── handleCancelQueueItem ─────────────────────────────────────────────────────
 
 describe("handleCancelQueueItem", () => {
-  it("returns 409 when queue item not found or already running", () => {
+  it("should return 409 when queue item not found or already running", () => {
     const deps = makeDeps({ cancelQueueItem: vi.fn().mockReturnValue(false) });
     const res = makeRes();
     handleCancelQueueItem(res, makeContext(), deps, "s1", "qi1");
     expect(res.writeHead).toHaveBeenCalledWith(409, expect.anything());
   });
 
-  it("returns 404 when session not found", () => {
+  it("should return 404 when session not found", () => {
     const deps = makeDeps({ getSession: vi.fn().mockReturnValue({ ok: true, value: null }) });
     const res = makeRes();
     handleCancelQueueItem(res, makeContext(), deps, "s1", "qi1");
     expect(res.writeHead).toHaveBeenCalledWith(404, expect.anything());
   });
 
-  it("emits queue:updated and returns cancelled on success", () => {
+  it("should emit queue:updated and returns cancelled on success", () => {
     const context = makeContext();
     const res = makeRes();
     handleCancelQueueItem(res, context, makeDeps(), "s1", "qi1");
@@ -128,19 +128,19 @@ describe("handleCancelQueueItem", () => {
 // ── handlePauseQueue ──────────────────────────────────────────────────────────
 
 describe("handlePauseQueue", () => {
-  it("emits queue:updated with paused: true", () => {
+  it("should emit queue:updated with paused: true", () => {
     const context = makeContext();
     handlePauseQueue(makeRes(), context, makeDeps(), "s1");
     expect(context.emit).toHaveBeenCalledWith("queue:updated", expect.objectContaining({ paused: true, sessionId: "s1" }));
   });
 
-  it("calls pauseQueue on the session manager", () => {
+  it("should call pauseQueue on the session manager", () => {
     const queue = makeQueue();
     handlePauseQueue(makeRes(), makeContext(queue), makeDeps(), "s1");
     expect(queue.pauseQueue).toHaveBeenCalledWith("sk1");
   });
 
-  it("returns 404 when session not found", () => {
+  it("should return 404 when session not found", () => {
     const deps = makeDeps({ getSession: vi.fn().mockReturnValue({ ok: true, value: null }) });
     const res = makeRes();
     handlePauseQueue(res, makeContext(), deps, "s1");
@@ -151,19 +151,19 @@ describe("handlePauseQueue", () => {
 // ── handleResumeQueue ─────────────────────────────────────────────────────────
 
 describe("handleResumeQueue", () => {
-  it("emits queue:updated with paused: false", () => {
+  it("should emit queue:updated with paused: false", () => {
     const context = makeContext();
     handleResumeQueue(makeRes(), context, makeDeps(), "s1");
     expect(context.emit).toHaveBeenCalledWith("queue:updated", expect.objectContaining({ paused: false, sessionId: "s1" }));
   });
 
-  it("calls resumeQueue on the session manager", () => {
+  it("should call resumeQueue on the session manager", () => {
     const queue = makeQueue();
     handleResumeQueue(makeRes(), makeContext(queue), makeDeps(), "s1");
     expect(queue.resumeQueue).toHaveBeenCalledWith("sk1");
   });
 
-  it("returns 404 when session not found", () => {
+  it("should return 404 when session not found", () => {
     const deps = makeDeps({ getSession: vi.fn().mockReturnValue({ ok: true, value: null }) });
     const res = makeRes();
     handleResumeQueue(res, makeContext(), deps, "s1");

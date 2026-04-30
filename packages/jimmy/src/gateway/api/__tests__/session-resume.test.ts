@@ -59,14 +59,14 @@ describe("resumePendingWebQueueItemsImpl", () => {
     vi.mocked(dispatchWebSessionRun).mockReset();
   });
 
-  it("returns early when no pending items", () => {
+  it("should return early when no pending items", () => {
     vi.mocked(listAllPendingQueueItems).mockReturnValue([]);
     resumePendingWebQueueItemsImpl(makeContext());
     expect(cancelQueueItem).not.toHaveBeenCalled();
     expect(dispatchWebSessionRun).not.toHaveBeenCalled();
   });
 
-  it("cancels queue item when session not found", () => {
+  it("should cancel queue item when session not found", () => {
     vi.mocked(listAllPendingQueueItems).mockReturnValue([
       { id: "qi1", sessionId: "s1", prompt: "hello", sessionKey: "sk1", createdAt: 0, status: "pending" } as never,
     ]);
@@ -77,7 +77,7 @@ describe("resumePendingWebQueueItemsImpl", () => {
     expect(dispatchWebSessionRun).not.toHaveBeenCalled();
   });
 
-  it("skips non-web sessions", () => {
+  it("should skip non-web sessions", () => {
     const session = makeSession({ source: "discord" });
     vi.mocked(listAllPendingQueueItems).mockReturnValue([
       { id: "qi1", sessionId: "s1", prompt: "hello", sessionKey: "sk1", createdAt: 0, status: "pending" } as never,
@@ -88,7 +88,7 @@ describe("resumePendingWebQueueItemsImpl", () => {
     expect(dispatchWebSessionRun).not.toHaveBeenCalled();
   });
 
-  it("cancels and errors session when engine not available", () => {
+  it("should cancel and errors session when engine not available", () => {
     const session = makeSession({ source: "web" });
     vi.mocked(listAllPendingQueueItems).mockReturnValue([
       { id: "qi1", sessionId: "s1", prompt: "hello", sessionKey: "sk1", createdAt: 0, status: "pending" } as never,
@@ -103,7 +103,7 @@ describe("resumePendingWebQueueItemsImpl", () => {
     expect(updateSession).toHaveBeenCalledWith("s1", expect.objectContaining({ status: "error" }));
   });
 
-  it("dispatches web session run for valid pending web sessions", () => {
+  it("should dispatch web session run for valid pending web sessions", () => {
     const session = makeSession({ source: "web" });
     vi.mocked(listAllPendingQueueItems).mockReturnValue([
       { id: "qi1", sessionId: "s1", prompt: "hello", sessionKey: "sk1", createdAt: 0, status: "pending" } as never,

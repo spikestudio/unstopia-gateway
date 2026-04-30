@@ -24,7 +24,7 @@ const makeLine = (type: "user" | "assistant", content: string) =>
 // ── loadRawTranscript ─────────────────────────────────────────────────────────
 
 describe("loadRawTranscript", () => {
-  it("returns entries from a valid JSONL file", () => {
+  it("should return entries from a valid JSONL file", () => {
     const reader = makeReader(
       { "sess1.jsonl": [makeLine("user", "hello"), makeLine("assistant", "hi")].join("\n") },
       ["proj1"],
@@ -35,7 +35,7 @@ describe("loadRawTranscript", () => {
     expect(result[1].role).toBe("assistant");
   });
 
-  it("returns [] when projects directory does not exist", () => {
+  it("should return [] when projects directory does not exist", () => {
     const reader: TranscriptReader = {
       existsSync: () => false,
       readdirSync: () => [],
@@ -44,7 +44,7 @@ describe("loadRawTranscript", () => {
     expect(loadRawTranscript("sess1", reader)).toEqual([]);
   });
 
-  it("returns [] when the target JSONL file does not exist", () => {
+  it("should return [] when the target JSONL file does not exist", () => {
     const reader: TranscriptReader = {
       existsSync: (p) => p.endsWith("projects"),
       readdirSync: () => [makeDir("proj1")],
@@ -53,7 +53,7 @@ describe("loadRawTranscript", () => {
     expect(loadRawTranscript("sess1", reader)).toEqual([]);
   });
 
-  it("skips invalid JSON lines and returns remaining entries", () => {
+  it("should skip invalid JSON lines and returns remaining entries", () => {
     const lines = ["INVALID_JSON", makeLine("user", "valid")].join("\n");
     const reader = makeReader({ "sess1.jsonl": lines });
     const result = loadRawTranscript("sess1", reader);
@@ -61,7 +61,7 @@ describe("loadRawTranscript", () => {
     expect(result[0].role).toBe("user");
   });
 
-  it("skips non-user/assistant entries (e.g. system)", () => {
+  it("should skip non-user/assistant entries (e.g. system)", () => {
     const lines = [
       JSON.stringify({ type: "system", message: { content: "ignored" } }),
       makeLine("user", "kept"),
@@ -70,7 +70,7 @@ describe("loadRawTranscript", () => {
     expect(loadRawTranscript("sess1", reader)).toHaveLength(1);
   });
 
-  it("parses array content with multiple block types", () => {
+  it("should parse array content with multiple block types", () => {
     const content = [
       { type: "text", text: "hello" },
       { type: "tool_use", name: "bash", input: { cmd: "ls" } },
@@ -87,7 +87,7 @@ describe("loadRawTranscript", () => {
     expect(result[0].content[3]).toMatchObject({ type: "thinking" });
   });
 
-  it("handles tool_result with array content", () => {
+  it("should handle tool_result with array content", () => {
     const content = [{ type: "tool_result", content: [{ type: "text", text: "out" }] }];
     const line = JSON.stringify({ type: "assistant", message: { content } });
     const reader = makeReader({ "sess1.jsonl": line });
@@ -95,7 +95,7 @@ describe("loadRawTranscript", () => {
     expect(result[0].content[0]).toMatchObject({ type: "tool_result", text: "out" });
   });
 
-  it("skips entries with no parseable content blocks", () => {
+  it("should skip entries with no parseable content blocks", () => {
     const line = JSON.stringify({ type: "user", message: { content: [] } });
     const reader = makeReader({ "sess1.jsonl": line });
     expect(loadRawTranscript("sess1", reader)).toHaveLength(0);
@@ -105,7 +105,7 @@ describe("loadRawTranscript", () => {
 // ── loadTranscriptMessages ────────────────────────────────────────────────────
 
 describe("loadTranscriptMessages", () => {
-  it("converts text content to string messages", () => {
+  it("should convert text content to string messages", () => {
     const reader = makeReader({
       "sess1.jsonl": [makeLine("user", "hello"), makeLine("assistant", "hi")].join("\n"),
     });
@@ -116,7 +116,7 @@ describe("loadTranscriptMessages", () => {
     ]);
   });
 
-  it("returns [] when projects directory does not exist", () => {
+  it("should return [] when projects directory does not exist", () => {
     const reader: TranscriptReader = {
       existsSync: () => false,
       readdirSync: () => [],
@@ -125,7 +125,7 @@ describe("loadTranscriptMessages", () => {
     expect(loadTranscriptMessages("sess1", reader)).toEqual([]);
   });
 
-  it("returns [] when JSONL file does not exist", () => {
+  it("should return [] when JSONL file does not exist", () => {
     const reader: TranscriptReader = {
       existsSync: (p) => p.endsWith("projects"),
       readdirSync: () => [makeDir("proj1")],
@@ -134,7 +134,7 @@ describe("loadTranscriptMessages", () => {
     expect(loadTranscriptMessages("sess1", reader)).toEqual([]);
   });
 
-  it("joins array content text blocks into a single string", () => {
+  it("should join array content text blocks into a single string", () => {
     const content = [
       { type: "text", text: "part1 " },
       { type: "tool_use", name: "bash" },
@@ -146,14 +146,14 @@ describe("loadTranscriptMessages", () => {
     expect(result[0].content).toBe("part1 part2");
   });
 
-  it("skips entries with empty content after join", () => {
+  it("should skip entries with empty content after join", () => {
     const content = [{ type: "tool_use", name: "bash" }];
     const line = JSON.stringify({ type: "user", message: { content } });
     const reader = makeReader({ "sess1.jsonl": line });
     expect(loadTranscriptMessages("sess1", reader)).toHaveLength(0);
   });
 
-  it("skips invalid JSON lines without throwing", () => {
+  it("should skip invalid JSON lines without throwing", () => {
     const lines = ["BAD_JSON", makeLine("assistant", "good")].join("\n");
     const reader = makeReader({ "sess1.jsonl": lines });
     const result = loadTranscriptMessages("sess1", reader);
