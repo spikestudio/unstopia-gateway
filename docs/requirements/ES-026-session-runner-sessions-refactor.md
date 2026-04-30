@@ -146,9 +146,19 @@ branch カバレッジ向上にも貢献する。
 
 | 成果物 | 配置先 | ステータス |
 |--------|--------|----------|
-| 集約モデル詳細 | 該当なし（支援ドメイン） | 該当なし |
-| DB スキーマ骨格 | 該当なし | 該当なし |
-| API spec 骨格 | 該当なし（既存 API エンドポイントの内部リファクタリング） | 該当なし |
+| AC マッピングマトリクス | `docs/domain/session-runner-sessions-refactor-ac-mapping.md` | 完了（G2 通過済み） |
+| 集約モデル詳細 | `docs/domain/session-runner-sessions-refactor-domain-model.md` | 完了（Step 2 承認済み） |
+| DB スキーマ骨格 | 該当なし（スキーマ変更なし） | スキップ |
+| API spec 骨格（モジュール分割仕様） | `docs/design/session-runner-sessions-refactor-api-spec.md` | 完了（Step 3） |
+| インフラ設計骨格 | 該当なし（インフラ変更なし） | スキップ |
+| バッチ/ジョブ設計骨格 | 該当なし（バッチ処理追加なし） | スキップ |
+
+## ゲート状態
+
+| ゲート | 状態 |
+|--------|------|
+| G2（AC 承認） | 通過済み |
+| G3（設計承認） | 通過済み |
 
 ## バリデーションルール
 
