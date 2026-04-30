@@ -318,4 +318,4 @@ export async function handleSessionsRequest(
   return false;
 }
 
-export { resumePendingWebQueueItemsImpl } from "./session-runner.js";
+export { resumePendingWebQueueItemsImpl } from "./session-resume.js";
