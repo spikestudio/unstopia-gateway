@@ -3,11 +3,11 @@ import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const { tmpJinnHomeForModule } = vi.hoisted(() => {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  // eslint-disable-next-line @typescript-eslint/no-require-imports suppress-approved: vi.hoisted()内のrequireはESMとの競合回避のため技術的必要性あり
   const fss = require("node:fs") as typeof import("node:fs");
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  // eslint-disable-next-line @typescript-eslint/no-require-imports suppress-approved: vi.hoisted()内のrequireはESMとの競合回避のため技術的必要性あり
   const oss = require("node:os") as typeof import("node:os");
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  // eslint-disable-next-line @typescript-eslint/no-require-imports suppress-approved: vi.hoisted()内のrequireはESMとの競合回避のため技術的必要性あり
   const ps = require("node:path") as typeof import("node:path");
   return { tmpJinnHomeForModule: fss.mkdtempSync(ps.join(oss.tmpdir(), "jinn-paths-")) };
 });

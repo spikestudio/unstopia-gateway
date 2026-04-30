@@ -32,11 +32,11 @@
 
 **受入基準:**
 
-- [ ] **AC-E027-01**: `initialize` リクエストを送信すると、`protocolVersion: "2024-11-05"`・`capabilities.tools: {}`・`serverInfo.name: "jinn-gateway"` を含む JSON-RPC レスポンスが返る ← S1
-- [ ] **AC-E027-02**: `tools/list` リクエストを送信すると、12 個のツール定義（name・description・inputSchema を含む）が `result.tools` 配列に返る ← S1
-- [ ] **AC-E027-03**: `tools/call` リクエストで有効なツール名と引数を送信すると、`result.content[0].type === "text"` のレスポンスが返る ← S1
-- [ ] **AC-E027-04**: `notifications/initialized` を送信すると、stdout への書き込みが発生しない（通知への応答不要が保証される）← S1（AI 補完: MCP 仕様上 notification は応答不要。この分岐の実装を明示的に検証する必要がある。sendResponse のスパイで観測可能）
-- [ ] **AC-E027-05**: 未知のメソッドを送信すると、`error.code: -32601`（Method not found）を含む JSON-RPC エラーレスポンスが返る ← S1
+- [x] **AC-E027-01**: `initialize` リクエストを送信すると、`protocolVersion: "2024-11-05"`・`capabilities.tools: {}`・`serverInfo.name: "jinn-gateway"` を含む JSON-RPC レスポンスが返る ← S1
+- [x] **AC-E027-02**: `tools/list` リクエストを送信すると、12 個のツール定義（name・description・inputSchema を含む）が `result.tools` 配列に返る ← S1
+- [x] **AC-E027-03**: `tools/call` リクエストで有効なツール名と引数を送信すると、`result.content[0].type === "text"` のレスポンスが返る ← S1
+- [x] **AC-E027-04**: `notifications/initialized` を送信すると、stdout への書き込みが発生しない（通知への応答不要が保証される）← S1（AI 補完: MCP 仕様上 notification は応答不要。この分岐の実装を明示的に検証する必要がある。sendResponse のスパイで観測可能）
+- [x] **AC-E027-05**: 未知のメソッドを送信すると、`error.code: -32601`（Method not found）を含む JSON-RPC エラーレスポンスが返る ← S1
 
 ### Story 2: 全12ツールハンドラーテスト（S2）
 
@@ -48,18 +48,18 @@
 
 **受入基準:**
 
-- [ ] **AC-E027-06**: `send_message` ツールを呼び出すと、`/api/connectors/{connector}/send` に `channel`・`text` が POST される ← S2
-- [ ] **AC-E027-07**: `list_sessions` ツールを `status` フィルター付きで呼び出すと、`/api/sessions` のレスポンスから該当ステータスのセッションのみが返る ← S2
-- [ ] **AC-E027-08**: `get_session` ツールを呼び出すと、`/api/sessions/{sessionId}` の結果が返る ← S2
-- [ ] **AC-E027-09**: `create_child_session` ツールを呼び出すと、`/api/sessions` に `employee`・`prompt` が POST される ← S2
-- [ ] **AC-E027-10**: `send_to_session` ツールを呼び出すと、`/api/sessions/{sessionId}/message` に `message` が POST される ← S2
-- [ ] **AC-E027-11**: `list_employees` ツールを呼び出すと、`/api/org` の結果が返る ← S2
-- [ ] **AC-E027-12**: `get_employee` ツールを呼び出すと、`/api/org/employees/{name}` の結果が返る ← S2
-- [ ] **AC-E027-13**: `update_board` ツールを呼び出すと、`/api/org/departments/{department}/board` に `board` が PUT される ← S2
-- [ ] **AC-E027-14**: `get_board` ツールを呼び出すと、`/api/org/departments/{department}/board` の結果が返る ← S2
-- [ ] **AC-E027-15**: `list_cron_jobs` ツールを呼び出すと、`/api/cron` の結果が返る ← S2
-- [ ] **AC-E027-16**: `trigger_cron_job` ツールを `jobId` で呼び出すと、`/api/cron` から一致するジョブを検索し `triggered: true` が返る ← S2
-- [ ] **AC-E027-17**: `update_cron_job` ツールを呼び出すと、`/api/cron/{jobId}` に指定フィールドが PUT される ← S2
+- [x] **AC-E027-06**: `send_message` ツールを呼び出すと、`/api/connectors/{connector}/send` に `channel`・`text` が POST される ← S2
+- [x] **AC-E027-07**: `list_sessions` ツールを `status` フィルター付きで呼び出すと、`/api/sessions` のレスポンスから該当ステータスのセッションのみが返る ← S2
+- [x] **AC-E027-08**: `get_session` ツールを呼び出すと、`/api/sessions/{sessionId}` の結果が返る ← S2
+- [x] **AC-E027-09**: `create_child_session` ツールを呼び出すと、`/api/sessions` に `employee`・`prompt` が POST される ← S2
+- [x] **AC-E027-10**: `send_to_session` ツールを呼び出すと、`/api/sessions/{sessionId}/message` に `message` が POST される ← S2
+- [x] **AC-E027-11**: `list_employees` ツールを呼び出すと、`/api/org` の結果が返る ← S2
+- [x] **AC-E027-12**: `get_employee` ツールを呼び出すと、`/api/org/employees/{name}` の結果が返る ← S2
+- [x] **AC-E027-13**: `update_board` ツールを呼び出すと、`/api/org/departments/{department}/board` に `board` が PUT される ← S2
+- [x] **AC-E027-14**: `get_board` ツールを呼び出すと、`/api/org/departments/{department}/board` の結果が返る ← S2
+- [x] **AC-E027-15**: `list_cron_jobs` ツールを呼び出すと、`/api/cron` の結果が返る ← S2
+- [x] **AC-E027-16**: `trigger_cron_job` ツールを `jobId` で呼び出すと、`/api/cron` から一致するジョブを検索し `triggered: true` が返る ← S2
+- [x] **AC-E027-17**: `update_cron_job` ツールを呼び出すと、`/api/cron/{jobId}` に指定フィールドが PUT される ← S2
 
 ### Story 3: resolveMcpServers テスト（S3）
 
@@ -67,10 +67,10 @@
 
 **受入基準:**
 
-- [ ] **AC-E027-18**: `globalMcp` が `undefined` のとき `resolveMcpServers` は `{ mcpServers: {} }` を返す ← S3
-- [ ] **AC-E027-19**: `employee.mcp === false` のとき `resolveMcpServers` は全サーバーを除外した `{ mcpServers: {} }` を返す ← S3
-- [ ] **AC-E027-20**: `employee.mcp` が文字列配列のとき `resolveMcpServers` は指定サーバーのみを返す ← S3
-- [ ] **AC-E027-21**: `employee.mcp` が指定されていないとき（デフォルト）`resolveMcpServers` は有効な全サーバーを返す ← S3
+- [x] **AC-E027-18**: `globalMcp` が `undefined` のとき `resolveMcpServers` は `{ mcpServers: {} }` を返す ← S3
+- [x] **AC-E027-19**: `employee.mcp === false` のとき `resolveMcpServers` は全サーバーを除外した `{ mcpServers: {} }` を返す ← S3
+- [x] **AC-E027-20**: `employee.mcp` が文字列配列のとき `resolveMcpServers` は指定サーバーのみを返す ← S3
+- [x] **AC-E027-21**: `employee.mcp` が指定されていないとき（デフォルト）`resolveMcpServers` は有効な全サーバーを返す ← S3
 
 ### Story 4: buildAvailableServers 各サーバー種別テスト（S4）
 
@@ -78,15 +78,15 @@
 
 **受入基準:**
 
-- [ ] **AC-E027-22**: `config.browser.enabled !== false`（デフォルト）かつ `provider: "playwright"` のとき `browser` サーバーが `@anthropic-ai/mcp-server-playwright` として登録される ← S4
-- [ ] **AC-E027-23**: `config.browser.provider === "puppeteer"` のとき `browser` サーバーが `@anthropic-ai/mcp-server-puppeteer` として登録される ← S4
-- [ ] **AC-E027-24**: `config.browser.enabled === false` のとき `browser` サーバーが登録されない ← S4
-- [ ] **AC-E027-25**: `config.search.enabled === true` かつ `apiKey` が解決できるとき `search` サーバーが `BRAVE_API_KEY` 付きで登録される ← S4
-- [ ] **AC-E027-26**: `config.search.enabled === true` かつ `apiKey` が未設定（解決不可）のとき `search` サーバーが登録されず警告ログが出力される ← S4（AI 補完: APIキー未設定時の警告ブランチはカバレッジ上重要なパスである）
-- [ ] **AC-E027-27**: `config.fetch.enabled === true` のとき `fetch` サーバーが `@anthropic-ai/mcp-server-fetch` として登録される ← S4
-- [ ] **AC-E027-28**: `config.gateway.enabled !== false`（デフォルト）のとき `gateway` サーバーが `node` コマンドで登録される ← S4
-- [ ] **AC-E027-29**: `config.custom` にエントリが存在し `enabled !== false` かつ URL ベースのとき `type: "sse"` が付与されて登録される ← S4
-- [ ] **AC-E027-30**: `config.custom` のエントリが `enabled === false` のとき登録されない ← S4（AI 補完: enabled フラグの除外ロジックは明示的にテストが必要）
+- [x] **AC-E027-22**: `config.browser.enabled !== false`（デフォルト）かつ `provider: "playwright"` のとき `browser` サーバーが `@anthropic-ai/mcp-server-playwright` として登録される ← S4
+- [x] **AC-E027-23**: `config.browser.provider === "puppeteer"` のとき `browser` サーバーが `@anthropic-ai/mcp-server-puppeteer` として登録される ← S4
+- [x] **AC-E027-24**: `config.browser.enabled === false` のとき `browser` サーバーが登録されない ← S4
+- [x] **AC-E027-25**: `config.search.enabled === true` かつ `apiKey` が解決できるとき `search` サーバーが `BRAVE_API_KEY` 付きで登録される ← S4
+- [x] **AC-E027-26**: `config.search.enabled === true` かつ `apiKey` が未設定（解決不可）のとき `search` サーバーが登録されず警告ログが出力される ← S4（AI 補完: APIキー未設定時の警告ブランチはカバレッジ上重要なパスである）
+- [x] **AC-E027-27**: `config.fetch.enabled === true` のとき `fetch` サーバーが `@anthropic-ai/mcp-server-fetch` として登録される ← S4
+- [x] **AC-E027-28**: `config.gateway.enabled !== false`（デフォルト）のとき `gateway` サーバーが `node` コマンドで登録される ← S4
+- [x] **AC-E027-29**: `config.custom` にエントリが存在し `enabled !== false` かつ URL ベースのとき `type: "sse"` が付与されて登録される ← S4
+- [x] **AC-E027-30**: `config.custom` のエントリが `enabled === false` のとき登録されない ← S4（AI 補完: enabled フラグの除外ロジックは明示的にテストが必要）
 
 ### Story 5: writeMcpConfigFile / cleanupMcpConfigFile テスト（S5）
 
@@ -94,9 +94,9 @@
 
 **受入基準:**
 
-- [ ] **AC-E027-31**: `writeMcpConfigFile` を呼び出すと `JINN_HOME/tmp/mcp/{sessionId}.json` が生成され、内容は渡した `ResolvedMcpConfig` と一致する ← S5
-- [ ] **AC-E027-32**: `cleanupMcpConfigFile` を呼び出すと `JINN_HOME/tmp/mcp/{sessionId}.json` が削除される ← S5
-- [ ] **AC-E027-33**: `cleanupMcpConfigFile` を存在しないセッションIDで呼び出してもエラーが発生しない（サイレント無視） ← S5（AI 補完: ファイル不在時のサイレント無視は明示的な仕様であり、テストで保証する必要がある）
+- [x] **AC-E027-31**: `writeMcpConfigFile` を呼び出すと `JINN_HOME/tmp/mcp/{sessionId}.json` が生成され、内容は渡した `ResolvedMcpConfig` と一致する ← S5
+- [x] **AC-E027-32**: `cleanupMcpConfigFile` を呼び出すと `JINN_HOME/tmp/mcp/{sessionId}.json` が削除される ← S5
+- [x] **AC-E027-33**: `cleanupMcpConfigFile` を存在しないセッションIDで呼び出してもエラーが発生しない（サイレント無視） ← S5（AI 補完: ファイル不在時のサイレント無視は明示的な仕様であり、テストで保証する必要がある）
 
 ### Story 6: エラーハンドリングテスト（S6）
 
@@ -104,10 +104,10 @@
 
 **受入基準:**
 
-- [ ] **AC-E027-34**: 存在しないツール名で `tools/call` を呼び出すと、`result.isError: true` かつエラーメッセージを含む `content[0].text` が返る ← S6
-- [ ] **AC-E027-35**: ツールハンドラーが例外をスローしたとき、`result.isError: true` かつ例外メッセージが `content[0].text` に含まれる ← S6
-- [ ] **AC-E027-36**: gateway API が非 2xx レスポンスを返したとき、ツール呼び出しが `result.isError: true` のレスポンスを返す ← S6
-- [ ] **AC-E027-37**: `trigger_cron_job` で存在しない jobId を指定すると `error: "Job not found"` を含む JSON が返る ← S6（AI 補完: trigger_cron_job の not-found ブランチは他のエラーハンドラーと異なりエラーではなく通常 result で返す実装になっており、明示的な検証が必要）
+- [x] **AC-E027-34**: 存在しないツール名で `tools/call` を呼び出すと、`result.isError: true` かつエラーメッセージを含む `content[0].text` が返る ← S6
+- [x] **AC-E027-35**: ツールハンドラーが例外をスローしたとき、`result.isError: true` かつ例外メッセージが `content[0].text` に含まれる ← S6
+- [x] **AC-E027-36**: gateway API が非 2xx レスポンスを返したとき、ツール呼び出しが `result.isError: true` のレスポンスを返す ← S6
+- [x] **AC-E027-37**: `trigger_cron_job` で存在しない jobId を指定すると `error: "Job not found"` を含む JSON が返る ← S6（AI 補完: trigger_cron_job の not-found ブランチは他のエラーハンドラーと異なりエラーではなく通常 result で返す実装になっており、明示的な検証が必要）
 
 ### Story 7: resolveEnvVar テスト（S7）
 
@@ -115,11 +115,11 @@
 
 **受入基準:**
 
-- [ ] **AC-E027-38**: `resolveEnvVar` に `${VAR_NAME}` 形式の文字列を渡すと、環境変数 `VAR_NAME` の値が返る ← S7
-- [ ] **AC-E027-39**: `resolveEnvVar` に `$VAR_NAME` 形式の文字列を渡すと、環境変数 `VAR_NAME` の値が返る ← S7
-- [ ] **AC-E027-40**: `resolveEnvVar` に `${VAR_NAME}` 形式で環境変数が未設定のとき `undefined` が返る ← S7
-- [ ] **AC-E027-41**: `resolveEnvVar` にプレーンな文字列（`$` なし）を渡すと、その文字列がそのまま返る ← S7
-- [ ] **AC-E027-42**: `resolveEnvVar` に `undefined` を渡すと `undefined` が返る ← S7（AI 補完: undefined ガードは実装にあるが、テストで明示的に検証されていない）
+- [x] **AC-E027-38**: `resolveEnvVar` に `${VAR_NAME}` 形式の文字列を渡すと、環境変数 `VAR_NAME` の値が返る ← S7
+- [x] **AC-E027-39**: `resolveEnvVar` に `$VAR_NAME` 形式の文字列を渡すと、環境変数 `VAR_NAME` の値が返る ← S7
+- [x] **AC-E027-40**: `resolveEnvVar` に `${VAR_NAME}` 形式で環境変数が未設定のとき `undefined` が返る ← S7
+- [x] **AC-E027-41**: `resolveEnvVar` にプレーンな文字列（`$` なし）を渡すと、その文字列がそのまま返る ← S7
+- [x] **AC-E027-42**: `resolveEnvVar` に `undefined` を渡すと `undefined` が返る ← S7（AI 補完: undefined ガードは実装にあるが、テストで明示的に検証されていない）
 
 **インターフェース:** なし（テスト専用 Epic、外部インターフェース変更なし）
 

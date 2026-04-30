@@ -106,8 +106,23 @@ describe("gateway-server: ツールハンドラー（全12ツール）", () => {
     );
   });
 
-  // AC-E027-07: list_sessions
-  it("should call GET /api/sessions for list_sessions", async () => {
+  // AC-E027-07: list_sessions (status filter)
+  it("should filter sessions by status when status argument is provided", async () => {
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: async () => [
+        { id: "s1", employee: "alice", status: "running", engine: "claude", source: "slack", title: null, lastActivity: null, lastError: null },
+        { id: "s2", employee: "bob", status: "idle", engine: "claude", source: "slack", title: null, lastActivity: null, lastError: null },
+      ],
+    });
+    const result = await handleTool("list_sessions", { status: "running" });
+    const sessions = JSON.parse(result) as Array<{ id: string; status: string }>;
+    expect(sessions).toHaveLength(1);
+    expect(sessions[0].id).toBe("s1");
+    expect(sessions[0].status).toBe("running");
+  });
+
+  it("should call GET /api/sessions without filter for list_sessions", async () => {
     mockFetch.mockResolvedValue({ ok: true, json: async () => [] });
     await handleTool("list_sessions", {});
     expect(mockFetch).toHaveBeenCalledWith(expect.stringContaining("/api/sessions"));
@@ -205,7 +220,37 @@ describe("gateway-server: エラーハンドリング", () => {
     vi.restoreAllMocks();
   });
 
-  // AC-E027-34: API 非 2xx → isError: true
+  // AC-E027-34: 未知ツール名 → isError: true
+  it("should return isError: true for unknown tool name", async () => {
+    await handleRequest({
+      jsonrpc: "2.0",
+      id: 10,
+      method: "tools/call",
+      params: { name: "nonexistent_tool", arguments: {} },
+    });
+
+    const response = JSON.parse((writeSpy.mock.calls[0][0] as string).trim());
+    expect(response.result.isError).toBe(true);
+    expect(response.result.content[0].text).toContain("Error:");
+  });
+
+  // AC-E027-35: ハンドラーが例外スロー → isError: true + メッセージ
+  it("should return isError: true when tool handler throws an exception", async () => {
+    (global.fetch as ReturnType<typeof vi.fn>).mockRejectedValue(new Error("network error"));
+
+    await handleRequest({
+      jsonrpc: "2.0",
+      id: 11,
+      method: "tools/call",
+      params: { name: "list_employees", arguments: {} },
+    });
+
+    const response = JSON.parse((writeSpy.mock.calls[0][0] as string).trim());
+    expect(response.result.isError).toBe(true);
+    expect(response.result.content[0].text).toContain("network error");
+  });
+
+  // AC-E027-36: API 非 2xx → isError: true
   it("should return isError: true when API returns non-2xx status", async () => {
     (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
       ok: false,
@@ -216,7 +261,7 @@ describe("gateway-server: エラーハンドリング", () => {
 
     await handleRequest({
       jsonrpc: "2.0",
-      id: 10,
+      id: 12,
       method: "tools/call",
       params: { name: "list_employees", arguments: {} },
     });
@@ -224,33 +269,6 @@ describe("gateway-server: エラーハンドリング", () => {
     const response = JSON.parse((writeSpy.mock.calls[0][0] as string).trim());
     expect(response.result.isError).toBe(true);
     expect(response.result.content[0].type).toBe("text");
-  });
-
-  // AC-E027-35: 未知ツール名 → isError: true
-  it("should return isError: true for unknown tool name", async () => {
-    await handleRequest({
-      jsonrpc: "2.0",
-      id: 11,
-      method: "tools/call",
-      params: { name: "nonexistent_tool", arguments: {} },
-    });
-
-    const response = JSON.parse((writeSpy.mock.calls[0][0] as string).trim());
-    expect(response.result.isError).toBe(true);
-    expect(response.result.content[0].text).toContain("Error:");
-  });
-
-  // AC-E027-36: handleTool が例外を投げる → tools/call エラーレスポンス
-  it("should return error content when handleTool throws non-Error value", async () => {
-    await handleRequest({
-      jsonrpc: "2.0",
-      id: 12,
-      method: "tools/call",
-      params: { name: "unknown_tool_xyz", arguments: {} },
-    });
-
-    const response = JSON.parse((writeSpy.mock.calls[0][0] as string).trim());
-    expect(response.result.isError).toBe(true);
   });
 
   // AC-E027-37: trigger_cron_job でジョブが見つからない → error メッセージ
