@@ -1,34 +1,51 @@
 import {
-  cancelQueueItem,
-  getSession,
-  listAllPendingQueueItems,
-  updateSession,
+  type cancelQueueItem,
+  type getSession,
+  type listAllPendingQueueItems,
+  type updateSession,
+  cancelQueueItem as defaultCancelQueueItem,
+  getSession as defaultGetSession,
+  listAllPendingQueueItems as defaultListAllPendingQueueItems,
+  updateSession as defaultUpdateSession,
 } from "../../sessions/registry.js";
 import { logger } from "../../shared/logger.js";
 import type { ApiContext } from "../types.js";
+import {
+  type dispatchWebSessionRun,
+  type maybeRevertEngineOverride,
+  dispatchWebSessionRun as defaultDispatchWebSessionRun,
+  maybeRevertEngineOverride as defaultMaybeRevertEngineOverride,
+} from "./session-runner.js";
 import { unwrapSession } from "./utils.js";
-import { dispatchWebSessionRun, maybeRevertEngineOverride } from "./session-runner.js";
 
+export interface ResumeDeps {
+  listAllPendingQueueItems: typeof listAllPendingQueueItems;
+  getSession: typeof getSession;
+  cancelQueueItem: typeof cancelQueueItem;
+  updateSession: typeof updateSession;
+  maybeRevertEngineOverride: typeof maybeRevertEngineOverride;
+  dispatchWebSessionRun: typeof dispatchWebSessionRun;
+}
 
-export function resumePendingWebQueueItemsImpl(context: ApiContext): void {
-  const pending = listAllPendingQueueItems();
+export function resumePendingWebQueueItemsImpl(context: ApiContext, deps: ResumeDeps = defaultResumeDeps): void {
+  const pending = deps.listAllPendingQueueItems();
   if (pending.length === 0) return;
 
   let resumed = 0;
   for (const item of pending) {
-    let session = unwrapSession(getSession(item.sessionId));
+    let session = unwrapSession(deps.getSession(item.sessionId));
     if (!session) {
-      cancelQueueItem(item.id);
+      deps.cancelQueueItem(item.id);
       continue;
     }
     if (session.source !== "web") continue;
-    session = maybeRevertEngineOverride(session);
+    session = deps.maybeRevertEngineOverride(session);
 
     const config = context.getConfig();
     const engine = context.sessionManager.getEngine(session.engine);
     if (!engine) {
-      cancelQueueItem(item.id);
-      updateSession(session.id, {
+      deps.cancelQueueItem(item.id);
+      deps.updateSession(session.id, {
         status: "error",
         lastActivity: new Date().toISOString(),
         lastError: `Engine "${session.engine}" not available`,
@@ -36,8 +53,8 @@ export function resumePendingWebQueueItemsImpl(context: ApiContext): void {
       continue;
     }
 
-    updateSession(session.id, { status: "running", lastActivity: new Date().toISOString(), lastError: null });
-    dispatchWebSessionRun(session, item.prompt, engine, config, context, { queueItemId: item.id });
+    deps.updateSession(session.id, { status: "running", lastActivity: new Date().toISOString(), lastError: null });
+    deps.dispatchWebSessionRun(session, item.prompt, engine, config, context, { queueItemId: item.id });
     resumed++;
   }
 
@@ -45,3 +62,12 @@ export function resumePendingWebQueueItemsImpl(context: ApiContext): void {
     logger.info(`Re-dispatched ${resumed} pending web queue item(s) after gateway restart`);
   }
 }
+
+export const defaultResumeDeps: ResumeDeps = {
+  listAllPendingQueueItems: defaultListAllPendingQueueItems,
+  getSession: defaultGetSession,
+  cancelQueueItem: defaultCancelQueueItem,
+  updateSession: defaultUpdateSession,
+  maybeRevertEngineOverride: defaultMaybeRevertEngineOverride,
+  dispatchWebSessionRun: defaultDispatchWebSessionRun,
+};

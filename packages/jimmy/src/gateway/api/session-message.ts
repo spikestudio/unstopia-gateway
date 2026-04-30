@@ -144,10 +144,11 @@ export async function handlePostMessage(
 }
 
 /**
- * Base deps for handlePostMessage. getEngine and getConfig MUST be overridden
- * by the caller (sessions.ts) with live context values before use.
+ * Registry-backed deps for handlePostMessage.
+ * getEngine and getConfig must always be provided by the caller — they are
+ * context-specific and cannot be defaulted statically.
  */
-export const defaultPostMessageDeps: PostMessageDeps = {
+export const basePostMessageDeps: Omit<PostMessageDeps, "getEngine" | "getConfig"> = {
   getSession: defaultGetSession,
   insertMessage: defaultInsertMessage,
   updateSession: defaultUpdateSession,
@@ -156,6 +157,4 @@ export const defaultPostMessageDeps: PostMessageDeps = {
   maybeRevertEngineOverride: defaultMaybeRevertEngineOverride,
   dispatchWebSessionRun: defaultDispatchWebSessionRun,
   resolveAttachmentPaths: defaultResolveAttachmentPaths,
-  getEngine: () => null, // overridden in sessions.ts
-  getConfig: () => ({ engines: { default: "claude", claude: {} } }) as unknown as JinnConfig, // overridden in sessions.ts
 };

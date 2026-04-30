@@ -1,27 +1,8 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import type { Engine, Session } from "../../../shared/types.js";
 import type { ApiContext } from "../../types.js";
+import type { ResumeDeps } from "../session-resume.js";
 import { resumePendingWebQueueItemsImpl } from "../session-resume.js";
-
-vi.mock("../../../sessions/registry.js", () => ({
-  listAllPendingQueueItems: vi.fn().mockReturnValue([]),
-  getSession: vi.fn().mockReturnValue({ ok: true, value: null }),
-  cancelQueueItem: vi.fn(),
-  updateSession: vi.fn().mockReturnValue({ ok: true, value: null }),
-}));
-
-vi.mock("../session-runner.js", () => ({
-  maybeRevertEngineOverride: vi.fn().mockImplementation((s: Session) => s),
-  dispatchWebSessionRun: vi.fn(),
-}));
-
-import {
-  cancelQueueItem,
-  getSession,
-  listAllPendingQueueItems,
-  updateSession,
-} from "../../../sessions/registry.js";
-import { dispatchWebSessionRun, maybeRevertEngineOverride } from "../session-runner.js";
 
 const makeSession = (overrides: Partial<Session> = {}): Session =>
   ({
@@ -49,69 +30,70 @@ const makeContext = (): ApiContext =>
     },
   }) as unknown as ApiContext;
 
-describe("resumePendingWebQueueItemsImpl", () => {
-  beforeEach(() => {
-    vi.mocked(listAllPendingQueueItems).mockReturnValue([]);
-    vi.mocked(getSession).mockReturnValue({ ok: true, value: null });
-    vi.mocked(cancelQueueItem).mockReset();
-    vi.mocked(updateSession).mockReturnValue({ ok: true, value: makeSession() });
-    vi.mocked(maybeRevertEngineOverride).mockImplementation((s: Session) => s);
-    vi.mocked(dispatchWebSessionRun).mockReset();
-  });
+const makeDeps = (overrides: Partial<ResumeDeps> = {}): ResumeDeps => ({
+  listAllPendingQueueItems: vi.fn().mockReturnValue([]),
+  getSession: vi.fn().mockReturnValue({ ok: true, value: null }),
+  cancelQueueItem: vi.fn(),
+  updateSession: vi.fn().mockReturnValue({ ok: true, value: makeSession() }),
+  maybeRevertEngineOverride: vi.fn().mockImplementation((s: Session) => s),
+  dispatchWebSessionRun: vi.fn(),
+  ...overrides,
+});
 
+describe("resumePendingWebQueueItemsImpl", () => {
   it("should return early when no pending items", () => {
-    vi.mocked(listAllPendingQueueItems).mockReturnValue([]);
-    resumePendingWebQueueItemsImpl(makeContext());
-    expect(cancelQueueItem).not.toHaveBeenCalled();
-    expect(dispatchWebSessionRun).not.toHaveBeenCalled();
+    const deps = makeDeps();
+    resumePendingWebQueueItemsImpl(makeContext(), deps);
+    expect(deps.cancelQueueItem).not.toHaveBeenCalled();
+    expect(deps.dispatchWebSessionRun).not.toHaveBeenCalled();
   });
 
   it("should cancel queue item when session not found", () => {
-    vi.mocked(listAllPendingQueueItems).mockReturnValue([
-      { id: "qi1", sessionId: "s1", prompt: "hello", sessionKey: "sk1", createdAt: 0, status: "pending" } as never,
-    ]);
-    vi.mocked(getSession).mockReturnValue({ ok: true, value: null });
-
-    resumePendingWebQueueItemsImpl(makeContext());
-    expect(cancelQueueItem).toHaveBeenCalledWith("qi1");
-    expect(dispatchWebSessionRun).not.toHaveBeenCalled();
+    const deps = makeDeps({
+      listAllPendingQueueItems: vi.fn().mockReturnValue([
+        { id: "qi1", sessionId: "s1", prompt: "hello", sessionKey: "sk1", createdAt: 0, status: "pending" } as never,
+      ]),
+      getSession: vi.fn().mockReturnValue({ ok: true, value: null }),
+    });
+    resumePendingWebQueueItemsImpl(makeContext(), deps);
+    expect(deps.cancelQueueItem).toHaveBeenCalledWith("qi1");
+    expect(deps.dispatchWebSessionRun).not.toHaveBeenCalled();
   });
 
   it("should skip non-web sessions", () => {
-    const session = makeSession({ source: "discord" });
-    vi.mocked(listAllPendingQueueItems).mockReturnValue([
-      { id: "qi1", sessionId: "s1", prompt: "hello", sessionKey: "sk1", createdAt: 0, status: "pending" } as never,
-    ]);
-    vi.mocked(getSession).mockReturnValue({ ok: true, value: session });
-
-    resumePendingWebQueueItemsImpl(makeContext());
-    expect(dispatchWebSessionRun).not.toHaveBeenCalled();
+    const deps = makeDeps({
+      listAllPendingQueueItems: vi.fn().mockReturnValue([
+        { id: "qi1", sessionId: "s1", prompt: "hello", sessionKey: "sk1", createdAt: 0, status: "pending" } as never,
+      ]),
+      getSession: vi.fn().mockReturnValue({ ok: true, value: makeSession({ source: "discord" }) }),
+    });
+    resumePendingWebQueueItemsImpl(makeContext(), deps);
+    expect(deps.dispatchWebSessionRun).not.toHaveBeenCalled();
   });
 
-  it("should cancel and errors session when engine not available", () => {
-    const session = makeSession({ source: "web" });
-    vi.mocked(listAllPendingQueueItems).mockReturnValue([
-      { id: "qi1", sessionId: "s1", prompt: "hello", sessionKey: "sk1", createdAt: 0, status: "pending" } as never,
-    ]);
-    vi.mocked(getSession).mockReturnValue({ ok: true, value: session });
-
+  it("should cancel and error session when engine not available", () => {
+    const deps = makeDeps({
+      listAllPendingQueueItems: vi.fn().mockReturnValue([
+        { id: "qi1", sessionId: "s1", prompt: "hello", sessionKey: "sk1", createdAt: 0, status: "pending" } as never,
+      ]),
+      getSession: vi.fn().mockReturnValue({ ok: true, value: makeSession({ source: "web" }) }),
+    });
     const context = makeContext();
     (context.sessionManager.getEngine as ReturnType<typeof vi.fn>).mockReturnValue(null);
-
-    resumePendingWebQueueItemsImpl(context);
-    expect(cancelQueueItem).toHaveBeenCalledWith("qi1");
-    expect(updateSession).toHaveBeenCalledWith("s1", expect.objectContaining({ status: "error" }));
+    resumePendingWebQueueItemsImpl(context, deps);
+    expect(deps.cancelQueueItem).toHaveBeenCalledWith("qi1");
+    expect(deps.updateSession).toHaveBeenCalledWith("s1", expect.objectContaining({ status: "error" }));
   });
 
   it("should dispatch web session run for valid pending web sessions", () => {
-    const session = makeSession({ source: "web" });
-    vi.mocked(listAllPendingQueueItems).mockReturnValue([
-      { id: "qi1", sessionId: "s1", prompt: "hello", sessionKey: "sk1", createdAt: 0, status: "pending" } as never,
-    ]);
-    vi.mocked(getSession).mockReturnValue({ ok: true, value: session });
-
-    resumePendingWebQueueItemsImpl(makeContext());
-    expect(updateSession).toHaveBeenCalledWith("s1", expect.objectContaining({ status: "running" }));
-    expect(dispatchWebSessionRun).toHaveBeenCalled();
+    const deps = makeDeps({
+      listAllPendingQueueItems: vi.fn().mockReturnValue([
+        { id: "qi1", sessionId: "s1", prompt: "hello", sessionKey: "sk1", createdAt: 0, status: "pending" } as never,
+      ]),
+      getSession: vi.fn().mockReturnValue({ ok: true, value: makeSession({ source: "web" }) }),
+    });
+    resumePendingWebQueueItemsImpl(makeContext(), deps);
+    expect(deps.updateSession).toHaveBeenCalledWith("s1", expect.objectContaining({ status: "running" }));
+    expect(deps.dispatchWebSessionRun).toHaveBeenCalled();
   });
 });

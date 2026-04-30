@@ -23,7 +23,7 @@ import {
   stopSession,
   updateSessionHandler,
 } from "./session-crud.js";
-import { defaultPostMessageDeps, handlePostMessage } from "./session-message.js";
+import { basePostMessageDeps, handlePostMessage } from "./session-message.js";
 import {
   defaultQueueHandlerDeps,
   handleCancelQueueItem,
@@ -303,7 +303,7 @@ export async function handleSessionsRequest(
   params = matchRoute("/api/sessions/:id/message", pathname);
   if (method === "POST" && params) {
     const deps = {
-      ...defaultPostMessageDeps,
+      ...basePostMessageDeps,
       getEngine: (name: string) => context.sessionManager.getEngine(name) ?? null,
       getConfig: () => context.getConfig(),
     };

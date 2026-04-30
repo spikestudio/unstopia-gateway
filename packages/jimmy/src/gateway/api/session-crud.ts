@@ -1,5 +1,8 @@
 import type { IncomingMessage as HttpRequest, ServerResponse } from "node:http";
-import { forkEngineSession } from "../../sessions/fork.js";
+import {
+  forkEngineSession,
+  type forkEngineSession as forkEngineSessionType,
+} from "../../sessions/fork.js";
 import {
   type deleteSession,
   type duplicateSession,
@@ -34,6 +37,7 @@ export interface CrudDeps {
   getMessages: typeof getMessages;
   listSessions: typeof listSessions;
   duplicateSession: typeof duplicateSession;
+  forkEngineSession: typeof forkEngineSessionType;
 }
 
 
@@ -199,7 +203,7 @@ export async function duplicateSessionHandler(
     const { session: newSession, messageCount } = deps.duplicateSession(sessionId);
     newSessionId = newSession.id;
 
-    const forkResult = forkEngineSession(source.engine, source.engineSessionId, JINN_HOME);
+    const forkResult = deps.forkEngineSession(source.engine, source.engineSessionId, JINN_HOME);
     deps.updateSession(newSession.id, { engineSessionId: forkResult.engineSessionId });
 
     const result = unwrapSession(deps.getSession(newSession.id));
@@ -249,4 +253,5 @@ export const defaultCrudDeps: CrudDeps = {
   getMessages: defaultGetMessages,
   listSessions: defaultListSessions,
   duplicateSession: defaultDuplicateSession,
+  forkEngineSession,
 };

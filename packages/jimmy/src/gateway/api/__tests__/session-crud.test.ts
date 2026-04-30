@@ -5,10 +5,6 @@ import type { ApiContext } from "../../types.js";
 import type { CrudDeps } from "../session-crud.js";
 import { loadTranscriptMessages } from "../session-runner.js";
 
-vi.mock("../../../sessions/fork.js", () => ({
-  forkEngineSession: vi.fn().mockReturnValue({ engineSessionId: "forked-e1" }),
-}));
-
 vi.mock("../session-runner.js", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../session-runner.js")>();
   return {
@@ -52,6 +48,7 @@ const makeDeps = (overrides: Partial<CrudDeps> = {}): CrudDeps => ({
   getMessages: vi.fn().mockReturnValue([]),
   listSessions: vi.fn().mockReturnValue([]),
   duplicateSession: vi.fn(),
+  forkEngineSession: vi.fn().mockReturnValue({ engineSessionId: "forked-e1" }),
   ...overrides,
 });
 
