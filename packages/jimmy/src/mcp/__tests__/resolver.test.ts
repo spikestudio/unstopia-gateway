@@ -13,7 +13,7 @@ const { tmpJinnHomeForModule } = vi.hoisted(() => {
 });
 
 import { logger } from "../../shared/logger.js";
-import { cleanupMcpConfigFile, resolveMcpServers, resolveEnvVar, writeMcpConfigFile } from "../resolver.js";
+import { cleanupMcpConfigFile, resolveEnvVar, resolveMcpServers, writeMcpConfigFile } from "../resolver.js";
 
 vi.mock("../../shared/logger.js", () => ({
   logger: { warn: vi.fn(), info: vi.fn(), debug: vi.fn(), error: vi.fn() },
