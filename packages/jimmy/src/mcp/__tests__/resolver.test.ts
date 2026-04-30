@@ -49,6 +49,10 @@ describe("resolveEnvVar", () => {
     expect(resolveEnvVar("${UNSET_VAR_XYZ_123}")).toBeUndefined();
   });
 
+  it("should return undefined when $VAR_NAME env var is not set", () => {
+    expect(resolveEnvVar("$UNSET_VAR_XYZ_456")).toBeUndefined();
+  });
+
   // AC-E027-41
   it("should return the string as-is for plain strings without $ prefix", () => {
     expect(resolveEnvVar("plain-string")).toBe("plain-string");
@@ -209,5 +213,71 @@ describe("buildAvailableServers (via resolveMcpServers)", () => {
     const config = { custom: { myserver: { command: "node", args: ["server.js"], enabled: false } } } as never;
     const result = resolveMcpServers(config);
     expect(result.mcpServers).not.toHaveProperty("myserver");
+  });
+
+  // Coverage補完: browser.enabled=true だが provider が未知 → browser 未登録
+  it("should not register browser server for unknown provider", () => {
+    const config = { browser: { enabled: true, provider: "unknown-browser" } } as never;
+    const result = resolveMcpServers(config);
+    expect(result.mcpServers).not.toHaveProperty("browser");
+  });
+
+  // Coverage補完: employee.mcp に存在しないサーバー名 → warn
+  it("should warn when employee requests a server that is not configured", () => {
+    vi.mocked(logger.warn).mockClear();
+    const config = { fetch: { enabled: true } } as never;
+    const employee = { name: "alice", mcp: ["nonexistent-server"] } as never;
+    resolveMcpServers(config, employee);
+    expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining("nonexistent-server"));
+  });
+
+  // Coverage補完: gateway dist ファイルが存在する場合 → dist パスを使用
+  it("should use dist path for gateway server when compiled file exists", () => {
+    const existsSyncSpy = vi.spyOn(fs, "existsSync").mockReturnValue(true);
+    const config = { gateway: { enabled: true } } as never;
+    const result = resolveMcpServers(config);
+    expect(result.mcpServers.gateway).toMatchObject({ command: "node" });
+    existsSyncSpy.mockRestore();
+  });
+
+  // Coverage補完: custom stdio server without env field
+  it("should register custom stdio server without env field", () => {
+    const config = {
+      custom: { myserver: { command: "node", args: ["server.js"] } },
+    } as never;
+    const result = resolveMcpServers(config);
+    expect(result.mcpServers.myserver).toMatchObject({ command: "node" });
+  });
+
+  // Coverage補完: custom server with env field → env vars resolved
+  it("should resolve env vars in custom server env fields", () => {
+    vi.stubEnv("MY_TOKEN", "secret123");
+    const config = {
+      custom: {
+        myserver: {
+          command: "node",
+          args: ["server.js"],
+          env: { TOKEN: "${MY_TOKEN}" },
+        },
+      },
+    } as never;
+    const result = resolveMcpServers(config);
+    expect((result.mcpServers.myserver as { env?: Record<string, string> }).env?.TOKEN).toBe("secret123");
+  });
+
+  // Coverage補完: custom server env with unresolvable var → falls back to original value
+  it("should keep original value when env var in custom server is unresolvable", () => {
+    const config = {
+      custom: {
+        myserver: {
+          command: "node",
+          args: ["server.js"],
+          env: { TOKEN: "${UNSET_CUSTOM_TOKEN_XYZ}" },
+        },
+      },
+    } as never;
+    const result = resolveMcpServers(config);
+    // Falls back to original value when unresolvable
+    expect((result.mcpServers.myserver as { env?: Record<string, string> }).env?.TOKEN).toBe("${UNSET_CUSTOM_TOKEN_XYZ}");
   });
 });
