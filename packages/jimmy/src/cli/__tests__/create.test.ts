@@ -37,8 +37,8 @@ vi.mock("../instances.js", () => ({
 
 import { execFileSync } from "node:child_process";
 import fs from "node:fs";
-import { loadInstances, nextAvailablePort, saveInstances } from "../instances.js";
 import { runCreate } from "../create.js";
+import { loadInstances, nextAvailablePort, saveInstances } from "../instances.js";
 
 const mockExecFileSync = vi.mocked(execFileSync);
 const mockExistsSync = vi.mocked(fs.existsSync);
@@ -156,9 +156,7 @@ describe("runCreate", () => {
       }),
     );
     expect(mockSaveInstances).toHaveBeenCalledWith(
-      expect.arrayContaining([
-        expect.objectContaining({ name: "atlas", port: 7778 }),
-      ]),
+      expect.arrayContaining([expect.objectContaining({ name: "atlas", port: 7778 })]),
     );
     expect(mockConsoleLog).toHaveBeenCalledWith(expect.stringContaining('Instance "atlas" created successfully'));
 

@@ -75,7 +75,9 @@ describe("migrate: additional AC tests", () => {
 
     const { runMigrate } = await import("../migrate.js");
     // Supply config.yaml content for stampVersion to parse
-    vi.mocked(fs.readFileSync).mockReturnValue('jinn:\n  version: "1.0.0"\n' as unknown as ReturnType<typeof fs.readFileSync>);
+    vi.mocked(fs.readFileSync).mockReturnValue(
+      'jinn:\n  version: "1.0.0"\n' as unknown as ReturnType<typeof fs.readFileSync>,
+    );
 
     await runMigrate({});
 

@@ -110,9 +110,7 @@ describe("ensureDefaultInstance", () => {
 
   it("should prepend 'jinn' instance when it is missing from instances list", () => {
     mockExistsSync.mockReturnValue(true);
-    const instances = [
-      { name: "other", port: 7778, home: "/home/user/.other", createdAt: "2024-01-01T00:00:00.000Z" },
-    ];
+    const instances = [{ name: "other", port: 7778, home: "/home/user/.other", createdAt: "2024-01-01T00:00:00.000Z" }];
     mockReadFileSync.mockReturnValue(JSON.stringify(instances) as unknown as ReturnType<typeof fs.readFileSync>);
 
     ensureDefaultInstance();
@@ -133,7 +131,10 @@ describe("findInstance", () => {
   it("should return the matching instance when searching for 'jinn'", () => {
     mockExistsSync.mockReturnValue(true);
     const jinnInstance = { name: "jinn", port: 7777, home: "/home/user/.jinn", createdAt: "2024-01-01T00:00:00.000Z" };
-    const instances = [jinnInstance, { name: "other", port: 7778, home: "/home/user/.other", createdAt: "2024-01-01T00:00:00.000Z" }];
+    const instances = [
+      jinnInstance,
+      { name: "other", port: 7778, home: "/home/user/.other", createdAt: "2024-01-01T00:00:00.000Z" },
+    ];
     mockReadFileSync.mockReturnValue(JSON.stringify(instances) as unknown as ReturnType<typeof fs.readFileSync>);
 
     const result = findInstance("jinn");

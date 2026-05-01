@@ -46,19 +46,22 @@ vi.mock("node:os", async () => {
 });
 
 // モック設定後にインポート
-import {
-  allowAllForBrowser,
-  getExtensionDbPath,
-  isBrowserRunning,
-  runChromeAllow,
-} from "../chrome-allow.js";
+import { allowAllForBrowser, getExtensionDbPath, isBrowserRunning, runChromeAllow } from "../chrome-allow.js";
 
 // ── LevelDB スタブファクトリ ───────────────────────────────────────────────────
 
-function makeMockClassicLevel(opts: {
-  existingPermissions?: Array<{ action: string; createdAt: number; duration: string; id: string; scope: { netloc: string; type: string } }>;
-  getThrows?: boolean;
-} = {}): {
+function makeMockClassicLevel(
+  opts: {
+    existingPermissions?: Array<{
+      action: string;
+      createdAt: number;
+      duration: string;
+      id: string;
+      scope: { netloc: string; type: string };
+    }>;
+    getThrows?: boolean;
+  } = {},
+): {
   ClassicLevel: ClassicLevelConstructor;
   mockGet: ReturnType<typeof vi.fn>;
   mockPut: ReturnType<typeof vi.fn>;
@@ -150,8 +153,7 @@ describe("AC-E029-80: getExtensionDbPath — profile exists → returns path", (
   it("returns the Default profile path on darwin when it exists", () => {
     mockPlatform.mockReturnValue("darwin");
     const browser = makeBrowser({ macDataDir: "Google/Chrome" });
-    const expectedPath =
-      `/home/testuser/Library/Application Support/Google/Chrome/Default/Local Extension Settings/${EXTENSION_ID}`;
+    const expectedPath = `/home/testuser/Library/Application Support/Google/Chrome/Default/Local Extension Settings/${EXTENSION_ID}`;
 
     mockExistsSync.mockImplementation((p: PathLike) => p === expectedPath);
 
@@ -161,8 +163,7 @@ describe("AC-E029-80: getExtensionDbPath — profile exists → returns path", (
   it("returns Profile 1 path when Default does not exist (darwin)", () => {
     mockPlatform.mockReturnValue("darwin");
     const browser = makeBrowser({ macDataDir: "Google/Chrome" });
-    const profile1Path =
-      `/home/testuser/Library/Application Support/Google/Chrome/Profile 1/Local Extension Settings/${EXTENSION_ID}`;
+    const profile1Path = `/home/testuser/Library/Application Support/Google/Chrome/Profile 1/Local Extension Settings/${EXTENSION_ID}`;
 
     mockExistsSync.mockImplementation((p: unknown) => p === profile1Path);
 
@@ -172,8 +173,7 @@ describe("AC-E029-80: getExtensionDbPath — profile exists → returns path", (
   it("returns a path on linux when Default profile exists", () => {
     mockPlatform.mockReturnValue("linux");
     const browser = makeBrowser({ linuxDataDir: "google-chrome" });
-    const expectedPath =
-      `/home/testuser/.config/google-chrome/Default/Local Extension Settings/${EXTENSION_ID}`;
+    const expectedPath = `/home/testuser/.config/google-chrome/Default/Local Extension Settings/${EXTENSION_ID}`;
 
     mockExistsSync.mockImplementation((p: PathLike) => p === expectedPath);
 
@@ -392,9 +392,19 @@ describe("AC-E029-86: allowAllForBrowser — idempotent (already allowed → no 
 
     // Phase 2: 書き込まれた全 TLD エントリを初期値として返す DB で再実行
     const writtenData = JSON.parse(writtenValue) as {
-      permissions: Array<{ action: string; createdAt: number; duration: string; id: string; scope: { netloc: string; type: string } }>;
+      permissions: Array<{
+        action: string;
+        createdAt: number;
+        duration: string;
+        id: string;
+        scope: { netloc: string; type: string };
+      }>;
     };
-    const { ClassicLevel: CL2, mockPut: mockPut2, mockClose: mockClose2 } = makeMockClassicLevel({
+    const {
+      ClassicLevel: CL2,
+      mockPut: mockPut2,
+      mockClose: mockClose2,
+    } = makeMockClassicLevel({
       existingPermissions: writtenData.permissions,
     });
     const mockConsoleLog2 = vi.spyOn(console, "log").mockImplementation(() => {});

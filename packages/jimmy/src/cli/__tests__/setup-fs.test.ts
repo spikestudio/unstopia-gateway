@@ -63,7 +63,9 @@ describe("whichBin", () => {
   });
 
   it("should return the first line when output contains multiple lines", () => {
-    mockExecSync.mockReturnValue("/usr/local/bin/node\n/usr/bin/node\n" as unknown as ReturnType<typeof fs.readFileSync>);
+    mockExecSync.mockReturnValue(
+      "/usr/local/bin/node\n/usr/bin/node\n" as unknown as ReturnType<typeof fs.readFileSync>,
+    );
 
     const result = whichBin("node");
 

@@ -93,10 +93,10 @@ import { spawn } from "node:child_process";
 import fs from "node:fs";
 import yaml from "js-yaml";
 import { initDb } from "../../sessions/registry.js";
+import { runSetup } from "../setup.js";
 import { detectProjectContext } from "../setup-context.js";
 import { copyTemplateDir, ensureDir, ensureFile, runVersion, whichBin } from "../setup-fs.js";
 import { fail, info, ok, prompt, warn } from "../setup-ui.js";
-import { runSetup } from "../setup.js";
 
 const mockFs = vi.mocked(fs);
 const mockOk = vi.mocked(ok);
@@ -388,7 +388,7 @@ describe("runSetup", () => {
       // CONFIG_PATH exists; other paths do not
       mockFs.existsSync.mockImplementation((p) => String(p) === "/mock/.jinn/config.yaml");
       mockFs.readFileSync.mockReturnValue(
-        "jinn:\n  version: \"0.0.0\"\nportal: {}\n" as unknown as ReturnType<typeof fs.readFileSync>,
+        'jinn:\n  version: "0.0.0"\nportal: {}\n' as unknown as ReturnType<typeof fs.readFileSync>,
       );
 
       await runSetup();
@@ -434,7 +434,7 @@ describe("runSetup", () => {
     it("does not call ensureFile for CLAUDE.md when it already exists", async () => {
       mockFs.existsSync.mockImplementation((p) => String(p) === "/mock/.jinn/CLAUDE.md");
       mockFs.readFileSync.mockReturnValue(
-        "jinn:\n  version: \"0.0.0\"\n" as unknown as ReturnType<typeof fs.readFileSync>,
+        'jinn:\n  version: "0.0.0"\n' as unknown as ReturnType<typeof fs.readFileSync>,
       );
 
       await runSetup();
@@ -467,7 +467,7 @@ describe("runSetup", () => {
     it("does not call ensureFile for AGENTS.md when it already exists", async () => {
       mockFs.existsSync.mockImplementation((p) => String(p) === "/mock/.jinn/AGENTS.md");
       mockFs.readFileSync.mockReturnValue(
-        "jinn:\n  version: \"0.0.0\"\n" as unknown as ReturnType<typeof fs.readFileSync>,
+        'jinn:\n  version: "0.0.0"\n' as unknown as ReturnType<typeof fs.readFileSync>,
       );
 
       await runSetup();
@@ -519,7 +519,9 @@ describe("runSetup", () => {
 
     it("falls back to 'Jinn' when portal is missing in config", async () => {
       mockFs.existsSync.mockImplementation((p) => String(p) === "/mock/.jinn/config.yaml");
-      mockFs.readFileSync.mockReturnValue("jinn:\n  version: \"0.0.0\"\n" as unknown as ReturnType<typeof fs.readFileSync>);
+      mockFs.readFileSync.mockReturnValue(
+        'jinn:\n  version: "0.0.0"\n' as unknown as ReturnType<typeof fs.readFileSync>,
+      );
       vi.mocked(yaml.load).mockReturnValue({ jinn: { version: "0.0.0" } });
 
       await runSetup();
@@ -623,10 +625,7 @@ describe("runSetup", () => {
 
       await runSetup();
 
-      expect(mockFs.copyFileSync).toHaveBeenCalledWith(
-        "/mock/template/skills.json",
-        "/mock/.jinn/skills.json",
-      );
+      expect(mockFs.copyFileSync).toHaveBeenCalledWith("/mock/template/skills.json", "/mock/.jinn/skills.json");
     });
 
     it("does not copy skills.json when dest already exists", async () => {
@@ -915,9 +914,7 @@ describe("runSetup", () => {
     it("calls ensureFile for settings.local.json with permissions JSON", async () => {
       await runSetup();
 
-      const settingsCall = mockEnsureFile.mock.calls.find((c) =>
-        String(c[0]).endsWith("settings.local.json"),
-      );
+      const settingsCall = mockEnsureFile.mock.calls.find((c) => String(c[0]).endsWith("settings.local.json"));
       expect(settingsCall).toBeDefined();
       expect(settingsCall?.[1]).toContain("permissions");
     });
@@ -939,21 +936,13 @@ describe("runSetup", () => {
     it("copies docs, skills, and org template dirs", async () => {
       await runSetup();
 
-      expect(mockCopyTemplateDir).toHaveBeenCalledWith(
-        "/mock/template/docs",
-        "/mock/.jinn/docs",
-        expect.any(Object),
-      );
+      expect(mockCopyTemplateDir).toHaveBeenCalledWith("/mock/template/docs", "/mock/.jinn/docs", expect.any(Object));
       expect(mockCopyTemplateDir).toHaveBeenCalledWith(
         "/mock/template/skills",
         "/mock/.jinn/skills",
         expect.any(Object),
       );
-      expect(mockCopyTemplateDir).toHaveBeenCalledWith(
-        "/mock/template/org",
-        "/mock/.jinn/org",
-        expect.any(Object),
-      );
+      expect(mockCopyTemplateDir).toHaveBeenCalledWith("/mock/template/org", "/mock/.jinn/org", expect.any(Object));
     });
 
     it("adds copied files to created list", async () => {

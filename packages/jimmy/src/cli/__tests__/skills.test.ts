@@ -114,9 +114,7 @@ describe("upsertManifest", () => {
 
   it("should update an existing entry when skill already exists in manifest", () => {
     mockExistsSync.mockReturnValue(true);
-    const existing = [
-      { name: "my-skill", source: "old-owner/repo@my-skill", installedAt: "2024-01-01T00:00:00.000Z" },
-    ];
+    const existing = [{ name: "my-skill", source: "old-owner/repo@my-skill", installedAt: "2024-01-01T00:00:00.000Z" }];
     mockReadFileSync.mockReturnValue(JSON.stringify(existing) as unknown as ReturnType<typeof fs.readFileSync>);
 
     upsertManifest("my-skill", "new-owner/repo@my-skill");
@@ -289,7 +287,9 @@ describe("skillsList", () => {
       isDirectory: () => true,
     };
     mockReaddirSync.mockReturnValue([skillDir] as unknown as ReturnType<typeof fs.readdirSync>);
-    const manifest = [{ name: "manifest-skill", source: "owner/repo@manifest-skill", installedAt: "2024-01-01T00:00:00.000Z" }];
+    const manifest = [
+      { name: "manifest-skill", source: "owner/repo@manifest-skill", installedAt: "2024-01-01T00:00:00.000Z" },
+    ];
     mockReadFileSync.mockReturnValue(JSON.stringify(manifest) as unknown as ReturnType<typeof fs.readFileSync>);
 
     skillsList();
