@@ -140,4 +140,103 @@ describe("runNuke", () => {
 
     mockConsoleLog.mockRestore();
   });
+
+  it("should exit with error when named instance is not found", async () => {
+    // Cover lines 58-61: index === -1 branch
+    const mockExit = vi.spyOn(process, "exit").mockImplementation(() => {
+      throw new Error("process.exit called");
+    });
+    const mockConsoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+    // sampleInstance is in loadInstances but we pass a different name
+    await expect(runNuke("nonexistent")).rejects.toThrow("process.exit called");
+    expect(mockConsoleError).toHaveBeenCalledWith(expect.stringContaining('Instance "nonexistent" not found'));
+    expect(mockExit).toHaveBeenCalledWith(1);
+    mockExit.mockRestore();
+    mockConsoleError.mockRestore();
+  });
+
+  it("should select instance by number when no name provided and choice is numeric", async () => {
+    // Cover lines 30-47: no name → show list → pick by number
+    vi.spyOn(console, "log").mockImplementation(() => {});
+    setReadlineAnswer("1"); // pick first instance by number
+    // Second call to readline (confirmation): provide correct name
+    let callCount = 0;
+    mockCreateInterface.mockImplementation(
+      () =>
+        ({
+          question: vi.fn((_q: string, cb: (answer: string) => void) => {
+            callCount++;
+            // First ask: pick "1" (number selection), second: confirmation
+            cb(callCount === 1 ? "1" : "atlas");
+          }),
+          close: vi.fn(),
+        }) as unknown as ReturnType<typeof readline.createInterface>,
+    );
+
+    await runNuke(); // no name → interactive
+
+    expect(mockSaveInstances).toHaveBeenCalled();
+  });
+
+  it("should select instance by name string when choice is not numeric", async () => {
+    // Cover line 46: name = choice (not a number)
+    vi.spyOn(console, "log").mockImplementation(() => {});
+    let callCount = 0;
+    mockCreateInterface.mockImplementation(
+      () =>
+        ({
+          question: vi.fn((_q: string, cb: (answer: string) => void) => {
+            callCount++;
+            // First ask: pick "atlas" by name, second: confirmation
+            cb(callCount === 1 ? "atlas" : "atlas");
+          }),
+          close: vi.fn(),
+        }) as unknown as ReturnType<typeof readline.createInterface>,
+    );
+
+    await runNuke(); // no name → interactive
+
+    expect(mockSaveInstances).toHaveBeenCalled();
+  });
+
+  it("should stop running instance when PID file exists and process is alive", async () => {
+    // Cover lines 69-79: PID file exists, process.kill succeeds
+    vi.spyOn(console, "log").mockImplementation(() => {});
+    const mockKill = vi.spyOn(process, "kill").mockImplementation(() => true);
+    vi.spyOn(fs, "readFileSync").mockReturnValue("12345" as never);
+    mockExistsSync.mockImplementation((p: unknown) => {
+      const ps = String(p);
+      if (ps.endsWith("gateway.pid")) return true; // PID file exists
+      return false;
+    });
+    setReadlineAnswer("atlas");
+
+    await runNuke("atlas");
+
+    // process.kill called twice: once with 0 (check), once with SIGTERM
+    expect(mockKill).toHaveBeenCalledWith(12345, 0);
+    expect(mockKill).toHaveBeenCalledWith(12345, "SIGTERM");
+    mockKill.mockRestore();
+  });
+
+  it("should continue silently when PID process is not alive (kill throws)", async () => {
+    // Cover lines 77-79: catch block — process not alive
+    vi.spyOn(console, "log").mockImplementation(() => {});
+    const mockKill = vi.spyOn(process, "kill").mockImplementation(() => {
+      throw new Error("no such process");
+    });
+    vi.spyOn(fs, "readFileSync").mockReturnValue("99999" as never);
+    mockExistsSync.mockImplementation((p: unknown) => {
+      const ps = String(p);
+      if (ps.endsWith("gateway.pid")) return true;
+      return false;
+    });
+    setReadlineAnswer("atlas");
+
+    // Should not throw — catch block handles it
+    await runNuke("atlas");
+
+    expect(mockSaveInstances).toHaveBeenCalled();
+    mockKill.mockRestore();
+  });
 });

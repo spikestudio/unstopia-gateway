@@ -131,4 +131,31 @@ describe("runStatus", () => {
 
     mockConsoleLog.mockRestore();
   });
+
+  it("should display sessions as non-object value (line 54 branch)", async () => {
+    // Cover line 54: sessions is not an object (e.g. a number or string)
+    mockExistsSync.mockReturnValue(true);
+    mockGetStatus.mockReturnValue({ running: true, pid: 12345 });
+
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: vi.fn().mockResolvedValue({
+          sessions: 42, // not an object → else branch at line 53
+          uptime: 100,
+        }),
+      }),
+    );
+
+    const mockConsoleLog = vi.spyOn(console, "log").mockImplementation(() => {});
+
+    await runStatus();
+
+    const allCalls = mockConsoleLog.mock.calls.map((c) => c.join(" "));
+    // Line 54: console.log(`  Active sessions: ${data.sessions}`)
+    expect(allCalls.some((line) => line.includes("42") || line.includes("Active sessions"))).toBe(true);
+
+    mockConsoleLog.mockRestore();
+  });
 });

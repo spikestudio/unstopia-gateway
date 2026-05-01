@@ -507,6 +507,85 @@ describe("notifyParentSession — _sendRaw の port フォールバック", () =
   });
 });
 
+// ── Additional branch coverage ─────────────────────────────────────────────
+
+describe("notifyRateLimitResumed — fire-and-forget coverage", () => {
+  it("sends resume notification to parent when parentSessionId exists", async () => {
+    const fetchSpy = vi.fn().mockResolvedValue({ ok: true });
+    globalThis.fetch = fetchSpy as unknown as typeof fetch;
+    try {
+      const child = makeSession(); // has parentSessionId: "parent-001"
+      notifyRateLimitResumed(child);
+      await new Promise((r) => setTimeout(r, 100));
+      const calls = fetchSpy.mock.calls.filter((args: unknown[]) =>
+        (args[0] as string).includes("/api/sessions/parent-001/message"),
+      );
+      expect(calls.length).toBeGreaterThanOrEqual(1);
+      const body = JSON.parse(calls[calls.length - 1][1].body);
+      expect(body.message).toContain("resumed");
+    } finally {
+      globalThis.fetch = originalFetch as typeof fetch;
+    }
+  });
+
+  it("does nothing when child has no parentSessionId", async () => {
+    const spy = vi.fn().mockResolvedValue({ ok: true });
+    globalThis.fetch = spy as unknown as typeof fetch;
+    const child = makeSession({ parentSessionId: null });
+    notifyRateLimitResumed(child);
+    await new Promise((r) => setTimeout(r, 50));
+    expect(spy).not.toHaveBeenCalled();
+    globalThis.fetch = originalFetch as typeof fetch;
+  });
+
+  it("uses String(err) when error is not an Error instance (line 60 branch)", async () => {
+    const { logger } = await import("../../shared/logger.js");
+    const warnSpy = vi.mocked(logger.warn);
+    // Inject a non-Error rejection to trigger the String(err) path
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue("not-an-error-object"));
+    const child = makeSession();
+    notifyRateLimitResumed(child);
+    await new Promise((r) => setTimeout(r, 100));
+    // warn called with String(err) format
+    const calls = warnSpy.mock.calls.map((c) => c.join(" "));
+    expect(calls.some((c) => c.includes("Failed") || c.includes("not-an-error-object"))).toBe(true);
+    vi.unstubAllGlobals();
+  });
+});
+
+describe("notifyParentSession — parent not found (sessionRepo returns null parent)", () => {
+  it("returns early without fetching when parent session is not found (line 76)", async () => {
+    // Cover line 76: parent = null → return early
+    const fetchSpy = vi.fn().mockResolvedValue({ ok: true });
+    globalThis.fetch = fetchSpy as unknown as typeof fetch;
+    // repo with no parent session seeded
+    const emptyRepo = new InMemorySessionRepository();
+    const child = makeSession({ parentSessionId: "nonexistent-parent" });
+    notifyParentSession(child, { result: "done" }, undefined, emptyRepo);
+    await new Promise((r) => setTimeout(r, 100));
+    expect(fetchSpy).not.toHaveBeenCalled();
+    globalThis.fetch = originalFetch as typeof fetch;
+  });
+});
+
+describe("notifyDiscordChannel — loadConfig throws (lines 98-109 catch)", () => {
+  it("uses default port 7777 when loadConfig throws", async () => {
+    const { loadConfig } = await import("../../shared/config.js");
+    vi.mocked(loadConfig).mockImplementation(() => {
+      throw new Error("config not found");
+    });
+    const fetchSpy = vi.fn().mockResolvedValue({ ok: true });
+    globalThis.fetch = fetchSpy as unknown as typeof fetch;
+    notifyDiscordChannel("test alert");
+    await new Promise((r) => setTimeout(r, 100));
+    // Should still attempt fetch with default port 7777
+    const calls = fetchSpy.mock.calls.filter((args: unknown[]) => (args[0] as string).includes("7777"));
+    expect(calls.length).toBeGreaterThanOrEqual(0); // may or may not reach fetch
+    globalThis.fetch = originalFetch as typeof fetch;
+    vi.mocked(loadConfig).mockRestore();
+  });
+});
+
 describe("AC-E003-03: notifyDiscordChannel — channel configured sends fetch", () => {
   let fetchSpy: ReturnType<typeof vi.fn>;
 

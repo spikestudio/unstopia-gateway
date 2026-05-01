@@ -404,3 +404,46 @@ describe("unmatched routes", () => {
     expect(handled).toBe(false);
   });
 });
+
+// ── Additional branch coverage ────────────────────────────────────────────
+
+describe("POST /api/org/cross-request - managers with employees (line 152)", () => {
+  beforeEach(() => {
+    vi.mocked(orgMock.scanOrg).mockReturnValue(
+      new Map([
+        ["alice", makeOrgEntry("alice")],
+        ["bob", makeOrgEntry("bob")],
+        ["carol", makeOrgEntry("carol")],
+      ]) as never,
+    );
+    vi.mocked(hierarchyMock.resolveOrgHierarchy).mockReturnValue(makeHierarchy(["alice", "bob", "carol"]) as never);
+    vi.mocked(servicesMock.buildServiceRegistry).mockReturnValue(
+      new Map([
+        [
+          "analytics",
+          {
+            declaration: { name: "analytics", description: "Analytics service" },
+            provider: makeOrgEntry("bob"),
+          },
+        ],
+      ]) as never,
+    );
+    vi.mocked(servicesMock.buildRoutePath).mockReturnValue(["alice", "carol", "bob"]);
+    // resolveManagerChain returns non-empty list — covers line 152 .map branch
+    vi.mocked(servicesMock.resolveManagerChain).mockReturnValue([
+      { employee: makeOrgEntry("carol"), parentName: null, directReports: [], depth: 1, chain: ["carol"] },
+    ] as never);
+  });
+
+  it("maps manager names when resolveManagerChain returns non-empty list", async () => {
+    const context = makeContext();
+    const res = makeRes();
+    const req = makeReq({ fromEmployee: "alice", service: "analytics", prompt: "Analyze data" });
+    const handled = await handleOrgRequest(req, res, context, "POST", "/api/org/cross-request");
+    expect(handled).toBe(true);
+    expect(getStatusCode(res)).toBe(201);
+    const body = getResponseBody(res) as Record<string, unknown>;
+    const managers = body.managers as string[];
+    expect(managers).toContain("carol");
+  });
+});

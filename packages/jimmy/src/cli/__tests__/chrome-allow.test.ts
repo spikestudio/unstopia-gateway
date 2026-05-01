@@ -474,3 +474,191 @@ describe("runChromeAllow — chrome target (integration via runChromeAllow with 
     mockConsoleLog.mockRestore();
   });
 });
+
+// ── allowAllForBrowser — wasRunning && opts.restart !== false (lines 451-453) ──
+
+describe("allowAllForBrowser — restart branch when browser was running", () => {
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("restarts browser when wasRunning=true and restart is not false", async () => {
+    // isBrowserRunning returns true → wasRunning = true
+    // after writing, opts.restart is undefined (truthy) → reopens browser
+    mockPlatform.mockReturnValue("darwin");
+    mockHomedir.mockReturnValue("/home/testuser");
+    mockExistsSync.mockReturnValue(true);
+    // First execSync call (for isBrowserRunning): returns "true" (browser is running)
+    // Subsequent calls (for openBrowser → spawn): handled by spawn mock
+    mockExecSync.mockReturnValueOnce("true").mockReturnValue(""); // kill -0 → true means running
+
+    const { ClassicLevel, mockPut } = makeMockClassicLevel({ existingPermissions: [] });
+    const mockConsoleLog = vi.spyOn(console, "log").mockImplementation(() => {});
+
+    await allowAllForBrowser(makeBrowser(), ClassicLevel, { restart: true });
+
+    // db.put was called (some TLDs added)
+    expect(mockPut).toHaveBeenCalledOnce();
+    const logs = mockConsoleLog.mock.calls.map((c) => c.join(" "));
+    // Lines 451-453: "Reopening" and "Restarted" logged
+    expect(logs.some((l) => l.includes("Reopening") || l.includes("Restarted"))).toBe(true);
+
+    mockConsoleLog.mockRestore();
+  });
+
+  it("exits when opts.restart is explicitly false and browser is running", async () => {
+    // When restart: false and browser is running, the code calls process.exit(1)
+    mockPlatform.mockReturnValue("darwin");
+    mockHomedir.mockReturnValue("/home/testuser");
+    mockExistsSync.mockReturnValue(true);
+    mockExecSync.mockReturnValueOnce("true"); // browser was running
+
+    const { ClassicLevel } = makeMockClassicLevel({ existingPermissions: [] });
+    const mockConsoleLog = vi.spyOn(console, "log").mockImplementation(() => {});
+    const mockConsoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+    const mockExit = vi.spyOn(process, "exit").mockImplementation(() => {
+      throw new Error("process.exit called");
+    });
+
+    await expect(allowAllForBrowser(makeBrowser(), ClassicLevel, { restart: false })).rejects.toThrow(
+      "process.exit called",
+    );
+
+    expect(mockExit).toHaveBeenCalledWith(1);
+
+    mockConsoleLog.mockRestore();
+    mockConsoleError.mockRestore();
+    mockExit.mockRestore();
+  });
+});
+
+// ── runChromeAllow — cometBrowser path (line 472) ────────────────────────────
+
+describe("runChromeAllow — cometBrowser=true target", () => {
+  it("targets comet browser when cometBrowser option is true", async () => {
+    mockPlatform.mockReturnValue("darwin");
+    mockHomedir.mockReturnValue("/home/testuser");
+    mockExistsSync.mockReturnValue(false); // DB path not found
+    mockExecSync.mockReturnValue("false");
+
+    const mockConsoleLog = vi.spyOn(console, "log").mockImplementation(() => {});
+
+    // Cover line 472: opts.cometBrowser → targets.push(BROWSERS.comet)
+    await expect(runChromeAllow({ cometBrowser: true })).resolves.toBeUndefined();
+
+    const logs = mockConsoleLog.mock.calls.map((c) => c.join(" "));
+    // Comet browser label should appear in logs
+    expect(logs.some((l) => l.includes("Comet") || l.includes("Done"))).toBe(true);
+
+    mockConsoleLog.mockRestore();
+  });
+});
+
+// ── openBrowser platform branches (lines 362-372) ────────────────────────────
+
+describe("allowAllForBrowser — openBrowser platform branches (linux/win32)", () => {
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("uses spawn on linux platform when browser is restarted (line 363)", async () => {
+    // On linux: isBrowserRunning uses pgrep (throws → false if not running, succeeds → true if running)
+    // quitBrowser: pkill, then check isBrowserRunning again
+    mockPlatform.mockReturnValue("linux");
+    mockHomedir.mockReturnValue("/home/testuser");
+    mockExistsSync.mockReturnValue(true);
+
+    let execSyncCallCount = 0;
+    mockExecSync.mockImplementation(() => {
+      execSyncCallCount++;
+      if (execSyncCallCount === 1) return ""; // isBrowserRunning: pgrep succeeds → true
+      if (execSyncCallCount === 2) return ""; // quitBrowser: pkill succeeds
+      // isBrowserRunning after quit: pgrep throws → false → quitBrowser returns true
+      throw new Error("not running");
+    });
+
+    const { ClassicLevel } = makeMockClassicLevel({ existingPermissions: [] });
+    const mockConsoleLog = vi.spyOn(console, "log").mockImplementation(() => {});
+
+    const { spawn } = await import("node:child_process");
+    const spawnMock = vi.mocked(spawn);
+    spawnMock.mockReturnValue({ unref: vi.fn() } as never);
+
+    await allowAllForBrowser(makeBrowser(), ClassicLevel, { restart: true });
+
+    // openBrowser called spawn with browser process name (linux path, line 363)
+    expect(spawnMock).toHaveBeenCalled();
+
+    mockConsoleLog.mockRestore();
+  });
+
+  it("uses spawn with cmd on win32 platform when browser is restarted (line 369)", async () => {
+    // On win32, openBrowser uses spawn("cmd", ...) — but to reach openBrowser,
+    // wasRunning must be true, quitBrowser must succeed, and write must happen.
+    // We mock carefully: isBrowserRunning returns true initially (darwin path for isBrowserRunning),
+    // then false after quit (so quitBrowser returns true).
+    mockPlatform.mockReturnValue("win32");
+    mockHomedir.mockReturnValue("C:\\Users\\testuser");
+    mockExistsSync.mockReturnValue(true);
+    // isBrowserRunning (win32): execSync doesn't throw → returns true
+    // quitBrowser: execSync for taskkill → success; next isBrowserRunning → false (not running)
+    let execSyncCallCount = 0;
+    mockExecSync.mockImplementation(() => {
+      execSyncCallCount++;
+      if (execSyncCallCount === 1) return ""; // isBrowserRunning: true
+      if (execSyncCallCount === 2) return ""; // quitBrowser: taskkill succeeds
+      throw new Error("not running"); // isBrowserRunning after quit → false (catch → return false)
+    });
+
+    const { ClassicLevel } = makeMockClassicLevel({ existingPermissions: [] });
+    const mockConsoleLog = vi.spyOn(console, "log").mockImplementation(() => {});
+
+    const { spawn } = await import("node:child_process");
+    const spawnMock = vi.mocked(spawn);
+    spawnMock.mockReturnValue({ unref: vi.fn() } as never);
+
+    await allowAllForBrowser(makeBrowser(), ClassicLevel, { restart: true });
+
+    // spawn called with "cmd" for win32 openBrowser (line 369)
+    const cmdCalls = spawnMock.mock.calls.filter((c) => c[0] === "cmd");
+    expect(cmdCalls.length).toBeGreaterThanOrEqual(1);
+
+    mockConsoleLog.mockRestore();
+  });
+});
+
+// ── allowAllForBrowser — quitBrowser fails (lines 403-404) ───────────────────
+
+describe("allowAllForBrowser — quitBrowser fails and exits (lines 403-404)", () => {
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("exits when quitBrowser returns falsy (execSync throws during quit)", async () => {
+    mockPlatform.mockReturnValue("darwin");
+    mockHomedir.mockReturnValue("/home/testuser");
+    mockExistsSync.mockReturnValue(true);
+    // isBrowserRunning → returns true (browser is running)
+    // quitBrowser uses execSync — throw to simulate failure
+    mockExecSync
+      .mockReturnValueOnce("true") // isBrowserRunning: true
+      .mockImplementationOnce(() => {
+        throw new Error("kill failed");
+      }); // quitBrowser: throws → returns false/undefined
+
+    const { ClassicLevel } = makeMockClassicLevel({ existingPermissions: [] });
+    const mockConsoleLog = vi.spyOn(console, "log").mockImplementation(() => {});
+    const mockConsoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+    const mockExit = vi.spyOn(process, "exit").mockImplementation(() => {
+      throw new Error("process.exit called");
+    });
+
+    await expect(allowAllForBrowser(makeBrowser(), ClassicLevel, {})).rejects.toThrow();
+
+    expect(mockExit).toHaveBeenCalledWith(1);
+
+    mockConsoleLog.mockRestore();
+    mockConsoleError.mockRestore();
+    mockExit.mockRestore();
+  });
+});
