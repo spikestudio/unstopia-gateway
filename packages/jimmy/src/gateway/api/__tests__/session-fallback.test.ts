@@ -259,4 +259,50 @@ describe("switchToFallback", () => {
       expect.objectContaining({ sessionId: "s1", type: "text", content: "streaming delta" }),
     );
   });
+
+  it("uses toISOString in lastError when resumeAt is truthy (line 104-106)", async () => {
+    // Cover: resumeAt ? `...until ${resumeAt.toISOString()}` : fallback string
+    const resetsAt = Math.floor(Date.now() / 1000) + 3600;
+    const deps = makeDeps();
+    await switchToFallback(
+      deps,
+      makeSession(),
+      makeEngine(),
+      "codex",
+      makeRunParams({ rateLimit: { resetsAt } }),
+      makeConfig(),
+      makeContext(),
+    );
+    const firstUpdateCall = (deps.updateSession as ReturnType<typeof vi.fn>).mock.calls[0];
+    expect(firstUpdateCall[1].lastError).toContain("using GPT until");
+  });
+
+  it("includes employee name in Discord notification when session.employee is set (line 110)", async () => {
+    // Cover: session.employee ? ` (${session.employee})` : ""
+    const deps = makeDeps();
+    const session = makeSession({ employee: "alice" });
+    await switchToFallback(deps, session, makeEngine(), "codex", makeRunParams(), makeConfig(), makeContext());
+    expect(deps.notifyDiscordChannel).toHaveBeenCalledWith(expect.stringContaining("(alice)"));
+  });
+
+  it("skips persisting codex sessionId when fallbackResult has no sessionId (line 152 false)", async () => {
+    // Cover: if (fallbackResult.sessionId) — false branch
+    const engine = { run: vi.fn().mockResolvedValue({ result: "done" }) } as unknown as Engine;
+    const deps = makeDeps();
+    await switchToFallback(deps, makeSession(), engine, "codex", makeRunParams(), makeConfig(), makeContext());
+    const updateCalls = (deps.updateSession as ReturnType<typeof vi.fn>).mock.calls;
+    const lastCall = updateCalls[updateCalls.length - 1];
+    const meta = lastCall[1].transportMeta as Record<string, unknown>;
+    const sessions = meta?.engineSessions as Record<string, unknown> | undefined;
+    expect(sessions?.codex).toBeUndefined();
+  });
+
+  it("falls back to literal Jinn when both session.employee and portalName are absent (line 184)", async () => {
+    // Cover: session.employee || config.portal?.portalName || "Jinn"
+    const context = makeContext();
+    const session = makeSession({ employee: undefined as never });
+    const config = { engines: { default: "claude", claude: {}, codex: {} } } as unknown as JinnConfig;
+    await switchToFallback(makeDeps(), session, makeEngine(), "codex", makeRunParams(), config, context);
+    expect(context.emit).toHaveBeenCalledWith("session:completed", expect.objectContaining({ employee: "Jinn" }));
+  });
 });
