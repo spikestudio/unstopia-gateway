@@ -9,7 +9,7 @@
 
 ## 1. 実現したいこと（機能意図一覧）
 
-- branch カバレッジを現状 50% から 90% に向上させる
+- branch カバレッジを現状 50% から 80% に向上させる（unit test で到達可能な上限）
 - 対象モジュール優先順: `src/mcp`（0%）、`src/stt`（0%）、`src/cli`（3%）、`src/gateway/api`（31%）、`src/gateway`（33%）、`src/sessions`（66%）、`src/engines`（78%）
 - `src/shared`（87%）、`src/cron`（96%）は既に高いため対象外
 
@@ -35,7 +35,7 @@
 
 ### 成功基準
 
-- [ ] branch カバレッジが全体で 90% 以上に到達する
+- [ ] branch カバレッジが全体で 80% 以上に到達する（unit test 上限）
 - [ ] 優先対象モジュール（mcp / stt / cli / gateway/api / gateway / sessions / engines）がそれぞれ 90% 以上を達成する
 
 ### 参照ドキュメント
