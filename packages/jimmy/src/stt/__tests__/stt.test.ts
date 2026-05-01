@@ -24,7 +24,7 @@ vi.mock("node:child_process", () => ({
 }));
 
 import { logger } from "../../shared/logger.js";
-import { downloadModel, getSttStatus, getModelPath, initStt, resolveLanguages, transcribe } from "../stt.js";
+import { downloadModel, getModelPath, getSttStatus, initStt, resolveLanguages, transcribe } from "../stt.js";
 
 // Helper to access hoisted mocks by type
 const childProcess = { execFile: execFileMock, spawn: spawnMock };
@@ -273,11 +273,13 @@ describe("transcribe", () => {
   });
 
   const mockExecFile = (result: { stdout?: string; stderr?: string } | Error) => {
-    execFileMock.mockImplementation((_cmd: string, _args: string[], _opts: unknown, callback: (err: Error | null, res?: unknown) => void) => {
-      if (result instanceof Error) callback(result);
-      // Return object so promisify resolves with {stdout, stderr}
-      else callback(null, { stdout: result.stdout ?? "", stderr: result.stderr ?? "" });
-    });
+    execFileMock.mockImplementation(
+      (_cmd: string, _args: string[], _opts: unknown, callback: (err: Error | null, res?: unknown) => void) => {
+        if (result instanceof Error) callback(result);
+        // Return object so promisify resolves with {stdout, stderr}
+        else callback(null, { stdout: result.stdout ?? "", stderr: result.stderr ?? "" });
+      },
+    );
   };
 
   // AC-E028-20: WAV ファイルは直接 whisper-cli を実行
@@ -299,11 +301,14 @@ describe("transcribe", () => {
     vi.mocked(fs.existsSync).mockReturnValue(true);
     // First execFile call: ffmpeg, second: whisper-cli (needs {stdout})
     let callCount = 0;
-    execFileMock.mockImplementation((_cmd: string, _args: string[], _opts: unknown, callback: (err: null, res?: unknown) => void) => {
-      callCount++;
-      if (callCount === 1) callback(null, { stdout: "", stderr: "" }); // ffmpeg success
-      else callback(null, { stdout: "Transcribed text\n", stderr: "" }); // whisper-cli
-    });
+    execFileMock.mockImplementation(
+      (_cmd: string, _args: string[], _opts: unknown, callback: (err: null, res?: unknown) => void) => {
+        callCount++;
+        if (callCount === 1)
+          callback(null, { stdout: "", stderr: "" }); // ffmpeg success
+        else callback(null, { stdout: "Transcribed text\n", stderr: "" }); // whisper-cli
+      },
+    );
     const result = await transcribe("/audio/test.mp3", "tiny");
     expect(result).toBe("Transcribed text");
     expect(execFileMock).toHaveBeenCalledWith("ffmpeg", expect.anything(), expect.anything(), expect.any(Function));
