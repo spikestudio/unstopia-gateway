@@ -129,6 +129,16 @@ describe("SessionManager", () => {
     it("セッションが存在しない場合は何もしない", () => {
       expect(() => manager.resetSession("not-found")).not.toThrow();
     });
+
+    it("getSessionBySessionKey が ok=false を返す場合は何もしない (line 267 null branch)", () => {
+      const originalLookup = sessionRepo.getSessionBySessionKey.bind(sessionRepo);
+      sessionRepo.getSessionBySessionKey = (_key: string) => ({ ok: false, error: new Error("db error") }) as never;
+
+      // Should not throw
+      expect(() => manager.resetSession("k1")).not.toThrow();
+
+      sessionRepo.getSessionBySessionKey = originalLookup;
+    });
   });
 
   describe("route", () => {
@@ -482,6 +492,146 @@ describe("SessionManager", () => {
     it("未知のコマンドは false を返す", async () => {
       const handled = await manager.handleCommand({ ...baseMsg, text: "普通のメッセージ" } as never, makeConnector());
       expect(handled).toBe(false);
+    });
+
+    it("/status で lastError がある場合は Last error 行が含まれる (line 206 truthy branch)", async () => {
+      const session = sessionRepo.createSession({
+        engine: "claude",
+        source: "telegram",
+        sourceRef: "k1",
+        sessionKey: "k1",
+      });
+      sessionRepo.updateSession(session.id, { lastError: "Something went wrong" });
+
+      const connector = makeConnector();
+      const handled = await manager.handleCommand({ ...baseMsg, text: "/status" } as never, connector);
+
+      expect(handled).toBe(true);
+      const [, reply] = vi.mocked(connector.replyMessage).mock.calls[0];
+      expect(String(reply)).toContain("Something went wrong");
+    });
+
+    it("/model で getSessionBySessionKey が ok=false を返す場合はエラーメッセージを返す (line 223 else branch)", async () => {
+      // Patch getSessionBySessionKey to return Err
+      const originalLookup = sessionRepo.getSessionBySessionKey.bind(sessionRepo);
+      sessionRepo.getSessionBySessionKey = (_key: string) => ({ ok: false, error: new Error("db error") }) as never;
+
+      const connector = makeConnector();
+      const handled = await manager.handleCommand({ ...baseMsg, text: "/model claude-opus-4" } as never, connector);
+
+      expect(handled).toBe(true);
+      const [, reply] = vi.mocked(connector.replyMessage).mock.calls[0];
+      expect(String(reply)).toContain("No active session");
+
+      sessionRepo.getSessionBySessionKey = originalLookup;
+    });
+
+    it("/status で getSessionBySessionKey が ok=false を返す場合は No active session を返す (line 189 null branch)", async () => {
+      const originalLookup = sessionRepo.getSessionBySessionKey.bind(sessionRepo);
+      sessionRepo.getSessionBySessionKey = (_key: string) => ({ ok: false, error: new Error("db error") }) as never;
+
+      const connector = makeConnector();
+      const handled = await manager.handleCommand({ ...baseMsg, text: "/status" } as never, connector);
+
+      expect(handled).toBe(true);
+      const [, reply] = vi.mocked(connector.replyMessage).mock.calls[0];
+      expect(String(reply)).toContain("No active session");
+
+      sessionRepo.getSessionBySessionKey = originalLookup;
+    });
+
+    it("/status でセッションの connector が null の場合は source を使う (line 200 right branch)", async () => {
+      sessionRepo.createSession({
+        engine: "claude",
+        source: "telegram",
+        sourceRef: "k1",
+        sessionKey: "k1",
+        connector: undefined, // connector が null になる
+      });
+
+      const connector = makeConnector();
+      const handled = await manager.handleCommand({ ...baseMsg, text: "/status" } as never, connector);
+
+      expect(handled).toBe(true);
+      const [, reply] = vi.mocked(connector.replyMessage).mock.calls[0];
+      // connector が null → source (telegram) が使われる
+      expect(String(reply)).toContain("telegram");
+    });
+
+    it("/status でセッションの model が null の場合は config モデルにフォールバックする (line 201 branches)", async () => {
+      sessionRepo.createSession({
+        engine: "claude",
+        source: "telegram",
+        sourceRef: "k1",
+        sessionKey: "k1",
+        // model が設定されない → config のモデルが使われる
+      });
+
+      const connector = makeConnector();
+      const handled = await manager.handleCommand({ ...baseMsg, text: "/status" } as never, connector);
+
+      expect(handled).toBe(true);
+      // model が null → config.engines.claude.model = "sonnet" が表示される
+      const [, reply] = vi.mocked(connector.replyMessage).mock.calls[0];
+      expect(String(reply)).toContain("sonnet");
+    });
+
+    it("/doctor でコネクターの health.detail がない場合は括弧なしで表示する (line 243 false branch)", async () => {
+      const connector = makeConnector();
+      const mockConnector = makeConnector({
+        name: "slack",
+        getHealth: vi.fn().mockReturnValue({ status: "ok" }), // no detail
+      });
+      manager.setConnectorProvider(() => new Map([["slack", mockConnector]]));
+
+      const handled = await manager.handleCommand({ ...baseMsg, text: "/doctor" } as never, connector);
+
+      expect(handled).toBe(true);
+      const [, reply] = vi.mocked(connector.replyMessage).mock.calls[0];
+      const replyStr = String(reply);
+      expect(replyStr).toContain("slack: ok");
+      // Should NOT have parentheses since detail is absent
+      expect(replyStr).not.toContain("(undefined)");
+    });
+  });
+
+  describe("maybeRevertEngineOverride — updateResult failure branch (line 54)", () => {
+    it("updateSession が ok=false を返す場合は元の session をそのまま返す", async () => {
+      const pastDate = new Date(Date.now() - 1000).toISOString();
+      const session = sessionRepo.createSession({
+        engine: "codex",
+        source: "telegram",
+        sourceRef: "k1",
+        sessionKey: "k1",
+      });
+      sessionRepo.updateSession(session.id, {
+        transportMeta: {
+          engineOverride: {
+            originalEngine: "claude",
+            originalEngineSessionId: "claude-orig-session",
+            until: pastDate,
+          },
+        },
+      });
+
+      // モックの updateSession を一時的に失敗させる
+      const originalUpdate = sessionRepo.updateSession.bind(sessionRepo);
+      let callCount = 0;
+      sessionRepo.updateSession = (...args) => {
+        callCount++;
+        // maybeRevertEngineOverride 内部からの呼び出し（2回目以降）を失敗させる
+        if (callCount >= 2) {
+          return { ok: false, error: new Error("simulated failure") } as never;
+        }
+        return originalUpdate(...args);
+      };
+
+      const result = await manager.route(baseMsg as never, makeConnector());
+      // route は成功して sessionId を返す（元のセッションにフォールバック）
+      expect(result?.sessionId).toBeDefined();
+
+      // 元に戻す
+      sessionRepo.updateSession = originalUpdate;
     });
   });
 });

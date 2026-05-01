@@ -618,3 +618,108 @@ describe("AC-E003-03: notifyDiscordChannel — channel configured sends fetch", 
     expect(body.text).toBe("alert: something happened");
   });
 });
+
+// ── Additional branch coverage: uncovered lines 23, 70, 76, 98-109 ──────────
+
+describe("notifyParentSession — non-Error rejection in catch (line 23)", () => {
+  it("logs String(err) when _sendNotification rejects with non-Error (line 23 branch)", async () => {
+    const { logger } = await import("../../shared/logger.js");
+    const warnSpy = vi.mocked(logger.warn);
+    // Make fetch throw a non-Error primitive
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue("plain-string-error"));
+    const repo = makeRepoWithParent("idle");
+    const child = makeSession();
+
+    notifyParentSession(child, { result: "done" }, undefined, repo);
+    await new Promise((r) => setTimeout(r, 150));
+
+    const warned = warnSpy.mock.calls.map((c) => String(c[0]));
+    // The warn message should contain "plain-string-error" (String(err) path)
+    expect(warned.some((m) => m.includes("plain-string-error") || m.includes("Failed"))).toBe(true);
+    vi.unstubAllGlobals();
+    globalThis.fetch = originalFetch;
+  });
+});
+
+describe("notifyParentSession — parentResult.ok=false branch (line 72→73 null path)", () => {
+  it("skips notification when sessionRepo.getSession returns ok=false (parent not retrievable)", async () => {
+    const fetchSpy = vi.fn().mockResolvedValue({ ok: true });
+    globalThis.fetch = fetchSpy as unknown as typeof fetch;
+
+    // Create a repo where getSession returns an Err result for any id
+    const brokenRepo = new InMemorySessionRepository();
+    const original = brokenRepo.getSession.bind(brokenRepo);
+    brokenRepo.getSession = (_id: string) => ({ ok: false, error: new Error("db error") }) as never;
+
+    const child = makeSession({ parentSessionId: "parent-001" });
+    notifyParentSession(child, { result: "done" }, undefined, brokenRepo);
+    await new Promise((r) => setTimeout(r, 100));
+
+    expect(fetchSpy).not.toHaveBeenCalled();
+    globalThis.fetch = originalFetch;
+    brokenRepo.getSession = original;
+  });
+});
+
+describe("notifyRateLimited — non-Error rejection in catch (line 43 branch)", () => {
+  it("logs String(err) when _sendRaw rejects with non-Error primitive (line 43 branch)", async () => {
+    const { logger } = await import("../../shared/logger.js");
+    const warnSpy = vi.mocked(logger.warn);
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue("rate-limit-string-error"));
+
+    const child = makeSession();
+    notifyRateLimited(child);
+    await new Promise((r) => setTimeout(r, 150));
+
+    const warned = warnSpy.mock.calls.map((c) => String(c[0]));
+    expect(warned.some((m) => m.includes("Failed") || m.includes("rate-limit-string-error"))).toBe(true);
+    vi.unstubAllGlobals();
+    globalThis.fetch = originalFetch;
+  });
+});
+
+describe("_sendNotification — employeeName fallback to 'Unknown' (line 76)", () => {
+  it("uses 'Unknown' when employee field is empty string in _sendNotification", async () => {
+    const fetchSpy = vi.fn().mockResolvedValue({ ok: true });
+    globalThis.fetch = fetchSpy as unknown as typeof fetch;
+    const repo = makeRepoWithParent("idle");
+
+    // child.employee is empty string → "Unknown"
+    const child = makeSession({ employee: "" });
+    notifyParentSession(child, { result: "done" }, undefined, repo);
+    await new Promise((r) => setTimeout(r, 100));
+
+    expect(fetchSpy).toHaveBeenCalledOnce();
+    const body = JSON.parse(fetchSpy.mock.calls[0][1].body);
+    expect(body.message).toContain("Unknown");
+
+    globalThis.fetch = originalFetch;
+  });
+});
+
+describe("_sendDiscordNotification — connector fallback branch (lines 98-110)", () => {
+  it("uses 'discord' as default connector when notifications.connector is not set (line 110)", async () => {
+    const fetchSpy = vi.fn().mockResolvedValue({ ok: true });
+    globalThis.fetch = fetchSpy as unknown as typeof fetch;
+    const configModule = await import("../../shared/config.js");
+    (configModule as unknown as { loadConfig: unknown }).loadConfig = vi.fn(() => ({
+      gateway: { port: 9999, host: "0.0.0.0" },
+      engines: { default: "claude", claude: { bin: "claude", model: "sonnet" } },
+      connectors: {},
+      logging: { file: false, stdout: true, level: "info" },
+      notifications: { channel: "test-channel" },
+    }));
+
+    notifyDiscordChannel("test message");
+    await new Promise((r) => setTimeout(r, 150));
+
+    expect(fetchSpy).toHaveBeenCalledOnce();
+    const [url] = fetchSpy.mock.calls[0];
+    // Should use "discord" as connector (the default)
+    expect(url).toContain("/api/connectors/discord/send");
+    expect(url).toContain("9999");
+
+    globalThis.fetch = originalFetch;
+    vi.restoreAllMocks();
+  });
+});

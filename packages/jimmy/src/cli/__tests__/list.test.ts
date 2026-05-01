@@ -114,4 +114,57 @@ describe("runList", () => {
     mockProcessKill.mockRestore();
     mockConsoleLog.mockRestore();
   });
+
+  it("should use USERPROFILE when HOME is not set (line 38 branch)", async () => {
+    const origHome = process.env.HOME;
+    const origUserProfile = process.env.USERPROFILE;
+
+    delete process.env.HOME;
+    process.env.USERPROFILE = "/home/winuser";
+
+    mockLoadInstances.mockReturnValue([
+      { name: "win-inst", port: 7779, home: "/home/winuser/.jinn", createdAt: "2024-01-01T00:00:00.000Z" },
+    ]);
+    mockExistsSync.mockReturnValue(false);
+
+    const mockConsoleLog = vi.spyOn(console, "log").mockImplementation(() => {});
+
+    await runList();
+
+    const allCalls = mockConsoleLog.mock.calls.map((c) => c.join(" "));
+    const instanceRow = allCalls.find((line) => line.includes("win-inst"));
+    expect(instanceRow).toBeDefined();
+    // home should be replaced with "~"
+    expect(instanceRow).toContain("~");
+
+    mockConsoleLog.mockRestore();
+    if (origHome !== undefined) process.env.HOME = origHome;
+    if (origUserProfile !== undefined) process.env.USERPROFILE = origUserProfile;
+    else delete process.env.USERPROFILE;
+  });
+
+  it("should use empty string as home replacement when neither HOME nor USERPROFILE is set (line 38 last branch)", async () => {
+    const origHome = process.env.HOME;
+    const origUserProfile = process.env.USERPROFILE;
+
+    delete process.env.HOME;
+    delete process.env.USERPROFILE;
+
+    mockLoadInstances.mockReturnValue([
+      { name: "nohome-inst", port: 7780, home: "/some/path/.jinn", createdAt: "2024-01-01T00:00:00.000Z" },
+    ]);
+    mockExistsSync.mockReturnValue(false);
+
+    const mockConsoleLog = vi.spyOn(console, "log").mockImplementation(() => {});
+
+    await runList();
+
+    const allCalls = mockConsoleLog.mock.calls.map((c) => c.join(" "));
+    const instanceRow = allCalls.find((line) => line.includes("nohome-inst"));
+    expect(instanceRow).toBeDefined();
+
+    mockConsoleLog.mockRestore();
+    if (origHome !== undefined) process.env.HOME = origHome;
+    if (origUserProfile !== undefined) process.env.USERPROFILE = origUserProfile;
+  });
 });

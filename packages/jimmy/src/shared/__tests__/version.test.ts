@@ -110,6 +110,12 @@ describe("AC-E003-03: getInstanceVersion", () => {
     fs.writeFileSync(configPath, "key: :\n  - broken\nyaml", "utf-8");
     expect(getInstanceVersion()).toBe("0.0.0");
   });
+
+  it("returns '0.0.0' when jinn.version is null (line 32 ?? branch)", () => {
+    // jinn.version が null の場合 → ?? "0.0.0" が使われる
+    fs.writeFileSync(configPath, "jinn:\n  version: null\n", "utf-8");
+    expect(getInstanceVersion()).toBe("0.0.0");
+  });
 });
 
 // ── getPendingMigrations ──────────────────────────────────────────────────────

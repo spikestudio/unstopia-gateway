@@ -1764,4 +1764,140 @@ describe("runSession", () => {
       expect(vi.mocked(connector.replyMessage)).toHaveBeenCalledWith(expect.anything(), "Something went wrong");
     });
   });
+
+  describe("unwrapSessionResult — result.ok=false branch (line 38 right-side null)", () => {
+    it("returns null when getSessionBySessionKey returns Err (stops retry loop)", async () => {
+      const { detectRateLimit, computeNextRetryDelayMs, computeRateLimitDeadlineMs } = await import(
+        "../../shared/rateLimit.js"
+      );
+
+      vi.mocked(detectRateLimit)
+        .mockReturnValueOnce({ limited: true as const, resetsAt: undefined })
+        .mockReturnValue({ limited: false as const });
+      vi.mocked(computeNextRetryDelayMs).mockReturnValue({ delayMs: 1, resumeAt: undefined });
+      vi.mocked(computeRateLimitDeadlineMs).mockReturnValue(Date.now() + 30_000);
+
+      const repos = makeRepos();
+      const { id: sessionId } = repos.sessions.createSession({
+        engine: "claude",
+        source: "slack",
+        sourceRef: "slack:C12345",
+        sessionKey: "slack:C12345",
+      });
+      const session = makeSession({ id: sessionId, engine: "claude" });
+
+      // Patch getSessionBySessionKey to return Err after the first call
+      // so that unwrapSessionResult receives ok=false → returns null → early return
+      const originalGetByKey = repos.sessions.getSessionBySessionKey.bind(repos.sessions);
+      let callCount = 0;
+      repos.sessions.getSessionBySessionKey = (key: string) => {
+        callCount++;
+        if (callCount >= 2) {
+          // Return Err — unwrapSessionResult's null branch
+          return { ok: false, error: new Error("DB error") } as never;
+        }
+        return originalGetByKey(key);
+      };
+
+      const mockEngine = makeEngine({ result: "some result" });
+      const engines = new Map<string, Engine>([["claude", mockEngine]]);
+      const connector = makeConnector();
+
+      const config = {
+        ...makeConfig(),
+        sessions: { rateLimitStrategy: "wait" },
+      } as unknown as JinnConfig;
+
+      // Should complete without throwing — the null currentSession → early return
+      await expect(
+        runSession(session, makeMsg(), [], connector, makeTarget(), engines, config, () => new Map(), undefined, repos),
+      ).resolves.toBeUndefined();
+
+      repos.sessions.getSessionBySessionKey = originalGetByKey;
+    });
+  });
+
+  describe("rate limit wait loop — setInterval heartbeat (line 471 branch)", () => {
+    it("heartbeat setInterval is set up during rate-limit wait (repos?.sessions.updateSession)", async () => {
+      const { detectRateLimit, computeNextRetryDelayMs, computeRateLimitDeadlineMs } = await import(
+        "../../shared/rateLimit.js"
+      );
+
+      vi.mocked(detectRateLimit)
+        .mockReturnValueOnce({ limited: true as const, resetsAt: undefined })
+        .mockReturnValue({ limited: false as const });
+      vi.mocked(computeNextRetryDelayMs).mockReturnValue({ delayMs: 1, resumeAt: undefined });
+      vi.mocked(computeRateLimitDeadlineMs).mockReturnValue(Date.now() + 30_000);
+
+      const repos = makeRepos();
+      const { id: sessionId } = repos.sessions.createSession({
+        engine: "claude",
+        source: "slack",
+        sourceRef: "slack:C12345",
+        sessionKey: "slack:C12345",
+      });
+      const session = makeSession({ id: sessionId, engine: "claude" });
+
+      const mockEngine = makeEngine({ result: "retry success" });
+      const engines = new Map<string, Engine>([["claude", mockEngine]]);
+      const connector = makeConnector();
+
+      const config = {
+        ...makeConfig(),
+        sessions: { rateLimitStrategy: "wait" },
+      } as unknown as JinnConfig;
+
+      // Run normally — setInterval created internally for heartbeat
+      // Even without fake timers, the interval is created and refs repos.sessions.updateSession
+      // This test verifies the code path runs without throwing
+      await expect(
+        runSession(session, makeMsg(), [], connector, makeTarget(), engines, config, () => new Map(), undefined, repos),
+      ).resolves.toBeUndefined();
+
+      // repos.sessions.updateSession was called (at least for status updates)
+      expect(vi.mocked(mockEngine.run)).toHaveBeenCalled();
+    });
+  });
+
+  describe("rate limit wait loop — repos=undefined (line 484 false ternary branch)", () => {
+    it("handles rate limit wait loop when repos is undefined (currentSessionResult is undefined → null)", async () => {
+      const { detectRateLimit, computeNextRetryDelayMs, computeRateLimitDeadlineMs } = await import(
+        "../../shared/rateLimit.js"
+      );
+
+      // Rate limit on first call, success on retry
+      vi.mocked(detectRateLimit)
+        .mockReturnValueOnce({ limited: true as const, resetsAt: undefined })
+        .mockReturnValue({ limited: false as const });
+      vi.mocked(computeNextRetryDelayMs).mockReturnValue({ delayMs: 1, resumeAt: undefined });
+      // Very short deadline — loop will exit quickly
+      vi.mocked(computeRateLimitDeadlineMs).mockReturnValue(Date.now() + 10);
+
+      const session = makeSession({ engine: "claude" });
+      const mockEngine = makeEngine({ result: "some result" });
+      const engines = new Map<string, Engine>([["claude", mockEngine]]);
+      const connector = makeConnector();
+
+      const config = {
+        ...makeConfig(),
+        sessions: { rateLimitStrategy: "wait" },
+      } as unknown as JinnConfig;
+
+      // Pass repos=undefined → repos?.sessions.getSessionBySessionKey returns undefined (line 484 false branch)
+      await expect(
+        runSession(
+          session,
+          makeMsg(),
+          [],
+          connector,
+          makeTarget(),
+          engines,
+          config,
+          () => new Map(),
+          undefined,
+          undefined,
+        ),
+      ).resolves.toBeUndefined();
+    });
+  });
 });

@@ -106,4 +106,18 @@ describe("runStart", () => {
 
     mockConsoleLog.mockRestore();
   });
+
+  it("should override config port when --port flag is provided (line 30 branch)", async () => {
+    const mockConsoleLog = vi.spyOn(console, "log").mockImplementation(() => {});
+    const { loadConfig } = await import("../../shared/config.js");
+    const mockConfig = { gateway: { host: "localhost", port: 7777 } };
+    vi.mocked(loadConfig).mockReturnValue(mockConfig as never);
+
+    await runStart({ port: 8080 });
+
+    // The config.gateway.port should have been overridden to 8080
+    expect(mockConfig.gateway.port).toBe(8080);
+
+    mockConsoleLog.mockRestore();
+  });
 });

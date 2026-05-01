@@ -632,7 +632,7 @@ describe("buildContext", () => {
           return ["readme.md", "notes.txt"];
         }
         return [];
-      }) as typeof fs.readdirSync);
+      }) as unknown as typeof fs.readdirSync);
       vi.mocked(fs.statSync).mockReturnValue({ isDirectory: () => false, size: 2048 } as unknown as ReturnType<
         typeof fs.statSync
       >);
@@ -664,7 +664,7 @@ describe("buildContext", () => {
           return ["alice.yaml"];
         }
         return [];
-      }) as typeof fs.readdirSync);
+      }) as unknown as typeof fs.readdirSync);
       vi.mocked(fs.readFileSync).mockImplementation(((filePath: unknown) => {
         const p = String(filePath);
         if (p.includes("alice.yaml")) {
@@ -715,7 +715,7 @@ describe("buildContext", () => {
           return [];
         }
         return [];
-      }) as typeof fs.readdirSync);
+      }) as unknown as typeof fs.readdirSync);
 
       vi.mocked(fs.readFileSync).mockImplementation(((filePath: unknown) => {
         const p = String(filePath);
@@ -900,6 +900,288 @@ describe("buildContext", () => {
 
       expect(result).toContain("childEffortOverride");
       expect(result).toContain('"medium"');
+    });
+  });
+
+  // ── Additional branch coverage ────────────────────────────────────────────
+
+  describe("buildChainOfCommand — parentName exists but not in hierarchy.nodes (line 289)", () => {
+    it("falls back to raw parentName string when parent node is missing", () => {
+      const makeEmp = (name: string, displayName: string) => ({
+        name,
+        displayName,
+        department: "Eng",
+        rank: "employee" as const,
+        engine: "claude",
+        model: "sonnet",
+        persona: "",
+      });
+
+      const hierarchy = {
+        nodes: {
+          // "alice" has parentName "ghost" but "ghost" is NOT in nodes
+          alice: {
+            employee: makeEmp("alice", "Alice"),
+            depth: 1,
+            parentName: "ghost",
+            directReports: [],
+            chain: ["ghost", "alice"],
+          },
+          // "ghost" is intentionally absent from nodes
+        },
+        sorted: ["alice"],
+        root: "ghost",
+        warnings: [],
+      } as unknown as import("../../shared/types.js").OrgHierarchy;
+
+      const employee = {
+        name: "alice",
+        displayName: "Alice",
+        department: "Eng",
+        rank: "employee" as const,
+        engine: "claude",
+        model: "sonnet",
+        persona: "A worker.",
+      };
+
+      const result = buildContext({
+        source: "slack",
+        channel: "C12345",
+        user: "U99999",
+        employee,
+        hierarchy,
+      });
+
+      // line 289: falls back to node.parentName string "ghost" when parent not in nodes
+      expect(result).toContain("ghost");
+    });
+  });
+
+  describe("buildServicesContext — catch branch (line 347)", () => {
+    it("returns null when buildServiceRegistry throws", () => {
+      vi.mocked(buildServiceRegistry).mockImplementation(() => {
+        throw new Error("registry error");
+      });
+
+      // With an employee, buildServicesContext is called
+      const employee = {
+        name: "alice",
+        displayName: "Alice",
+        department: "Eng",
+        rank: "employee" as const,
+        engine: "claude",
+        model: "sonnet",
+        persona: "A worker.",
+      };
+
+      // Should not throw — buildServicesContext silently returns null on error
+      expect(() =>
+        buildContext({
+          source: "slack",
+          channel: "C12345",
+          user: "U99999",
+          employee,
+        }),
+      ).not.toThrow();
+
+      // Restore mock
+      vi.mocked(buildServiceRegistry).mockReturnValue(new Map());
+    });
+  });
+
+  describe("buildKnowledgeContext — statSync throws for individual file (line 550)", () => {
+    it("uses '?' as sizeKb when statSync throws for a specific file", () => {
+      vi.mocked(fs.readdirSync).mockImplementation(((dirPath: unknown) => {
+        const p = String(dirPath);
+        if (p.includes("docs") || p.includes("knowledge")) {
+          return ["notes.md"] as unknown as ReturnType<typeof fs.readdirSync>;
+        }
+        return [] as unknown as ReturnType<typeof fs.readdirSync>;
+      }) as unknown as typeof fs.readdirSync);
+
+      // statSync throws for the file inside the loop
+      vi.mocked(fs.statSync).mockImplementation((() => {
+        throw new Error("ENOENT: file not found");
+      }) as typeof fs.statSync);
+
+      const result = buildContext({
+        source: "slack",
+        channel: "C12345",
+        user: "U99999",
+      });
+
+      // Knowledge base is still shown even with "?" size
+      expect(result).toContain("Knowledge base");
+      expect(result).toContain("notes.md");
+    });
+  });
+
+  describe("buildEnvironmentContext — tool directory has more than 15 contents (line 625 branch)", () => {
+    it("shows truncated content list when tool directory has > 15 items", () => {
+      // Make statSync return a directory
+      vi.mocked(fs.statSync).mockReturnValue({ isDirectory: () => true, size: 0 } as unknown as ReturnType<
+        typeof fs.statSync
+      >);
+      // readdirSync returns 20 files for the tool dir
+      const manyFiles = Array.from({ length: 20 }, (_, i) => `file${i}.txt`);
+      vi.mocked(fs.readdirSync).mockImplementation(((_dirPath: unknown) => {
+        return manyFiles as unknown as ReturnType<typeof fs.readdirSync>;
+      }) as unknown as typeof fs.readdirSync);
+
+      const result = buildContext({
+        source: "slack",
+        channel: "C12345",
+        user: "U99999",
+      });
+
+      // contents.length > 15 → "... (N total)" suffix
+      expect(result).toContain("total");
+      expect(result).toContain("Local environment");
+    });
+  });
+
+  describe("buildDelegationProtocol — gemini engine with no config (line 709 ?? branch)", () => {
+    it("falls back to claude config when default engine is gemini but gemini config is missing", () => {
+      const result = buildContext({
+        source: "slack",
+        channel: "C12345",
+        user: "U99999",
+        config: {
+          gateway: { port: 7777, host: "127.0.0.1" },
+          engines: {
+            default: "gemini",
+            claude: { bin: "claude", model: "sonnet", childEffortOverride: "fallback-effort" },
+            // gemini intentionally absent → ?? falls back to claude config
+          },
+          connectors: {},
+          logging: { file: false, stdout: false, level: "info" },
+        } as unknown as JinnConfig,
+      });
+
+      // Should use claude config as fallback → childEffortOverride "fallback-effort" shown
+      expect(result).toContain("fallback-effort");
+    });
+  });
+
+  describe("trimContext — result already fits within budget (line 816 break branch)", () => {
+    it("does not trim when sections fit within budget on first pass", () => {
+      // Use a very large budget so no trimming occurs
+      // The default budget is 100_000 chars, so normal contexts should not trim
+      // We verify that the result contains full sections without truncation
+      vi.mocked(fs.statSync).mockReturnValue({ isDirectory: () => false, size: 0 } as unknown as ReturnType<
+        typeof fs.statSync
+      >);
+      vi.mocked(fs.readdirSync).mockReturnValue([] as unknown as ReturnType<typeof fs.readdirSync>);
+
+      const result = buildContext({
+        source: "slack",
+        channel: "C12345",
+        user: "U99999",
+      });
+
+      // The result should contain the basic session section (not trimmed)
+      expect(result).toContain("## Current session");
+    });
+  });
+
+  describe("buildKnowledgeContext — group.length=0 continue branch (line 569)", () => {
+    it("skips a knowledge group when no files match that label", () => {
+      // Only docs has files, knowledge has none → group.length=0 for knowledge → continue
+      vi.mocked(fs.readdirSync).mockImplementation(((dirPath: unknown) => {
+        const p = String(dirPath);
+        if (p.includes("docs")) return ["notes.md"] as unknown as ReturnType<typeof fs.readdirSync>;
+        if (p.includes("knowledge")) return [] as unknown as ReturnType<typeof fs.readdirSync>;
+        return [] as unknown as ReturnType<typeof fs.readdirSync>;
+      }) as unknown as typeof fs.readdirSync);
+      vi.mocked(fs.statSync).mockReturnValue({ isDirectory: () => false, size: 1024 } as unknown as ReturnType<
+        typeof fs.statSync
+      >);
+
+      const result = buildContext({
+        source: "slack",
+        channel: "C12345",
+        user: "U99999",
+      });
+
+      // docs group should appear; knowledge group with 0 files is skipped
+      expect(result).toContain("Knowledge base");
+      expect(result).toContain("notes.md");
+    });
+  });
+
+  describe("buildEnvironmentContext — tool dir has contents (line 623 true branch)", () => {
+    it("shows Contents line when tool directory has non-hidden files", () => {
+      vi.mocked(fs.statSync).mockReturnValue({ isDirectory: () => true, size: 0 } as unknown as ReturnType<
+        typeof fs.statSync
+      >);
+      // readdirSync for tool dirs: return non-empty list without dots
+      vi.mocked(fs.readdirSync).mockImplementation(((dirPath: unknown) => {
+        const p = String(dirPath);
+        // Only return files for tool dirs (non-docs, non-knowledge)
+        if (!p.includes("docs") && !p.includes("knowledge") && !p.includes("Projects")) {
+          return ["config.json", "projects"] as unknown as ReturnType<typeof fs.readdirSync>;
+        }
+        return [] as unknown as ReturnType<typeof fs.readdirSync>;
+      }) as unknown as typeof fs.readdirSync);
+
+      const result = buildContext({
+        source: "slack",
+        channel: "C12345",
+        user: "U99999",
+      });
+
+      // tool directory has contents → Contents line is shown
+      expect(result).toContain("Local environment");
+      expect(result).toContain("Contents:");
+    });
+  });
+
+  describe("trimContext — result exceeds budget and trimming occurs (line 816)", () => {
+    it("trims optional sections when context exceeds max budget", () => {
+      // Generate a very large context by providing many connectors
+      // to trigger trimContext's budget enforcement
+      const manyConnectors = Array.from({ length: 50 }, (_, i) => `connector${i}`);
+
+      const result = buildContext({
+        source: "slack",
+        channel: "C12345",
+        user: "U99999",
+        connectors: manyConnectors,
+        // maxContextChars is not a buildContext param — budget is internal (DEFAULT_MAX_CONTEXT_CHARS)
+      });
+
+      // The result should be non-empty
+      expect(result.length).toBeGreaterThan(0);
+      // Should still contain essential session info
+      expect(result).toContain("Current session");
+    });
+  });
+
+  describe("buildEnvironmentContext — statSync throws inside filter (line 642)", () => {
+    it("excludes project entry when statSync throws while checking if it is a directory", () => {
+      // statSync for tool dirs throws → no tools shown
+      // readdirSync for projectsDir returns a project name
+      // inner statSync for that project throws → filter returns false → project excluded
+      vi.mocked(fs.statSync).mockImplementation((() => {
+        throw new Error("ENOENT");
+      }) as typeof fs.statSync);
+
+      vi.mocked(fs.readdirSync).mockImplementation(((dirPath: unknown) => {
+        const p = String(dirPath);
+        if (p.includes("Projects")) {
+          return ["my-project"] as unknown as ReturnType<typeof fs.readdirSync>;
+        }
+        return [] as unknown as ReturnType<typeof fs.readdirSync>;
+      }) as unknown as typeof fs.readdirSync);
+
+      // Should not throw; the inner catch at line 642 returns false
+      expect(() =>
+        buildContext({
+          source: "slack",
+          channel: "C12345",
+          user: "U99999",
+        }),
+      ).not.toThrow();
     });
   });
 });

@@ -405,7 +405,121 @@ describe("unmatched routes", () => {
   });
 });
 
+// ── readJsonBody failure branches (lines 80, 189, 228) ────────────────────
+
+const makeBadReq = (): never =>
+  ({
+    headers: { "content-type": "application/json" },
+    on: vi.fn().mockImplementation((event: string, cb: (chunk?: Buffer | string) => void) => {
+      if (event === "data") cb(Buffer.from("not-valid-json"));
+      if (event === "end") cb();
+    }),
+  }) as never;
+
+describe("POST /api/org/cross-request — readJsonBody failure (line 80)", () => {
+  it("returns true with 400 when body parse fails", async () => {
+    const context = makeContext();
+    const res = makeRes();
+    const handled = await handleOrgRequest(makeBadReq(), res, context, "POST", "/api/org/cross-request");
+    expect(handled).toBe(true);
+    expect(getStatusCode(res)).toBe(400);
+  });
+});
+
+describe("PATCH /api/org/employees/:name — readJsonBody failure (line 189)", () => {
+  it("returns true with 400 when body parse fails", async () => {
+    const context = makeContext();
+    const res = makeRes();
+    const handled = await handleOrgRequest(makeBadReq(), res, context, "PATCH", "/api/org/employees/alice");
+    expect(handled).toBe(true);
+    expect(getStatusCode(res)).toBe(400);
+  });
+});
+
+describe("PUT /api/org/departments/:name/board — readJsonBody failure (line 228)", () => {
+  it("returns true with 400 when body parse fails", async () => {
+    const fs = await import("node:fs");
+    vi.mocked(fs.default.existsSync).mockReturnValue(true); // dept dir exists
+    const context = makeContext();
+    const res = makeRes();
+    const handled = await handleOrgRequest(makeBadReq(), res, context, "PUT", "/api/org/departments/engineering/board");
+    expect(handled).toBe(true);
+    expect(getStatusCode(res)).toBe(400);
+  });
+});
+
 // ── Additional branch coverage ────────────────────────────────────────────
+
+describe("POST /api/org/cross-request — engine/model branch coverage (lines 120-121)", () => {
+  it("uses config.engines.default when provider.engine is empty (line 126 right branch)", async () => {
+    const { createSession } = await import("../../../sessions/registry.js");
+    // Provider has no engine set
+    const providerNoEngine = { ...makeOrgEntry("bob"), engine: "" };
+    vi.mocked(orgMock.scanOrg).mockReturnValue(
+      new Map([
+        ["alice", makeOrgEntry("alice")],
+        ["bob", providerNoEngine],
+      ]) as never,
+    );
+    vi.mocked(hierarchyMock.resolveOrgHierarchy).mockReturnValue(makeHierarchy(["alice", "bob"]) as never);
+    vi.mocked(servicesMock.buildServiceRegistry).mockReturnValue(
+      new Map([
+        [
+          "analytics",
+          {
+            declaration: { name: "analytics", description: "Analytics service" },
+            provider: providerNoEngine,
+          },
+        ],
+      ]) as never,
+    );
+    vi.mocked(servicesMock.buildRoutePath).mockReturnValue(["alice", "bob"]);
+    vi.mocked(servicesMock.resolveManagerChain).mockReturnValue([]);
+
+    const context = makeContext();
+    const res = makeRes();
+    const req = makeReq({ fromEmployee: "alice", service: "analytics", prompt: "help" });
+    await handleOrgRequest(req, res, context, "POST", "/api/org/cross-request");
+
+    // createSession called with config.engines.default ("claude") since provider.engine is ""
+    expect(createSession).toHaveBeenCalledWith(expect.objectContaining({ engine: "claude" }));
+  });
+
+  it("uses provider.model when it is set (line 127 left branch)", async () => {
+    const { createSession } = await import("../../../sessions/registry.js");
+    // Provider has a model set
+    const providerWithModel = { ...makeOrgEntry("bob"), model: "claude-opus-4" } as unknown as ReturnType<
+      typeof makeOrgEntry
+    >;
+    vi.mocked(orgMock.scanOrg).mockReturnValue(
+      new Map([
+        ["alice", makeOrgEntry("alice")],
+        ["bob", providerWithModel],
+      ]) as never,
+    );
+    vi.mocked(hierarchyMock.resolveOrgHierarchy).mockReturnValue(makeHierarchy(["alice", "bob"]) as never);
+    vi.mocked(servicesMock.buildServiceRegistry).mockReturnValue(
+      new Map([
+        [
+          "analytics",
+          {
+            declaration: { name: "analytics", description: "Analytics service" },
+            provider: providerWithModel,
+          },
+        ],
+      ]) as never,
+    );
+    vi.mocked(servicesMock.buildRoutePath).mockReturnValue(["alice", "bob"]);
+    vi.mocked(servicesMock.resolveManagerChain).mockReturnValue([]);
+
+    const context = makeContext();
+    const res = makeRes();
+    const req = makeReq({ fromEmployee: "alice", service: "analytics", prompt: "help" });
+    await handleOrgRequest(req, res, context, "POST", "/api/org/cross-request");
+
+    expect(createSession).toHaveBeenCalledWith(expect.objectContaining({ model: "claude-opus-4" }));
+  });
+});
 
 describe("POST /api/org/cross-request - managers with employees (line 152)", () => {
   beforeEach(() => {

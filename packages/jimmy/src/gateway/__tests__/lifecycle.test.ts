@@ -349,6 +349,101 @@ describe("startForeground()", () => {
 
     onSpy.mockRestore();
   });
+
+  it("should force-exit (process.exit(1)) when shutdown is called twice (line 16-18 branch)", async () => {
+    let resolveCleanup!: () => void;
+    const mockCleanup = vi.fn().mockImplementation(
+      async () =>
+        new Promise<void>((r) => {
+          resolveCleanup = r;
+        }),
+    );
+    const { startGateway } = await import("../server.js");
+    (startGateway as ReturnType<typeof vi.fn>).mockResolvedValue(mockCleanup);
+
+    let sigintHandler: (() => void) | undefined;
+    const onSpy = vi.spyOn(process, "on").mockImplementation(
+      // biome-ignore lint: test mock needs flexible types
+      (event: string | symbol, handler: (...args: unknown[]) => void) => {
+        if (event === "SIGINT") sigintHandler = handler as () => void;
+        return process;
+      },
+    );
+    let exitCode: number | undefined;
+    const exitSpy = vi.spyOn(process, "exit").mockImplementation(
+      // biome-ignore lint: test mock needs flexible types
+      (code?: string | number | null) => {
+        exitCode = typeof code === "number" ? code : 0;
+        return undefined as never;
+      },
+    );
+
+    await startForeground({} as never);
+
+    // Call shutdown once → sets shuttingDown = true, cleanup is awaiting
+    sigintHandler?.();
+
+    // Small tick to allow the async function to set shuttingDown = true
+    await new Promise((r) => setTimeout(r, 5));
+
+    // Call shutdown again → shuttingDown is true → forced exit (line 16-18)
+    sigintHandler?.();
+
+    // Verify process.exit(1) was called for the forced exit
+    expect(exitCode).toBe(1);
+
+    // Resolve cleanup to avoid hanging
+    resolveCleanup?.();
+    onSpy.mockRestore();
+    exitSpy.mockRestore();
+  });
+
+  it("should force-exit after 5 seconds if graceful shutdown hangs (lines 25-26 branch)", async () => {
+    let resolveCleanup!: () => void;
+    const mockCleanup = vi.fn().mockImplementation(
+      async () =>
+        new Promise<void>((r) => {
+          resolveCleanup = r;
+        }),
+    );
+    const { startGateway } = await import("../server.js");
+    (startGateway as ReturnType<typeof vi.fn>).mockResolvedValue(mockCleanup);
+
+    let sigintHandler: (() => void) | undefined;
+    const onSpy = vi.spyOn(process, "on").mockImplementation(
+      // biome-ignore lint: test mock needs flexible types
+      (event: string | symbol, handler: (...args: unknown[]) => void) => {
+        if (event === "SIGINT") sigintHandler = handler as () => void;
+        return process;
+      },
+    );
+    let exitCode: number | undefined;
+    const exitSpy = vi.spyOn(process, "exit").mockImplementation(
+      // biome-ignore lint: test mock needs flexible types
+      (code?: string | number | null) => {
+        exitCode = typeof code === "number" ? code : 0;
+        return undefined as never;
+      },
+    );
+
+    vi.useFakeTimers();
+
+    await startForeground({} as never);
+
+    // Start shutdown
+    sigintHandler?.();
+
+    // Advance timers past 5s forceTimer → should trigger the setTimeout callback
+    await vi.advanceTimersByTimeAsync(6000);
+
+    // The force-timer callback should have called process.exit(1)
+    expect(exitCode).toBe(1);
+
+    vi.useRealTimers();
+    resolveCleanup?.();
+    onSpy.mockRestore();
+    exitSpy.mockRestore();
+  });
 });
 
 // ── findPidOnPort() — win32 branch ────────────────────────────────────────────

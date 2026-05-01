@@ -239,4 +239,52 @@ describe("runNuke", () => {
     expect(mockSaveInstances).toHaveBeenCalled();
     mockKill.mockRestore();
   });
+
+  it("should use USERPROFILE when HOME is not set in instance list display (line 34 branch)", async () => {
+    const origHome = process.env.HOME;
+    const origUserProfile = process.env.USERPROFILE;
+
+    delete process.env.HOME;
+    process.env.USERPROFILE = "/home/winuser";
+
+    vi.spyOn(console, "log").mockImplementation(() => {});
+    vi.spyOn(console, "error").mockImplementation(() => {});
+
+    mockLoadInstances.mockReturnValue([
+      { name: "atlas", port: 7778, home: "/home/winuser/.atlas", createdAt: "2024-01-01T00:00:00.000Z" },
+    ]);
+    setReadlineAnswer("atlas");
+
+    await runNuke("atlas");
+
+    expect(mockSaveInstances).toHaveBeenCalled();
+
+    if (origHome !== undefined) process.env.HOME = origHome;
+    else delete process.env.HOME;
+    if (origUserProfile !== undefined) process.env.USERPROFILE = origUserProfile;
+    else delete process.env.USERPROFILE;
+  });
+
+  it("should fall back to empty string when neither HOME nor USERPROFILE is set (line 34/64 last branch)", async () => {
+    const origHome = process.env.HOME;
+    const origUserProfile = process.env.USERPROFILE;
+
+    delete process.env.HOME;
+    delete process.env.USERPROFILE;
+
+    vi.spyOn(console, "log").mockImplementation(() => {});
+    vi.spyOn(console, "error").mockImplementation(() => {});
+
+    mockLoadInstances.mockReturnValue([
+      { name: "atlas", port: 7778, home: "/some/path/.atlas", createdAt: "2024-01-01T00:00:00.000Z" },
+    ]);
+    setReadlineAnswer("atlas");
+
+    await runNuke("atlas");
+
+    expect(mockSaveInstances).toHaveBeenCalled();
+
+    if (origHome !== undefined) process.env.HOME = origHome;
+    if (origUserProfile !== undefined) process.env.USERPROFILE = origUserProfile;
+  });
 });

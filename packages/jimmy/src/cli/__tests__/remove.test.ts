@@ -118,6 +118,25 @@ describe("runRemove", () => {
     mockConsoleLog.mockRestore();
   });
 
+  it("should show note message when home directory exists and --force is not set (line 51 branch)", async () => {
+    // home dir exists, no --force flag
+    mockExistsSync.mockImplementation((p) => {
+      const path = String(p);
+      if (path === sampleInstance.home) return true; // home dir exists
+      return false; // no PID file
+    });
+
+    const mockConsoleLog = vi.spyOn(console, "log").mockImplementation(() => {});
+
+    await runRemove("atlas", {});
+
+    const allCalls = mockConsoleLog.mock.calls.map((c) => c.join(" "));
+    // Note about existing home dir should be shown
+    expect(allCalls.some((line) => line.includes("still exists") || line.includes("--force"))).toBe(true);
+
+    mockConsoleLog.mockRestore();
+  });
+
   it("should remove running instance with --force and delete home directory (AC-46)", async () => {
     // PID file exists with stale PID so instance passes the running check
     // then --force removes the home dir

@@ -809,3 +809,29 @@ describe("unmatched routes", () => {
     expect(handled).toBe(false);
   });
 });
+
+// ── POST /api/sessions — readJsonBody failure (line 139 branch) ──────────────
+
+describe("POST /api/sessions — readJsonBody failure (line 139)", () => {
+  it("returns 400 when body parse fails", async () => {
+    const context = makeContext();
+    const res = makeRes();
+    const badReq = {
+      headers: { "content-type": "application/json" },
+      on: vi.fn().mockImplementation((event: string, cb: (chunk?: Buffer | string) => void) => {
+        if (event === "data") cb(Buffer.from("not-valid-json"));
+        if (event === "end") cb();
+      }),
+    } as never;
+    const handled = await handleSessionsRequest(
+      badReq,
+      res,
+      context,
+      "POST",
+      "/api/sessions",
+      new URL("http://localhost/api/sessions"),
+    );
+    expect(handled).toBe(true);
+    expect(getStatusCode(res)).toBe(400);
+  });
+});

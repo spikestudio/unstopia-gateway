@@ -117,6 +117,30 @@ describe("deepMerge", () => {
     // id 不一致のためシークレット保護が発動せず "***" がそのまま入る
     expect(instances[0].token).toBe("***");
   });
+
+  it("source の key が配列だが target の同じ key が非配列の場合はソースの配列で上書きする (line 111 branch)", () => {
+    // source.items が配列、target.items が文字列（非配列）→ else ブランチ（line 111）
+    const target = { items: "not-an-array" };
+    const source = { items: [1, 2, 3] };
+    const result = deepMerge(target, source);
+    expect(result.items).toEqual([1, 2, 3]);
+  });
+});
+
+describe("stripAnsi — end===-1 branch (line 176)", () => {
+  it("handles partial ANSI sequence with no letter terminator (end===-1 branch)", () => {
+    // A string where \u001b[ is followed by only digits/special chars without a letter → end === -1
+    // We manually split to mimic what happens: part "123" has no letter → search returns -1
+    // In practice, a well-formed ANSI sequence always has a letter, but we can test via
+    // an incomplete sequence: "\u001b[123" (no letter terminator)
+    const str = "\u001b[123";
+    const result = stripAnsi(str);
+    // When end === -1: acc + part (the raw digits) are kept
+    // The function falls into the `end === -1 ? acc + part` branch
+    expect(typeof result).toBe("string");
+    // The output should just contain "123" since there's no letter to slice after
+    expect(result).toBe("123");
+  });
 });
 
 describe("stripAnsi", () => {

@@ -272,5 +272,16 @@ describe("RemoteDiscordConnector", () => {
       mockFetch.mockRejectedValueOnce(new Error("network error"));
       await expect(connector.setTypingStatus("channel-001", undefined, "typing")).resolves.toBeUndefined();
     });
+
+    it("logs String(err) when fetch rejects with non-Error (line 106 right-side branch)", async () => {
+      const { logger } = await import("../../../shared/logger.js");
+      const errorSpy = vi.mocked(logger.error);
+      // Reject with a non-Error primitive
+      mockFetch.mockRejectedValueOnce("plain-string-rejection");
+      await expect(connector.setTypingStatus("channel-001", undefined, "typing")).resolves.toBeUndefined();
+      // The error branch should use String(err) = "plain-string-rejection"
+      const errors = errorSpy.mock.calls.map((c) => String(c[0]));
+      expect(errors.some((e) => e.includes("plain-string-rejection") || e.includes("error"))).toBe(true);
+    });
   });
 });

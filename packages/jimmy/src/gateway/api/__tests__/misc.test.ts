@@ -1316,3 +1316,28 @@ describe("POST /api/budgets/:employee/override - no budgets config", () => {
     expect(getStatusCode(res)).toBe(200);
   });
 });
+
+describe("PUT /api/budgets — yaml.load returns null (line 437 || {} branch)", () => {
+  it("uses empty object when yaml.load returns null", async () => {
+    const fs = await import("node:fs");
+    const yaml = await import("js-yaml");
+    vi.mocked(fs.default.readFileSync).mockReturnValue("null");
+    // yaml.load("null") returns null → || {} branch fires
+    vi.mocked(yaml.default.load).mockReturnValue(null);
+    vi.mocked(yaml.default.dump).mockReturnValue("dumped:");
+    vi.mocked(fs.default.writeFileSync).mockImplementation(() => {});
+    const context = makeContext();
+    const res = makeRes();
+    const req = makeReq({ alice: 100 });
+    const handled = await handleMiscRequest(
+      req,
+      res,
+      context,
+      "PUT",
+      "/api/budgets",
+      new URL("http://localhost/api/budgets"),
+    );
+    expect(handled).toBe(true);
+    expect(getStatusCode(res)).toBe(200);
+  });
+});
