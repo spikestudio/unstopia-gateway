@@ -1,5 +1,17 @@
-import { describe, expect, it } from "vitest";
-import { formatResponse, markdownToSlackMrkdwn } from "../format.js";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+const { mockMkdirSync, mockWriteFileSync } = vi.hoisted(() => ({
+  mockMkdirSync: vi.fn(),
+  mockWriteFileSync: vi.fn(),
+}));
+
+vi.mock("node:fs", () => ({
+  default: { mkdirSync: mockMkdirSync, writeFileSync: mockWriteFileSync },
+  mkdirSync: mockMkdirSync,
+  writeFileSync: mockWriteFileSync,
+}));
+
+import { downloadAttachment, formatResponse, markdownToSlackMrkdwn } from "../format.js";
 
 describe("markdownToSlackMrkdwn", () => {
   describe("headings", () => {
@@ -149,5 +161,64 @@ describe("formatResponse", () => {
     const result = formatResponse(text);
     expect(result.length).toBeGreaterThanOrEqual(2);
     expect(result[0].length).toBe(SLACK_MAX);
+  });
+});
+
+// ── downloadAttachment ─────────────────────────────────────────────────────
+
+describe("downloadAttachment", () => {
+  let mockFetch: ReturnType<typeof vi.fn>;
+
+  beforeEach(() => {
+    mockMkdirSync.mockReset();
+    mockWriteFileSync.mockReset();
+    mockFetch = vi.fn();
+    vi.stubGlobal("fetch", mockFetch);
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("downloads attachment successfully and returns local path", async () => {
+    const fakeBuffer = Buffer.from("fake-file-content");
+    mockFetch.mockResolvedValue({
+      ok: true,
+      arrayBuffer: vi.fn().mockResolvedValue(fakeBuffer.buffer),
+    });
+
+    const localPath = await downloadAttachment("https://example.com/files/test.png", "xoxb-token", "/tmp/slack");
+
+    expect(mockFetch).toHaveBeenCalledWith("https://example.com/files/test.png", {
+      headers: { Authorization: "Bearer xoxb-token" },
+    });
+    expect(mockMkdirSync).toHaveBeenCalledWith("/tmp/slack", { recursive: true });
+    expect(mockWriteFileSync).toHaveBeenCalled();
+    expect(localPath).toMatch(/^\/tmp\/slack\/.+\.png$/);
+  });
+
+  it("throws when response is not ok", async () => {
+    mockFetch.mockResolvedValue({
+      ok: false,
+      status: 403,
+      statusText: "Forbidden",
+    });
+
+    await expect(downloadAttachment("https://example.com/private", "xoxb-token", "/tmp")).rejects.toThrow(
+      "Failed to download attachment: 403 Forbidden",
+    );
+  });
+
+  it("uses empty extension when URL has no extension", async () => {
+    const fakeBuffer = Buffer.from("data");
+    mockFetch.mockResolvedValue({
+      ok: true,
+      arrayBuffer: vi.fn().mockResolvedValue(fakeBuffer.buffer),
+    });
+
+    const localPath = await downloadAttachment("https://example.com/files/noext", "xoxb-token", "/tmp/slack");
+
+    // Should not have a trailing dot or extension
+    expect(localPath).not.toMatch(/\.\w+$/);
   });
 });

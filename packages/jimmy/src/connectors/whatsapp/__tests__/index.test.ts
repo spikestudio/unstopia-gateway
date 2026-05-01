@@ -459,4 +459,214 @@ describe("WhatsAppConnector", () => {
       expect(target.messageTs).toBeUndefined();
     });
   });
+
+  // ── newsletter / broadcast JID filters ────────────────────────────────────
+
+  describe("newsletter / broadcast JID filters", () => {
+    it("does not call handler when remoteJid ends with @newsletter", async () => {
+      const handler = vi.fn();
+      connector.onMessage(handler);
+      await connector.start();
+
+      const newsletterMsg = makeWAMessage({
+        key: { remoteJid: "1234567890@newsletter", fromMe: false, id: "msg-nl" },
+      });
+      await triggerMessagesUpsert([newsletterMsg]);
+
+      expect(handler).not.toHaveBeenCalled();
+    });
+
+    it("does not call handler when remoteJid ends with @broadcast", async () => {
+      const handler = vi.fn();
+      connector.onMessage(handler);
+      await connector.start();
+
+      const broadcastMsg = makeWAMessage({
+        key: { remoteJid: "status@broadcast", fromMe: false, id: "msg-bc" },
+      });
+      await triggerMessagesUpsert([broadcastMsg]);
+
+      expect(handler).not.toHaveBeenCalled();
+    });
+
+    it("does not call handler when remoteJid is null/undefined", async () => {
+      const handler = vi.fn();
+      connector.onMessage(handler);
+      await connector.start();
+
+      const noJidMsg = makeWAMessage({
+        key: { remoteJid: null, fromMe: false, id: "msg-no-jid" },
+      });
+      await triggerMessagesUpsert([noJidMsg]);
+
+      expect(handler).not.toHaveBeenCalled();
+    });
+  });
+
+  // ── getQrCode ─────────────────────────────────────────────────────────────
+
+  describe("getQrCode", () => {
+    it("returns null before any QR is generated", () => {
+      expect(connector.getQrCode()).toBeNull();
+    });
+
+    it("returns QR code after qr event fires", async () => {
+      await connector.start();
+
+      const call = mockEvOn.mock.calls.find((c: unknown[]) => c[0] === "connection.update");
+      const cb = call?.[1] as ((update: Record<string, unknown>) => void) | undefined;
+      cb?.({ qr: "qr-data-string" });
+
+      expect(connector.getQrCode()).toBe("qr-data-string");
+    });
+
+    it("returns null after successful connection (QR cleared)", async () => {
+      await connector.start();
+
+      const call = mockEvOn.mock.calls.find((c: unknown[]) => c[0] === "connection.update");
+      const cb = call?.[1] as ((update: Record<string, unknown>) => void) | undefined;
+      cb?.({ qr: "qr-data-string" });
+      cb?.({ connection: "open" });
+
+      expect(connector.getQrCode()).toBeNull();
+    });
+  });
+
+  // ── stop with active reconnect timer ─────────────────────────────────────
+
+  describe("stop with reconnect timer", () => {
+    it("clears reconnect timer if pending when stop is called", async () => {
+      await connector.start();
+
+      // Trigger close to schedule reconnect
+      const call = mockEvOn.mock.calls.find((c: unknown[]) => c[0] === "connection.update");
+      const cb = call?.[1] as ((update: Record<string, unknown>) => void) | undefined;
+      cb?.({
+        connection: "close",
+        lastDisconnect: { error: { output: { statusCode: 500 } } },
+      });
+
+      // Stop should clear the timer without error
+      await connector.stop();
+      expect(connector.getHealth().status).toBe("stopped");
+    });
+  });
+
+  // ── connection.update close: loggedOut ────────────────────────────────────
+
+  describe("connection.update close: loggedOut", () => {
+    it("sets status to stopped when loggedOut (code 401)", async () => {
+      await connector.start();
+
+      const call = mockEvOn.mock.calls.find((c: unknown[]) => c[0] === "connection.update");
+      const cb = call?.[1] as ((update: Record<string, unknown>) => void) | undefined;
+      cb?.({
+        connection: "close",
+        lastDisconnect: { error: { output: { statusCode: 401 } } },
+      });
+
+      expect(connector.getHealth().status).toBe("stopped");
+    });
+  });
+
+  // ── setTypingStatus ────────────────────────────────────────────────────────
+
+  describe("setTypingStatus", () => {
+    it("returns early when not connected (sock is null)", async () => {
+      // Not started — sock is null
+      await connector.setTypingStatus("15559876543@s.whatsapp.net", undefined, "typing");
+      expect(mockSendPresenceUpdate).not.toHaveBeenCalled();
+    });
+
+    it("sends composing presence and sets interval when status is truthy", async () => {
+      await connector.start();
+
+      const call = mockEvOn.mock.calls.find((c: unknown[]) => c[0] === "connection.update");
+      const cb = call?.[1] as ((update: Record<string, unknown>) => void) | undefined;
+      cb?.({ connection: "open" });
+
+      await connector.setTypingStatus("15559876543@s.whatsapp.net", undefined, "typing");
+      expect(mockSendPresenceUpdate).toHaveBeenCalledWith("composing", "15559876543@s.whatsapp.net");
+    });
+
+    it("sends paused presence when status is empty string", async () => {
+      await connector.start();
+
+      const call = mockEvOn.mock.calls.find((c: unknown[]) => c[0] === "connection.update");
+      const cb = call?.[1] as ((update: Record<string, unknown>) => void) | undefined;
+      cb?.({ connection: "open" });
+
+      await connector.setTypingStatus("15559876543@s.whatsapp.net", undefined, "");
+      expect(mockSendPresenceUpdate).toHaveBeenCalledWith("paused", "15559876543@s.whatsapp.net");
+    });
+
+    it("clears existing typing interval before setting a new one", async () => {
+      await connector.start();
+
+      const call = mockEvOn.mock.calls.find((c: unknown[]) => c[0] === "connection.update");
+      const cb = call?.[1] as ((update: Record<string, unknown>) => void) | undefined;
+      cb?.({ connection: "open" });
+
+      // First call — sets interval
+      await connector.setTypingStatus("15559876543@s.whatsapp.net", undefined, "typing");
+      mockSendPresenceUpdate.mockClear();
+
+      // Second call — should clear previous interval and set new one
+      await connector.setTypingStatus("15559876543@s.whatsapp.net", undefined, "typing");
+      expect(mockSendPresenceUpdate).toHaveBeenCalledWith("composing", "15559876543@s.whatsapp.net");
+    });
+  });
+
+  // ── replyMessage error handling ───────────────────────────────────────────
+
+  describe("replyMessage error handling", () => {
+    it("logs error when sock.sendMessage throws", async () => {
+      mockSendMessage.mockRejectedValueOnce(new Error("send failed"));
+
+      await connector.start();
+      const call = mockEvOn.mock.calls.find((c: unknown[]) => c[0] === "connection.update");
+      const cb = call?.[1] as ((update: Record<string, unknown>) => void) | undefined;
+      cb?.({ connection: "open" });
+
+      const target = { channel: "15559876543@s.whatsapp.net" };
+      const result = await connector.replyMessage(target, "Hello!");
+
+      const { logger } = await import("../../../shared/logger.js");
+      expect(logger.error).toHaveBeenCalled();
+      expect(result).toBeUndefined();
+    });
+  });
+
+  // ── message handler error handling ────────────────────────────────────────
+
+  describe("messages.upsert error handling", () => {
+    it("catches errors in handleMessage without crashing", async () => {
+      const handler = vi.fn().mockImplementation(() => {
+        throw new Error("handler error");
+      });
+      connector.onMessage(handler);
+      await connector.start();
+
+      const msg = makeWAMessage();
+      // Should not throw
+      await expect(triggerMessagesUpsert([msg])).resolves.toBeUndefined();
+    });
+  });
+
+  // ── getHealth detail for qr_pending ──────────────────────────────────────
+
+  describe("getHealth detail for qr_pending", () => {
+    it("returns 'Scan QR code in settings to connect' detail when qr_pending", async () => {
+      await connector.start();
+
+      const call = mockEvOn.mock.calls.find((c: unknown[]) => c[0] === "connection.update");
+      const cb = call?.[1] as ((update: Record<string, unknown>) => void) | undefined;
+      cb?.({ qr: "qr-data-string" });
+
+      const health = connector.getHealth();
+      expect(health.status).toBe("qr_pending");
+      expect(health.detail).toBe("Scan QR code in settings to connect");
+    });
+  });
 });
+
