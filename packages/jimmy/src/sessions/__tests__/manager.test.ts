@@ -201,7 +201,7 @@ describe("SessionManager", () => {
       // Queue に実行中ジョブを積む（isRunning が true になるよう）
       const queue = manager.getQueue();
       // enqueue して実行を保留させる: 別の遅延タスクをキューに投入
-      let resolveFirst: () => void;
+      let resolveFirst!: () => void;
       const firstDone = new Promise<void>((r) => {
         resolveFirst = r;
       });
@@ -217,7 +217,7 @@ describe("SessionManager", () => {
       const routePromise = manager.route(baseMsg as never, connector);
 
       // 先のタスクを完了させる
-      resolveFirst!();
+      resolveFirst?.();
       await routePromise;
 
       // running + isRunning + reactions=true の条件でない場合もあるので、

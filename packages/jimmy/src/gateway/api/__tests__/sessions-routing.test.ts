@@ -787,8 +787,8 @@ describe("POST /api/sessions/:id/message", () => {
     );
     // Call the captured functions to cover the arrow function lines
     expect(capturedGetEngine).not.toBeNull();
-    expect(capturedGetEngine!("claude")).toBe(engine);
-    expect(capturedGetConfig!()).toBeDefined();
+    expect((capturedGetEngine as unknown as (name: string) => unknown)("claude")).toBe(engine);
+    expect((capturedGetConfig as unknown as () => unknown)()).toBeDefined();
   });
 });
 

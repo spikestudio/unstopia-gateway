@@ -1,5 +1,5 @@
-import { describe, expect, it, vi } from "vitest";
 import type { EventEmitter } from "node:events";
+import { describe, expect, it, vi } from "vitest";
 
 vi.mock("../../sessions/registry.js", () => ({
   getFile: vi.fn(),
@@ -26,7 +26,16 @@ vi.mock("node:http", async (importOriginal) => {
   };
 });
 
-import { checkInstanceHealth, deepMerge, matchRoute, readBody, readBodyRaw, resolveAttachmentPaths, serverError, stripAnsi } from "../api/utils.js";
+import {
+  checkInstanceHealth,
+  deepMerge,
+  matchRoute,
+  readBody,
+  readBodyRaw,
+  resolveAttachmentPaths,
+  serverError,
+  stripAnsi,
+} from "../api/utils.js";
 
 describe("matchRoute", () => {
   it("完全一致パスにマッチし空オブジェクトを返す", () => {
@@ -165,8 +174,8 @@ describe("resolveAttachmentPaths", () => {
     const fs = await import("node:fs");
     vi.mocked(getFile).mockReturnValue({ id: "f1", filename: "photo.jpg", path: "/alt/path/photo.jpg" } as never);
     vi.mocked(fs.default.existsSync)
-      .mockReturnValueOnce(false)  // primary path does not exist
-      .mockReturnValueOnce(true);  // meta.path exists
+      .mockReturnValueOnce(false) // primary path does not exist
+      .mockReturnValueOnce(true); // meta.path exists
     const result = resolveAttachmentPaths(["file-id-1"]);
     expect(result).toEqual(["/alt/path/photo.jpg"]);
   });
@@ -210,8 +219,8 @@ describe("readBody", () => {
       },
     } as never;
     const promise = readBody(req);
-    for (const chunk of chunks) dataCallback!(chunk);
-    endCallback!();
+    for (const chunk of chunks) (dataCallback as unknown as (c: Buffer) => void)(chunk);
+    (endCallback as unknown as () => void)();
     const result = await promise;
     expect(result).toBe("hello world");
   });
@@ -231,8 +240,8 @@ describe("readBodyRaw", () => {
       },
     } as never;
     const promise = readBodyRaw(req);
-    for (const chunk of chunks) dataCallback!(chunk);
-    endCallback!();
+    for (const chunk of chunks) (dataCallback as unknown as (c: Buffer) => void)(chunk);
+    (endCallback as unknown as () => void)();
     const result = await promise;
     expect(result).toEqual(Buffer.from("raw data"));
     expect(errorCallback).toBeDefined();
@@ -246,7 +255,7 @@ describe("readBodyRaw", () => {
       },
     } as never;
     const promise = readBodyRaw(req);
-    errorCallback!(new Error("stream error"));
+    (errorCallback as unknown as (e: Error) => void)(new Error("stream error"));
     await expect(promise).rejects.toThrow("stream error");
   });
 });
