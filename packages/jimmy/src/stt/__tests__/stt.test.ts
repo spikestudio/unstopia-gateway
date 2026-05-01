@@ -159,6 +159,7 @@ describe("downloadModel", () => {
   });
 
   afterEach(() => {
+    vi.clearAllTimers();
     vi.useRealTimers();
     vi.clearAllMocks();
     // Reset module-level globals by re-importing (done via vi.resetModules in prod)
@@ -240,8 +241,10 @@ describe("downloadModel", () => {
     vi.mocked(fs.existsSync).mockReturnValue(false);
     makeCurlMock(1);
     const p = downloadModel("tiny", vi.fn());
+    // Attach rejection handler before advancing timers to avoid unhandled rejection
+    const expectation = expect(p).rejects.toThrow("curl exited with code 1");
     await vi.advanceTimersByTimeAsync(20);
-    await expect(p).rejects.toThrow("curl exited with code 1");
+    await expectation;
     expect(fs.unlinkSync).toHaveBeenCalledWith(expect.stringContaining(".downloading"));
   });
 
@@ -250,8 +253,10 @@ describe("downloadModel", () => {
     vi.mocked(fs.existsSync).mockReturnValue(false);
     makeCurlMock(null, new Error("ENOENT"));
     const p = downloadModel("tiny", vi.fn());
+    // Attach rejection handler before advancing timers
+    const expectation = expect(p).rejects.toThrow("ENOENT");
     await vi.advanceTimersByTimeAsync(20);
-    await expect(p).rejects.toThrow("ENOENT");
+    await expectation;
     expect(fs.unlinkSync).toHaveBeenCalled();
   });
 });
