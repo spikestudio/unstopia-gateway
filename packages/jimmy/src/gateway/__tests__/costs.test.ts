@@ -30,8 +30,13 @@ describe("getCostSummary", () => {
 });
 
 describe("getCostsByEmployee", () => {
-  it("returns an array", () => {
+  it("returns an array for month period", () => {
     const result = getCostsByEmployee("month");
+    expect(Array.isArray(result)).toBe(true);
+  });
+
+  it("returns an array for week period", () => {
+    const result = getCostsByEmployee("week");
     expect(Array.isArray(result)).toBe(true);
   });
 });

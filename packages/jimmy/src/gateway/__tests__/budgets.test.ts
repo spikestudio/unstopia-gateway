@@ -8,7 +8,20 @@ const tmpHome = path.join(os.tmpdir(), `jinn-budgets-test-${process.pid}-${Date.
 mkdirSync(path.join(tmpHome, "sessions"), { recursive: true });
 process.env.JINN_HOME = tmpHome;
 
+import { initDb } from "../../sessions/registry.js";
 import { checkBudget, getBudgetEvents, getBudgetStatus, overrideBudget, recordBudgetEvent } from "../budgets.js";
+
+// ── DB helper to insert fake sessions with spend ──────────────────────────────
+
+function insertFakeSession(employee: string, totalCost: number): void {
+  const db = initDb();
+  const id = `fake-session-${Math.random().toString(36).slice(2)}`;
+  const now = new Date().toISOString();
+  db.prepare(`
+    INSERT INTO sessions (id, engine, source, source_ref, employee, total_cost, created_at, last_activity, status)
+    VALUES (?, 'claude', 'test', 'test-ref', ?, ?, ?, ?, 'idle')
+  `).run(id, employee, totalCost, now, now);
+}
 
 interface BudgetEvent {
   id: string;
@@ -136,5 +149,46 @@ describe("AC-E003-04: overrideBudget", () => {
     const result = overrideBudget("leo", {});
     expect(result.status).toBe("ok");
     expect(result.message).toContain("leo");
+  });
+});
+
+// ── Branch coverage: warning and paused status ────────────────────────────────
+
+describe("AC-E003-04: getBudgetStatus — warning and paused branches", () => {
+  it("returns status warning when percent is between 80 and 99 (inclusive)", () => {
+    // Insert a session with spend that puts the employee at ~85% of their limit
+    const employee = `warning-employee-${Date.now()}`;
+    const limit = 100;
+    insertFakeSession(employee, 85); // 85% of 100
+
+    const result = getBudgetStatus(employee, { [employee]: limit });
+    expect(result.status).toBe("warning");
+    expect(result.percent).toBeGreaterThanOrEqual(80);
+    expect(result.percent).toBeLessThan(100);
+  });
+
+  it("returns status paused when percent is 100 or more", () => {
+    // Insert sessions totaling >= limit
+    const employee = `paused-employee-${Date.now()}`;
+    const limit = 50;
+    insertFakeSession(employee, 50); // exactly 100%
+
+    const result = getBudgetStatus(employee, { [employee]: limit });
+    expect(result.status).toBe("paused");
+    expect(result.percent).toBeGreaterThanOrEqual(100);
+  });
+
+  it("checkBudget returns warning when spend is between 80-99%", () => {
+    const employee = `checkwarn-${Date.now()}`;
+    insertFakeSession(employee, 90); // 90% of 100
+    const status = checkBudget(employee, { [employee]: 100 });
+    expect(status).toBe("warning");
+  });
+
+  it("checkBudget returns paused when spend exceeds limit", () => {
+    const employee = `checkpaused-${Date.now()}`;
+    insertFakeSession(employee, 200); // 200% of 100
+    const status = checkBudget(employee, { [employee]: 100 });
+    expect(status).toBe("paused");
   });
 });
