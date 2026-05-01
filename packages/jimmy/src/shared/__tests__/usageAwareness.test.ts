@@ -165,6 +165,6 @@ describe("recordClaudeRateLimit", () => {
     recordClaudeRateLimit(secondReset);
 
     const state = readClaudeUsageState();
-    expect(new Date(state.lastResetsAt!).getTime()).toBeCloseTo(secondReset * 1000, -3);
+    expect(new Date(state?.lastResetsAt as string).getTime()).toBeCloseTo(secondReset * 1000, -3);
   });
 });
