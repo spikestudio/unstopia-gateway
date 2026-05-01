@@ -327,6 +327,186 @@ describe("notifyDiscordChannel", () => {
   });
 });
 
+describe("notifyParentSession — result が null/undefined の場合", () => {
+  let fetchSpy: ReturnType<typeof vi.fn>;
+  let repo: InMemorySessionRepository;
+
+  beforeEach(() => {
+    fetchSpy = vi.fn().mockResolvedValue({ ok: true });
+    globalThis.fetch = fetchSpy as unknown as typeof fetch;
+    repo = makeRepoWithParent("idle");
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+    globalThis.fetch = originalFetch as typeof fetch;
+  });
+
+  it("result.result が null の場合は '(no output)' を使う", async () => {
+    const child = makeSession();
+
+    notifyParentSession(child, { result: null }, undefined, repo);
+    await new Promise((r) => setTimeout(r, 50));
+
+    expect(fetchSpy).toHaveBeenCalledOnce();
+    const body = JSON.parse(fetchSpy.mock.calls[0][1].body);
+    expect(body.message).toContain("(no output)");
+  });
+
+  it("result.result が undefined の場合は '(no output)' を使う", async () => {
+    const child = makeSession();
+
+    notifyParentSession(child, {}, undefined, repo);
+    await new Promise((r) => setTimeout(r, 50));
+
+    expect(fetchSpy).toHaveBeenCalledOnce();
+    const body = JSON.parse(fetchSpy.mock.calls[0][1].body);
+    expect(body.message).toContain("(no output)");
+  });
+});
+
+describe("notifyParentSession — fetch 失敗時の catch ブロック", () => {
+  it("fetch が reject した場合も例外を throw しない（fire-and-forget）", async () => {
+    const failFetch = vi.fn().mockRejectedValue(new Error("Network error"));
+    globalThis.fetch = failFetch as unknown as typeof fetch;
+    const repo = makeRepoWithParent("idle");
+
+    try {
+      expect(() => notifyParentSession(makeSession(), { result: "done" }, undefined, repo)).not.toThrow();
+      // fire-and-forget なので非同期エラーはキャッチされる
+      await new Promise((r) => setTimeout(r, 100));
+    } finally {
+      globalThis.fetch = originalFetch as typeof fetch;
+    }
+  });
+});
+
+describe("notifyRateLimited — fetch 失敗時の catch ブロック", () => {
+  it("fetch が reject した場合も例外を throw しない（fire-and-forget）", async () => {
+    const failFetch = vi.fn().mockRejectedValue(new Error("Network unavailable"));
+    globalThis.fetch = failFetch as unknown as typeof fetch;
+
+    try {
+      const child = makeSession();
+      expect(() => notifyRateLimited(child)).not.toThrow();
+      await new Promise((r) => setTimeout(r, 100));
+    } finally {
+      globalThis.fetch = originalFetch as typeof fetch;
+    }
+  });
+
+  it("parentSessionId がない場合は早期 return する", () => {
+    const fetchSpy = vi.fn();
+    globalThis.fetch = fetchSpy as unknown as typeof fetch;
+    try {
+      const child = makeSession({ parentSessionId: null });
+      notifyRateLimited(child);
+      expect(fetchSpy).not.toHaveBeenCalled();
+    } finally {
+      globalThis.fetch = originalFetch as typeof fetch;
+    }
+  });
+});
+
+describe("notifyRateLimitResumed — fetch 失敗時の catch ブロック", () => {
+  it("fetch が reject した場合も例外を throw しない（fire-and-forget）", async () => {
+    const failFetch = vi.fn().mockRejectedValue(new Error("Connection refused"));
+    globalThis.fetch = failFetch as unknown as typeof fetch;
+
+    try {
+      const child = makeSession();
+      expect(() => notifyRateLimitResumed(child)).not.toThrow();
+      await new Promise((r) => setTimeout(r, 100));
+    } finally {
+      globalThis.fetch = originalFetch as typeof fetch;
+    }
+  });
+
+  it("parentSessionId がない場合は早期 return する", () => {
+    const fetchSpy = vi.fn();
+    globalThis.fetch = fetchSpy as unknown as typeof fetch;
+    try {
+      const child = makeSession({ parentSessionId: null });
+      notifyRateLimitResumed(child);
+      expect(fetchSpy).not.toHaveBeenCalled();
+    } finally {
+      globalThis.fetch = originalFetch as typeof fetch;
+    }
+  });
+});
+
+describe("notifyDiscordChannel — fetch 失敗時の catch ブロック", () => {
+  it("fetch が reject した場合も例外を throw しない", async () => {
+    const failFetch = vi.fn().mockRejectedValue(new Error("Discord API down"));
+    globalThis.fetch = failFetch as unknown as typeof fetch;
+    vi.mocked(await import("../../shared/config.js")).loadConfig = vi.fn(() => ({
+      gateway: { port: 7777, host: "0.0.0.0" },
+      engines: { default: "claude", claude: { bin: "claude", model: "sonnet" }, codex: { bin: "codex", model: "" } },
+      connectors: {},
+      logging: { file: false, stdout: true, level: "info" },
+      notifications: { connector: "discord", channel: "alerts" },
+    }));
+
+    try {
+      expect(() => notifyDiscordChannel("test")).not.toThrow();
+      await new Promise((r) => setTimeout(r, 100));
+    } finally {
+      globalThis.fetch = originalFetch as typeof fetch;
+    }
+  });
+
+  it("loadConfig が例外をスローした場合はデフォルト設定で続行する（channel なし → スキップ）", async () => {
+    const fetchSpy = vi.fn().mockResolvedValue({ ok: true });
+    globalThis.fetch = fetchSpy as unknown as typeof fetch;
+    vi.mocked(await import("../../shared/config.js")).loadConfig = vi.fn(() => {
+      throw new Error("Config file not found");
+    });
+
+    try {
+      notifyDiscordChannel("test with failed config");
+      await new Promise((r) => setTimeout(r, 100));
+      // channel が設定されないので fetch は呼ばれない
+      expect(fetchSpy).not.toHaveBeenCalled();
+    } finally {
+      globalThis.fetch = originalFetch as typeof fetch;
+    }
+  });
+});
+
+describe("notifyParentSession — _sendRaw の port フォールバック", () => {
+  let fetchSpy: ReturnType<typeof vi.fn>;
+  let repo: InMemorySessionRepository;
+
+  beforeEach(async () => {
+    fetchSpy = vi.fn().mockResolvedValue({ ok: true });
+    globalThis.fetch = fetchSpy as unknown as typeof fetch;
+    repo = makeRepoWithParent("idle");
+    // gateway.port が 0 の設定にする（|| 7777 のフォールバックが発動する）
+    vi.mocked(await import("../../shared/config.js")).loadConfig = vi.fn(() => ({
+      gateway: { port: 0, host: "0.0.0.0" }, // port=0 → || 7777 フォールバックが発動
+      engines: { default: "claude", claude: { bin: "claude", model: "sonnet" }, codex: { bin: "codex", model: "" } },
+      connectors: {},
+      logging: { file: false, stdout: true, level: "info" },
+    }));
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+    globalThis.fetch = originalFetch as typeof fetch;
+  });
+
+  it("gateway.port が 0 の場合は || 演算子でデフォルト 7777 が使われる", async () => {
+    const child = makeSession();
+
+    notifyParentSession(child, { result: "done" }, undefined, repo);
+    await new Promise((r) => setTimeout(r, 50));
+
+    expect(fetchSpy).toHaveBeenCalledOnce();
+    const [url] = fetchSpy.mock.calls[0];
+    expect(url).toContain("7777");
+  });
+});
+
 describe("AC-E003-03: notifyDiscordChannel — channel configured sends fetch", () => {
   let fetchSpy: ReturnType<typeof vi.fn>;
 

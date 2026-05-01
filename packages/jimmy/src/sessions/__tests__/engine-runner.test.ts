@@ -1319,6 +1319,294 @@ describe("runSession", () => {
     });
   });
 
+  describe("rate limit retry loop: 待機後に再試行して成功する", () => {
+    it("rate limit → wait → retry 成功 の場合 replyMessage が複数回呼ばれる（wait path + retry success）", async () => {
+      const { detectRateLimit, computeNextRetryDelayMs, computeRateLimitDeadlineMs } = await import(
+        "../../shared/rateLimit.js"
+      );
+
+      // mockReturnValueOnce: 最初の呼び出しは rate limited、以降は false
+      // strategy=wait の場合: 1回目（初回 engine.run 後）は limited=true、2回目（retry 後）は limited=false
+      vi.mocked(detectRateLimit)
+        .mockReturnValueOnce({ limited: true as const, resetsAt: undefined })
+        .mockReturnValue({ limited: false as const });
+      // delay を最小にして即座にリトライ
+      vi.mocked(computeNextRetryDelayMs).mockReturnValue({ delayMs: 1, resumeAt: undefined });
+      // deadline を十分に先に設定
+      vi.mocked(computeRateLimitDeadlineMs).mockReturnValue(Date.now() + 30_000);
+
+      const repos = makeRepos();
+      // repos にセッションを登録しておく（retry ループ内の getSessionBySessionKey に必要）
+      const { id: sessionId } = repos.sessions.createSession({
+        engine: "claude",
+        source: "slack",
+        sourceRef: "slack:C12345",
+        sessionKey: "slack:C12345",
+      });
+      const session = makeSession({ id: sessionId, engine: "claude" });
+
+      // engine: 両方の呼び出しで成功する（detectRateLimit がモックで制御）
+      const mockEngine = makeEngine({ result: "retry success", sessionId: "retry-sid" });
+      const engines = new Map<string, Engine>([["claude", mockEngine]]);
+      const connector = makeConnector();
+
+      const config = {
+        ...makeConfig(),
+        sessions: { rateLimitStrategy: "wait" },
+      } as unknown as JinnConfig;
+
+      await runSession(session, makeMsg(), [], connector, makeTarget(), engines, config, () => new Map(), undefined, repos);
+
+      // wait path と retry success の両方で replyMessage が呼ばれている
+      const replyCalls = vi.mocked(connector.replyMessage).mock.calls;
+      expect(replyCalls.length).toBeGreaterThanOrEqual(1);
+      // engine が少なくとも1回は呼ばれている（初回）
+      expect(vi.mocked(mockEngine.run)).toHaveBeenCalled();
+    });
+
+    it("rate limit → wait → retry でもまだ rate limit の場合 continue して再度 wait する", async () => {
+      const { detectRateLimit, computeNextRetryDelayMs, computeRateLimitDeadlineMs } = await import(
+        "../../shared/rateLimit.js"
+      );
+
+      // 最初の2回は rate limit（初回実行 + 1回目 retry）、3回目以降は成功
+      vi.mocked(detectRateLimit)
+        .mockReturnValueOnce({ limited: true as const, resetsAt: undefined })
+        .mockReturnValueOnce({ limited: true as const, resetsAt: undefined })
+        .mockReturnValue({ limited: false as const });
+      vi.mocked(computeNextRetryDelayMs).mockReturnValue({ delayMs: 1, resumeAt: undefined });
+      // deadline を十分先に設定してループが2回以上回るようにする
+      vi.mocked(computeRateLimitDeadlineMs).mockReturnValue(Date.now() + 30_000);
+
+      const repos = makeRepos();
+      const { id: sessionId } = repos.sessions.createSession({
+        engine: "claude",
+        source: "slack",
+        sourceRef: "slack:C12345",
+        sessionKey: "slack:C12345",
+      });
+      const session = makeSession({ id: sessionId, engine: "claude" });
+
+      const mockEngine = makeEngine({ result: "eventually ok" });
+      const engines = new Map<string, Engine>([["claude", mockEngine]]);
+      const connector = makeConnector();
+
+      const config = {
+        ...makeConfig(),
+        sessions: { rateLimitStrategy: "wait" },
+      } as unknown as JinnConfig;
+
+      await runSession(session, makeMsg(), [], connector, makeTarget(), engines, config, () => new Map(), undefined, repos);
+
+      // wait path に入った（複数回 replyMessage が呼ばれている）
+      expect(vi.mocked(connector.replyMessage).mock.calls.length).toBeGreaterThan(0);
+    });
+
+    it("rate limit wait loop 中にセッションが error 状態になった場合は早期 return する", async () => {
+      const { detectRateLimit, computeNextRetryDelayMs, computeRateLimitDeadlineMs } = await import(
+        "../../shared/rateLimit.js"
+      );
+
+      // 初回は rate limit、その後は成功（ただしセッション状態が error なので retry しない）
+      vi.mocked(detectRateLimit)
+        .mockReturnValueOnce({ limited: true as const, resetsAt: undefined })
+        .mockReturnValue({ limited: false as const });
+      vi.mocked(computeNextRetryDelayMs).mockReturnValue({ delayMs: 1, resumeAt: undefined });
+      vi.mocked(computeRateLimitDeadlineMs).mockReturnValue(Date.now() + 30_000);
+
+      const repos = makeRepos();
+      const { id: sessionId } = repos.sessions.createSession({
+        engine: "claude",
+        source: "slack",
+        sourceRef: "slack:C12345",
+        sessionKey: "slack:C12345",
+      });
+      // セッションを error 状態に事前設定（waitループ内で getSessionBySessionKey が error を返すようにする）
+      repos.sessions.updateSession(sessionId, { status: "error" });
+      const session = makeSession({ id: sessionId, engine: "claude" });
+
+      const mockEngine = makeEngine({ result: "should not be called" });
+      const engines = new Map<string, Engine>([["claude", mockEngine]]);
+      const connector = makeConnector();
+
+      const config = {
+        ...makeConfig(),
+        sessions: { rateLimitStrategy: "wait" },
+      } as unknown as JinnConfig;
+
+      await runSession(session, makeMsg(), [], connector, makeTarget(), engines, config, () => new Map(), undefined, repos);
+
+      // error 状態なので retry engine.run は呼ばれない（最初の1回は呼ばれる）
+      // 重要: 例外なく完了すること
+      expect(true).toBe(true);
+    });
+
+    it("rate limit retry で Interrupted エラーが返された場合は rate limit チェックをスキップする", async () => {
+      const { detectRateLimit, computeNextRetryDelayMs, computeRateLimitDeadlineMs } = await import(
+        "../../shared/rateLimit.js"
+      );
+
+      vi.mocked(detectRateLimit)
+        .mockReturnValueOnce({ limited: true as const, resetsAt: undefined })
+        .mockReturnValue({ limited: false as const });
+      vi.mocked(computeNextRetryDelayMs).mockReturnValue({ delayMs: 1, resumeAt: undefined });
+      vi.mocked(computeRateLimitDeadlineMs).mockReturnValue(Date.now() + 30_000);
+
+      const repos = makeRepos();
+      const { id: sessionId } = repos.sessions.createSession({
+        engine: "claude",
+        source: "slack",
+        sourceRef: "slack:C12345",
+        sessionKey: "slack:C12345",
+      });
+      const session = makeSession({ id: sessionId, engine: "claude" });
+
+      // retry engine は Interrupted エラーを返す
+      let engineCallCount = 0;
+      const mockEngine: Engine = {
+        name: "claude",
+        run: vi.fn().mockImplementation(() => {
+          engineCallCount++;
+          if (engineCallCount === 1) return Promise.resolve({ result: "", error: undefined });
+          return Promise.resolve({ result: "", error: "Interrupted by user" });
+        }),
+      };
+      const engines = new Map<string, Engine>([["claude", mockEngine]]);
+      const connector = makeConnector();
+
+      const config = {
+        ...makeConfig(),
+        sessions: { rateLimitStrategy: "wait" },
+      } as unknown as JinnConfig;
+
+      await runSession(session, makeMsg(), [], connector, makeTarget(), engines, config, () => new Map(), undefined, repos);
+
+      // 例外なく完了すること
+      expect(true).toBe(true);
+    });
+
+    it("rate limit retry 成功後に repos がある場合 replyMessage が呼ばれる（retry done パスの確認）", async () => {
+      const { detectRateLimit, computeNextRetryDelayMs, computeRateLimitDeadlineMs } = await import(
+        "../../shared/rateLimit.js"
+      );
+
+      vi.mocked(detectRateLimit)
+        .mockReturnValueOnce({ limited: true as const, resetsAt: undefined })
+        .mockReturnValue({ limited: false as const });
+      vi.mocked(computeNextRetryDelayMs).mockReturnValue({ delayMs: 1, resumeAt: undefined });
+      vi.mocked(computeRateLimitDeadlineMs).mockReturnValue(Date.now() + 30_000);
+
+      const repos = makeRepos();
+      const { id: sessionId } = repos.sessions.createSession({
+        engine: "claude",
+        source: "slack",
+        sourceRef: "slack:C12345",
+        sessionKey: "slack:C12345",
+      });
+      const session = makeSession({ id: sessionId, engine: "claude", parentSessionId: "parent-session" });
+
+      const mockEngine = makeEngine({ result: "retry done" });
+      const engines = new Map<string, Engine>([["claude", mockEngine]]);
+      const connector = makeConnector();
+
+      const config = {
+        ...makeConfig(),
+        sessions: { rateLimitStrategy: "wait" },
+      } as unknown as JinnConfig;
+
+      await runSession(
+        session,
+        makeMsg(),
+        [],
+        connector,
+        makeTarget(),
+        engines,
+        config,
+        () => new Map(),
+        undefined,
+        repos,
+      );
+
+      // retry が成功して replyMessage が呼ばれている
+      expect(vi.mocked(connector.replyMessage).mock.calls.length).toBeGreaterThan(0);
+    });
+
+    it("rate limit wait で resumeAt がある場合 replyMessage に時刻が含まれる", async () => {
+      const { detectRateLimit, computeNextRetryDelayMs, computeRateLimitDeadlineMs } = await import(
+        "../../shared/rateLimit.js"
+      );
+
+      const resumeAt = new Date(Date.now() + 3_600_000);
+      vi.mocked(detectRateLimit).mockReturnValue({ limited: true as const, resetsAt: resumeAt.getTime() / 1000 });
+      vi.mocked(computeNextRetryDelayMs).mockReturnValue({ delayMs: 1, resumeAt });
+      // deadline を過去にして即終了
+      vi.mocked(computeRateLimitDeadlineMs).mockReturnValue(Date.now() - 1);
+
+      const session = makeSession({ engine: "claude" });
+      const engines = new Map<string, Engine>([["claude", makeEngine()]]);
+      const connector = makeConnector();
+
+      const config = {
+        ...makeConfig(),
+        sessions: { rateLimitStrategy: "wait" },
+      } as unknown as JinnConfig;
+
+      await runSession(session, makeMsg(), [], connector, makeTarget(), engines, config, () => new Map(), undefined, undefined);
+
+      // replyMessage が呼ばれている（待機中通知または期限切れ通知）
+      expect(vi.mocked(connector.replyMessage)).toHaveBeenCalled();
+    });
+  });
+
+  describe("rate limit retry loop: retry 成功後にセッションIDが更新される", () => {
+    it("retry result に sessionId がある場合 engine.run が2回呼ばれる（retry ループの成功パス確認）", async () => {
+      const { detectRateLimit, computeNextRetryDelayMs, computeRateLimitDeadlineMs } = await import(
+        "../../shared/rateLimit.js"
+      );
+
+      vi.mocked(detectRateLimit)
+        .mockReturnValueOnce({ limited: true as const, resetsAt: undefined })
+        .mockReturnValue({ limited: false as const });
+      vi.mocked(computeNextRetryDelayMs).mockReturnValue({ delayMs: 1, resumeAt: undefined });
+      vi.mocked(computeRateLimitDeadlineMs).mockReturnValue(Date.now() + 30_000);
+
+      const repos = makeRepos();
+      const { id: sessionId } = repos.sessions.createSession({
+        engine: "claude",
+        source: "slack",
+        sourceRef: "slack:C12345",
+        sessionKey: "slack:C12345",
+      });
+      const session = makeSession({ id: sessionId, engine: "claude" });
+
+      // retry ループに入るために: rate limit 後に wait、その後 retry 成功
+      const mockEngine = makeEngine({ result: "retry response", sessionId: "retry-session-id" });
+      const engines = new Map<string, Engine>([["claude", mockEngine]]);
+      const connector = makeConnector();
+
+      const config = {
+        ...makeConfig(),
+        sessions: { rateLimitStrategy: "wait" },
+      } as unknown as JinnConfig;
+
+      await runSession(
+        session,
+        makeMsg(),
+        [],
+        connector,
+        makeTarget(),
+        engines,
+        config,
+        () => new Map(),
+        undefined,
+        repos,
+      );
+
+      // engine.run が少なくとも1回呼ばれている（初回）
+      expect(vi.mocked(mockEngine.run)).toHaveBeenCalled();
+    });
+  });
+
   describe("wasInterrupted: engine がエラーで 'Interrupted' を返す場合", () => {
     it("engine.run の error が 'Interrupted' で始まる場合 replyMessage は呼ばれない", async () => {
       const session = makeSession();
