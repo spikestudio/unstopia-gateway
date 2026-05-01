@@ -12,7 +12,7 @@ interface LevelDb {
 }
 
 /** Minimal interface for the ClassicLevel constructor */
-interface ClassicLevelConstructor {
+export interface ClassicLevelConstructor {
   new (path: string, options: { keyEncoding: string; valueEncoding: string }): LevelDb;
 }
 
@@ -242,7 +242,7 @@ const TLDS = [
   "ac.uk",
 ];
 
-interface BrowserConfig {
+export interface BrowserConfig {
   name: string;
   processName: string;
   macAppName: string;
@@ -270,7 +270,7 @@ const BROWSERS: Record<string, BrowserConfig> = {
   },
 };
 
-function getExtensionDbPath(browser: BrowserConfig): string | null {
+export function getExtensionDbPath(browser: BrowserConfig): string | null {
   const home = os.homedir();
   const platform = os.platform();
 
@@ -310,7 +310,7 @@ function getExtensionDbPath(browser: BrowserConfig): string | null {
   return null;
 }
 
-function isBrowserRunning(browser: BrowserConfig): boolean {
+export function isBrowserRunning(browser: BrowserConfig): boolean {
   try {
     const platform = os.platform();
     if (platform === "darwin") {
@@ -376,7 +376,7 @@ function openBrowser(browser: BrowserConfig): void {
   }
 }
 
-async function allowAllForBrowser(
+export async function allowAllForBrowser(
   browser: BrowserConfig,
   ClassicLevel: ClassicLevelConstructor,
   opts: { restart?: boolean },
