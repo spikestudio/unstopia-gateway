@@ -695,6 +695,451 @@ describe("CodexEngine", () => {
     });
   });
 
+  // ── Additional branch coverage tests ────────────────────────────────────────
+
+  describe("Additional branch coverage tests", () => {
+    // ── processJsonlLine: tool_call / tool_output (alias types) ──────────────
+    it("processJsonlLine: item.started file_edit with filename field", () => {
+      // biome-ignore lint/suspicious/noExplicitAny: intentional private method access for testing
+      const pjl = (line: string) => (engine as any).processJsonlLine(line);
+      const line = JSON.stringify({
+        type: "item.started",
+        item: { type: "file_edit", filename: "myfile.ts", id: "fe-fn" },
+      });
+      const r = pjl(line);
+      expect(r?.type).toBe("tool_start");
+      expect(r?.delta.content).toContain("myfile.ts");
+    });
+
+    it("processJsonlLine: item.started file_read with filename field", () => {
+      // biome-ignore lint/suspicious/noExplicitAny: intentional private method access for testing
+      const pjl = (line: string) => (engine as any).processJsonlLine(line);
+      const line = JSON.stringify({
+        type: "item.started",
+        item: { type: "file_read", filename: "readme.md", id: "fr-fn" },
+      });
+      const r = pjl(line);
+      expect(r?.type).toBe("tool_start");
+      expect(r?.delta.toolName).toBe("file_read");
+    });
+
+    it("processJsonlLine: item.completed file_edit with filename field fallback", () => {
+      // biome-ignore lint/suspicious/noExplicitAny: intentional private method access for testing
+      const pjl = (line: string) => (engine as any).processJsonlLine(line);
+      const line = JSON.stringify({
+        type: "item.completed",
+        item: { type: "file_edit", filename: "other.ts" },
+      });
+      const r = pjl(line);
+      expect(r?.type).toBe("tool_end");
+      expect(r?.delta.content).toContain("other.ts");
+    });
+
+    it("processJsonlLine: item.completed file_read with filename field fallback", () => {
+      // biome-ignore lint/suspicious/noExplicitAny: intentional private method access for testing
+      const pjl = (line: string) => (engine as any).processJsonlLine(line);
+      const line = JSON.stringify({
+        type: "item.completed",
+        item: { type: "file_read", filename: "config.json" },
+      });
+      const r = pjl(line);
+      expect(r?.type).toBe("tool_end");
+      expect(r?.delta.content).toContain("config.json");
+    });
+
+    it("processJsonlLine: turn.failed with no error field returns default message", () => {
+      // biome-ignore lint/suspicious/noExplicitAny: intentional private method access for testing
+      const pjl = (line: string) => (engine as any).processJsonlLine(line);
+      const line = JSON.stringify({ type: "turn.failed" });
+      const r = pjl(line);
+      expect(r?.type).toBe("turn_failed");
+      expect(r?.message).toBe("Turn failed");
+    });
+
+    it("processJsonlLine: top-level error with no message field", () => {
+      // biome-ignore lint/suspicious/noExplicitAny: intentional private method access for testing
+      const pjl = (line: string) => (engine as any).processJsonlLine(line);
+      const line = JSON.stringify({ type: "error" });
+      const r = pjl(line);
+      expect(r?.type).toBe("error");
+      expect(r?.message).toBe("Unknown error");
+    });
+
+    // ── lineBuf flush on close: text / usage / error / turn_failed ───────────
+    it("processes remaining lineBuf text on close", async () => {
+      const proc = createMockProcess();
+      mockSpawn.mockReturnValue(proc as unknown as ChildProcess);
+
+      const deltas: StreamDelta[] = [];
+      const p = engine.run({
+        prompt: "q",
+        cwd: "/tmp",
+        sessionId: "cx-buf-text",
+        onStream: (d) => deltas.push(d),
+      });
+
+      // Send agent_message without trailing newline (stays in lineBuf at close)
+      proc.stdout.emit(
+        "data",
+        Buffer.from(JSON.stringify({ type: "item.completed", item: { type: "agent_message", text: "buf-answer" } })),
+      );
+      proc.exitCode = 0;
+      proc.emit("close", 0);
+
+      const result = await p;
+      expect(result.result).toBe("buf-answer");
+    });
+
+    it("processes remaining lineBuf usage on close", async () => {
+      const proc = createMockProcess();
+      mockSpawn.mockReturnValue(proc as unknown as ChildProcess);
+
+      const p = engine.run({ prompt: "q", cwd: "/tmp", sessionId: "cx-buf-usage" });
+
+      const events = [
+        JSON.stringify({ type: "thread.started", thread_id: "th-bu" }),
+        "\n",
+        JSON.stringify({ type: "item.completed", item: { type: "agent_message", text: "done" } }),
+        "\n",
+      ].join("");
+      proc.stdout.emit("data", Buffer.from(events));
+      // Turn.completed without trailing newline in lineBuf at close
+      proc.stdout.emit("data", Buffer.from(JSON.stringify({ type: "turn.completed" })));
+      proc.exitCode = 0;
+      proc.emit("close", 0);
+
+      const result = await p;
+      expect(result.numTurns).toBe(1);
+    });
+
+    it("processes remaining lineBuf error on close", async () => {
+      const proc = createMockProcess();
+      mockSpawn.mockReturnValue(proc as unknown as ChildProcess);
+
+      const p = engine.run({ prompt: "q", cwd: "/tmp", sessionId: "cx-buf-err" });
+
+      proc.stdout.emit(
+        "data",
+        Buffer.from(
+          [
+            JSON.stringify({ type: "thread.started", thread_id: "th-be" }),
+            "\n",
+          ].join(""),
+        ),
+      );
+      // error without trailing newline
+      proc.stdout.emit(
+        "data",
+        Buffer.from(JSON.stringify({ type: "item.completed", item: { type: "error", message: "buf error msg" } })),
+      );
+      proc.exitCode = 0;
+      proc.emit("close", 0);
+
+      const result = await p;
+      expect(result.error).toBe("buf error msg");
+    });
+
+    it("processes remaining lineBuf turn_failed on close", async () => {
+      const proc = createMockProcess();
+      mockSpawn.mockReturnValue(proc as unknown as ChildProcess);
+
+      const p = engine.run({ prompt: "q", cwd: "/tmp", sessionId: "cx-buf-tf" });
+
+      proc.stdout.emit(
+        "data",
+        Buffer.from(
+          [JSON.stringify({ type: "thread.started", thread_id: "th-btf" }), "\n"].join(""),
+        ),
+      );
+      // turn.failed without trailing newline
+      proc.stdout.emit(
+        "data",
+        Buffer.from(JSON.stringify({ type: "turn.failed", error: { message: "buf turn fail" } })),
+      );
+      proc.exitCode = 0;
+      proc.emit("close", 0);
+
+      const result = await p;
+      expect(result.error).toBe("buf turn fail");
+    });
+
+    // ── buildResumeArgs: effortLevel in resume mode ───────────────────────────
+    it("buildResumeArgs includes effort config when effortLevel is not default", () => {
+      // biome-ignore lint/suspicious/noExplicitAny: intentional private method access for testing
+      const bra = (opts: EngineRunOpts, prompt: string) => (engine as any).buildResumeArgs(opts, prompt);
+      const args = bra({ prompt: "q", cwd: "/tmp", resumeSessionId: "t1", effortLevel: "high" }, "q");
+      expect(args).toContain("-c");
+      expect(args.some((a: string) => a.includes("high"))).toBe(true);
+    });
+
+    it("buildResumeArgs does NOT include effort config when effortLevel is 'default'", () => {
+      // biome-ignore lint/suspicious/noExplicitAny: intentional private method access for testing
+      const bra = (opts: EngineRunOpts, prompt: string) => (engine as any).buildResumeArgs(opts, prompt);
+      const args = bra({ prompt: "q", cwd: "/tmp", resumeSessionId: "t1", effortLevel: "default" }, "q");
+      expect(args).not.toContain("-c");
+    });
+
+    // ── non-zero exit + no thread + turnError (errMsg from turnError) ─────────
+    it("resolves with turnError message on non-zero exit with no thread", async () => {
+      const proc = createMockProcess();
+      mockSpawn.mockReturnValue(proc as unknown as ChildProcess);
+
+      const deltas: StreamDelta[] = [];
+      const p = engine.run({
+        prompt: "q",
+        cwd: "/tmp",
+        sessionId: "cx-te-nz",
+        onStream: (d) => deltas.push(d),
+      });
+
+      // turn_failed without thread_id
+      proc.stdout.emit(
+        "data",
+        Buffer.from(`${JSON.stringify({ type: "turn.failed", error: { message: "model overloaded" } })}\n`),
+      );
+      proc.exitCode = 1;
+      proc.emit("close", 1);
+
+      const result = await p;
+      expect(result.error).toBe("model overloaded");
+    });
+
+    // ── close event: settled=true guard (if settled return) ─────────────────
+    it("close event: duplicate close event is ignored after first close", async () => {
+      const proc = createMockProcess();
+      mockSpawn.mockReturnValue(proc as unknown as ChildProcess);
+
+      const p = engine.run({ prompt: "q", cwd: "/tmp", sessionId: "cx-settled-close" });
+
+      proc.stdout.emit(
+        "data",
+        Buffer.from(`${JSON.stringify({ type: "item.completed", item: { type: "agent_message", text: "ok-sc" } })}\n`),
+      );
+      proc.exitCode = 0;
+      proc.emit("close", 0);
+      // Second close event — should be ignored (settled=true)
+      proc.emit("close", 0);
+
+      const result = await p;
+      expect(result.result).toBe("ok-sc");
+    });
+
+    // ── error event: settled=true guard ──────────────────────────────────────
+    it("error event after close: duplicate error is ignored after settled", async () => {
+      const proc = createMockProcess();
+      mockSpawn.mockReturnValue(proc as unknown as ChildProcess);
+
+      const p = engine.run({ prompt: "q", cwd: "/tmp", sessionId: "cx-settled-err" });
+
+      proc.stdout.emit(
+        "data",
+        Buffer.from(`${JSON.stringify({ type: "item.completed", item: { type: "agent_message", text: "ok-se-cx" } })}\n`),
+      );
+      proc.exitCode = 0;
+      proc.emit("close", 0);
+      // Error event after close — should be ignored (settled=true)
+      proc.emit("error", new Error("late error"));
+
+      const result = await p;
+      expect(result.result).toBe("ok-se-cx");
+    });
+
+    // ── signalProcess: early return when proc already exited ─────────────────
+    it("signalProcess: does nothing when proc.exitCode is non-null", async () => {
+      const proc = createMockProcess();
+      mockSpawn.mockReturnValue(proc as unknown as ChildProcess);
+
+      const p = engine.run({
+        prompt: "q",
+        cwd: "/tmp",
+        sessionId: "cx-sig-early",
+        onStream: vi.fn(),
+      });
+
+      // Set exitCode to non-null before kill → signalProcess returns immediately
+      proc.exitCode = 0;
+      engine.kill("cx-sig-early", "Interrupted: early exit cx");
+
+      proc.emit("close", 0);
+      const result = await p;
+      expect(result.error).toBe("Interrupted: early exit cx");
+    });
+
+    // ── kill: SIGKILL not sent when proc exits before timeout ────────────────
+    it("kill: SIGKILL not sent when process exits before 2s timeout", async () => {
+      vi.useFakeTimers();
+      const proc = createMockProcess();
+      mockSpawn.mockReturnValue(proc as unknown as ChildProcess);
+
+      const p = engine.run({
+        prompt: "q",
+        cwd: "/tmp",
+        sessionId: "cx-sigkill-skip",
+        onStream: vi.fn(),
+      });
+
+      engine.kill("cx-sigkill-skip", "Interrupted: skip sigkill cx");
+
+      proc.exitCode = 0;
+      proc.emit("close", null);
+
+      // Advance past 2s — SIGKILL callback fires but exitCode !== null
+      await vi.advanceTimersByTimeAsync(2100);
+
+      const result = await p;
+      expect(result.error).toBe("Interrupted: skip sigkill cx");
+      vi.useRealTimers();
+    });
+
+    // ── kill: SIGKILL タイムアウトコールバック ────────────────────────────────
+    it("kill: SIGKILL is sent when process does not exit within timeout", async () => {
+      vi.useFakeTimers();
+      const proc = createMockProcess();
+      mockSpawn.mockReturnValue(proc as unknown as ChildProcess);
+
+      const p = engine.run({
+        prompt: "q",
+        cwd: "/tmp",
+        sessionId: "cx-sigkill",
+        onStream: vi.fn(),
+      });
+
+      // Kill then advance timers past 2000ms
+      engine.kill("cx-sigkill", "Interrupted: test sigkill cx");
+      await vi.advanceTimersByTimeAsync(2100);
+
+      // Simulate process finally closing
+      proc.exitCode = null;
+      proc.emit("close", null);
+
+      const result = await p;
+      expect(result.error).toBe("Interrupted: test sigkill cx");
+      vi.useRealTimers();
+    });
+
+    // ── streaming: invalid JSON in stream → parsed=null → continue ───────────
+    it("streaming: null parsed line (invalid JSON) is skipped", async () => {
+      const proc = createMockProcess();
+      mockSpawn.mockReturnValue(proc as unknown as ChildProcess);
+
+      const deltas: StreamDelta[] = [];
+      const p = engine.run({
+        prompt: "q",
+        cwd: "/tmp",
+        sessionId: "cx-null-parsed",
+        onStream: (d) => deltas.push(d),
+      });
+
+      const events = [
+        "not-valid-json",
+        "\n",
+        JSON.stringify({ type: "thread.started", thread_id: "th-np" }),
+        "\n",
+        JSON.stringify({ type: "item.completed", item: { type: "agent_message", text: "ok-null" } }),
+        "\n",
+      ].join("");
+
+      proc.stdout.emit("data", Buffer.from(events));
+      proc.exitCode = 0;
+      proc.emit("close", 0);
+
+      const result = await p;
+      expect(result.result).toBe("ok-null");
+    });
+
+    // ── streaming without onStream: tool_start/tool_end/error/turn_failed ─────
+    it("tool_start/tool_end without onStream (no callback) runs without error", async () => {
+      const proc = createMockProcess();
+      mockSpawn.mockReturnValue(proc as unknown as ChildProcess);
+
+      // No onStream provided → onStream=null → if(onStream) branches are false
+      const p = engine.run({ prompt: "q", cwd: "/tmp", sessionId: "cx-no-stream" });
+
+      const events = [
+        JSON.stringify({ type: "thread.started", thread_id: "th-ns" }),
+        "\n",
+        JSON.stringify({ type: "item.started", item: { type: "command_execution", command: "ls", id: "cmd-ns" } }),
+        "\n",
+        JSON.stringify({
+          type: "item.completed",
+          item: { type: "command_execution", command: "ls", aggregated_output: "file.ts", exit_code: 0 },
+        }),
+        "\n",
+        JSON.stringify({ type: "item.completed", item: { type: "error", message: "some warning" } }),
+        "\n",
+        JSON.stringify({ type: "turn.failed", error: { message: "turn err no stream" } }),
+        "\n",
+        JSON.stringify({ type: "item.completed", item: { type: "agent_message", text: "done-ns" } }),
+        "\n",
+      ].join("");
+
+      proc.stdout.emit("data", Buffer.from(events));
+      proc.exitCode = 0;
+      proc.emit("close", 0);
+
+      const result = await p;
+      expect(result.result).toBe("done-ns");
+    });
+
+    // ── stderr 10KB rolling window ────────────────────────────────────────────
+    it("stderr rolling window: keeps only last 10KB", async () => {
+      const proc = createMockProcess();
+      mockSpawn.mockReturnValue(proc as unknown as ChildProcess);
+
+      const p = engine.run({ prompt: "q", cwd: "/tmp", sessionId: "cx-stderr-big" });
+
+      // Send > 10KB of stderr
+      proc.stderr.emit("data", Buffer.from("E".repeat(11 * 1024)));
+
+      proc.stdout.emit(
+        "data",
+        Buffer.from(`${JSON.stringify({ type: "item.completed", item: { type: "agent_message", text: "ok-se" } })}\n`),
+      );
+      proc.exitCode = 0;
+      proc.emit("close", 0);
+
+      const result = await p;
+      expect(result.result).toBe("ok-se");
+    });
+
+    // ── lineBuf at close: parsed=null (invalid remaining buf) ────────────────
+    it("lineBuf at close: invalid JSON in lineBuf → parsed=null → if(parsed) else path", async () => {
+      const proc = createMockProcess();
+      mockSpawn.mockReturnValue(proc as unknown as ChildProcess);
+
+      const p = engine.run({ prompt: "q", cwd: "/tmp", sessionId: "cx-null-lbuf" });
+
+      proc.stdout.emit(
+        "data",
+        Buffer.from([JSON.stringify({ type: "thread.started", thread_id: "th-nlb" }), "\n"].join("")),
+      );
+      // Invalid JSON without newline → stays in lineBuf, processJsonlLine returns null
+      proc.stdout.emit("data", Buffer.from("not-json-at-close"));
+      proc.exitCode = 0;
+      proc.emit("close", 0);
+
+      const result = await p;
+      expect(result.sessionId).toBe("th-nlb");
+    });
+
+    // ── buildFreshArgs: cwd 未設定 ───────────────────────────────────────────
+    it("buildFreshArgs: no cwd → -C not added", () => {
+      // biome-ignore lint/suspicious/noExplicitAny: intentional private method access for testing
+      const bfa = (opts: EngineRunOpts, prompt: string) => (engine as any).buildFreshArgs(opts, prompt);
+      // cwd="" → falsy → else path for opts.cwd check
+      const args = bfa({ prompt: "q", cwd: "" }, "q");
+      expect(args).not.toContain("-C");
+    });
+
+    // ── buildResumeArgs: cliFlags ─────────────────────────────────────────────
+    it("buildResumeArgs includes cliFlags", () => {
+      // biome-ignore lint/suspicious/noExplicitAny: intentional private method access for testing
+      const bra = (opts: EngineRunOpts, prompt: string) => (engine as any).buildResumeArgs(opts, prompt);
+      const args = bra({ prompt: "q", cwd: "/tmp", resumeSessionId: "t1", cliFlags: ["--flag-x"] }, "q");
+      expect(args).toContain("--flag-x");
+    });
+  });
+
   // ── 10. buildCleanEnv ───────────────────────────────────────────────────────
 
   describe("buildCleanEnv", () => {
