@@ -351,12 +351,9 @@ describe("startForeground()", () => {
   });
 
   it("should force-exit (process.exit(1)) when shutdown is called twice (line 16-18 branch)", async () => {
-    let resolveCleanup!: () => void;
     const mockCleanup = vi.fn().mockImplementation(
-      async () =>
-        new Promise<void>((r) => {
-          resolveCleanup = r;
-        }),
+      // intentionally never resolves — cleanup hangs in this test scenario
+      async () => new Promise<void>(() => {}),
     );
     const { startGateway } = await import("../server.js");
     (startGateway as ReturnType<typeof vi.fn>).mockResolvedValue(mockCleanup);
@@ -392,19 +389,16 @@ describe("startForeground()", () => {
     // Verify process.exit(1) was called for the forced exit
     expect(exitCode).toBe(1);
 
-    // Resolve cleanup to avoid hanging
-    resolveCleanup?.();
+    // Do NOT resolve cleanup — leaving it pending prevents process.exit(0) from firing
+    // (in real code process.exit(1) above would have terminated the process)
     onSpy.mockRestore();
     exitSpy.mockRestore();
   });
 
   it("should force-exit after 5 seconds if graceful shutdown hangs (lines 25-26 branch)", async () => {
-    let resolveCleanup!: () => void;
     const mockCleanup = vi.fn().mockImplementation(
-      async () =>
-        new Promise<void>((r) => {
-          resolveCleanup = r;
-        }),
+      // intentionally never resolves — simulates hanging cleanup that triggers force-exit
+      async () => new Promise<void>(() => {}),
     );
     const { startGateway } = await import("../server.js");
     (startGateway as ReturnType<typeof vi.fn>).mockResolvedValue(mockCleanup);
@@ -440,7 +434,8 @@ describe("startForeground()", () => {
     expect(exitCode).toBe(1);
 
     vi.useRealTimers();
-    resolveCleanup?.();
+    // Do NOT resolve cleanup — leaving it pending prevents process.exit(0) from firing
+    // (in real code the force process.exit(1) above would have terminated the process)
     onSpy.mockRestore();
     exitSpy.mockRestore();
   });
