@@ -40,10 +40,10 @@ vi.mock("../../services.js", () => ({
   resolveManagerChain: vi.fn().mockReturnValue([]),
 }));
 
-import { handleOrgRequest } from "../org.js";
 import * as orgMock from "../../org.js";
 import * as hierarchyMock from "../../org-hierarchy.js";
 import * as servicesMock from "../../services.js";
+import { handleOrgRequest } from "../org.js";
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
@@ -126,9 +126,7 @@ describe("GET /api/org", () => {
   beforeEach(async () => {
     const fs = await import("node:fs");
     vi.mocked(fs.default.existsSync).mockReturnValue(true);
-    vi.mocked(fs.default.readdirSync).mockReturnValue([
-      { name: "engineering", isDirectory: () => true } as never,
-    ]);
+    vi.mocked(fs.default.readdirSync).mockReturnValue([{ name: "engineering", isDirectory: () => true } as never]);
     vi.mocked(orgMock.scanOrg).mockReturnValue(new Map([["alice", makeOrgEntry("alice")]]) as never);
     vi.mocked(hierarchyMock.resolveOrgHierarchy).mockReturnValue(makeHierarchy(["alice"]) as never);
   });
@@ -236,9 +234,7 @@ describe("POST /api/org/cross-request", () => {
 
   it("returns 404 when service not found", async () => {
     // Reset scanOrg to have the employee again
-    vi.mocked(orgMock.scanOrg).mockReturnValue(
-      new Map([["alice", makeOrgEntry("alice")]]) as never,
-    );
+    vi.mocked(orgMock.scanOrg).mockReturnValue(new Map([["alice", makeOrgEntry("alice")]]) as never);
     vi.mocked(servicesMock.buildServiceRegistry).mockReturnValue(new Map() as never);
     const context = makeContext();
     const res = makeRes();
@@ -270,9 +266,7 @@ describe("POST /api/org/cross-request", () => {
       parentSessionId: "parent-123",
     });
     await handleOrgRequest(req, res, context, "POST", "/api/org/cross-request");
-    expect(createSession).toHaveBeenCalledWith(
-      expect.objectContaining({ parentSessionId: "parent-123" }),
-    );
+    expect(createSession).toHaveBeenCalledWith(expect.objectContaining({ parentSessionId: "parent-123" }));
   });
 });
 

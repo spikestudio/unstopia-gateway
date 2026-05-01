@@ -301,7 +301,13 @@ describe("POST /api/connectors/:id/proxy", () => {
   it("returns 404 when connector not found", async () => {
     const context = makeContext();
     const res = makeRes();
-    const handled = await handleConnectorsRequest(makeReq({ action: "sendMessage" }), res, context, "POST", "/api/connectors/missing/proxy");
+    const handled = await handleConnectorsRequest(
+      makeReq({ action: "sendMessage" }),
+      res,
+      context,
+      "POST",
+      "/api/connectors/missing/proxy",
+    );
     expect(handled).toBe(true);
     expect(getStatusCode(res)).toBe(404);
   });
@@ -476,10 +482,7 @@ describe("POST /api/connectors/:name/send", () => {
     const req = makeReq({ channel: "general", text: "Hello Slack!" });
     const handled = await handleConnectorsRequest(req, res, context, "POST", "/api/connectors/slack/send");
     expect(handled).toBe(true);
-    expect(connector.sendMessage).toHaveBeenCalledWith(
-      { channel: "general", thread: undefined },
-      "Hello Slack!",
-    );
+    expect(connector.sendMessage).toHaveBeenCalledWith({ channel: "general", thread: undefined }, "Hello Slack!");
     const body = getResponseBody(res) as Record<string, unknown>;
     expect(body.status).toBe("sent");
   });
@@ -491,10 +494,7 @@ describe("POST /api/connectors/:name/send", () => {
     const res = makeRes();
     const req = makeReq({ channel: "general", text: "Reply in thread", thread: "ts123" });
     await handleConnectorsRequest(req, res, context, "POST", "/api/connectors/slack/send");
-    expect(connector.sendMessage).toHaveBeenCalledWith(
-      { channel: "general", thread: "ts123" },
-      "Reply in thread",
-    );
+    expect(connector.sendMessage).toHaveBeenCalledWith({ channel: "general", thread: "ts123" }, "Reply in thread");
   });
 });
 

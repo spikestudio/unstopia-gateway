@@ -139,7 +139,14 @@ describe("GET /api/sessions", () => {
     vi.mocked(listSessions).mockReturnValue([]);
     const context = makeContext();
     const res = makeRes();
-    const handled = await handleSessionsRequest(makeReq(), res, context, "GET", "/api/sessions", new URL("http://localhost/api/sessions"));
+    const handled = await handleSessionsRequest(
+      makeReq(),
+      res,
+      context,
+      "GET",
+      "/api/sessions",
+      new URL("http://localhost/api/sessions"),
+    );
     expect(handled).toBe(true);
     const body = getResponseBody(res);
     expect(body).toEqual([]);
@@ -162,7 +169,14 @@ describe("GET /api/sessions", () => {
     ]);
     const context = makeContext();
     const res = makeRes();
-    await handleSessionsRequest(makeReq(), res, context, "GET", "/api/sessions", new URL("http://localhost/api/sessions"));
+    await handleSessionsRequest(
+      makeReq(),
+      res,
+      context,
+      "GET",
+      "/api/sessions",
+      new URL("http://localhost/api/sessions"),
+    );
     const body = getResponseBody(res) as Array<Record<string, unknown>>;
     expect(body).toHaveLength(1);
     expect(body[0].id).toBe("s1");
@@ -177,7 +191,14 @@ describe("GET /api/sessions/interrupted", () => {
     vi.mocked(getInterruptedSessions).mockReturnValue([]);
     const context = makeContext();
     const res = makeRes();
-    const handled = await handleSessionsRequest(makeReq(), res, context, "GET", "/api/sessions/interrupted", new URL("http://localhost/api/sessions/interrupted"));
+    const handled = await handleSessionsRequest(
+      makeReq(),
+      res,
+      context,
+      "GET",
+      "/api/sessions/interrupted",
+      new URL("http://localhost/api/sessions/interrupted"),
+    );
     expect(handled).toBe(true);
     const body = getResponseBody(res);
     expect(body).toEqual([]);
@@ -200,7 +221,14 @@ describe("GET /api/sessions/interrupted", () => {
     ]);
     const context = makeContext();
     const res = makeRes();
-    await handleSessionsRequest(makeReq(), res, context, "GET", "/api/sessions/interrupted", new URL("http://localhost/api/sessions/interrupted"));
+    await handleSessionsRequest(
+      makeReq(),
+      res,
+      context,
+      "GET",
+      "/api/sessions/interrupted",
+      new URL("http://localhost/api/sessions/interrupted"),
+    );
     const body = getResponseBody(res) as Array<Record<string, unknown>>;
     expect(body).toHaveLength(1);
     expect(body[0].id).toBe("interrupted-1");
@@ -214,7 +242,14 @@ describe("POST /api/sessions/bulk-delete", () => {
     const context = makeContext();
     const res = makeRes();
     const req = makeReq({ ids: [] });
-    const handled = await handleSessionsRequest(req, res, context, "POST", "/api/sessions/bulk-delete", new URL("http://localhost/api/sessions/bulk-delete"));
+    const handled = await handleSessionsRequest(
+      req,
+      res,
+      context,
+      "POST",
+      "/api/sessions/bulk-delete",
+      new URL("http://localhost/api/sessions/bulk-delete"),
+    );
     expect(handled).toBe(true);
     expect(getStatusCode(res)).toBe(400);
   });
@@ -223,7 +258,14 @@ describe("POST /api/sessions/bulk-delete", () => {
     const context = makeContext();
     const res = makeRes();
     const req = makeReq({ ids: "s1" });
-    await handleSessionsRequest(req, res, context, "POST", "/api/sessions/bulk-delete", new URL("http://localhost/api/sessions/bulk-delete"));
+    await handleSessionsRequest(
+      req,
+      res,
+      context,
+      "POST",
+      "/api/sessions/bulk-delete",
+      new URL("http://localhost/api/sessions/bulk-delete"),
+    );
     expect(getStatusCode(res)).toBe(400);
   });
 
@@ -234,7 +276,14 @@ describe("POST /api/sessions/bulk-delete", () => {
     const context = makeContext();
     const res = makeRes();
     const req = makeReq({ ids: ["s1", "s2"] });
-    const handled = await handleSessionsRequest(req, res, context, "POST", "/api/sessions/bulk-delete", new URL("http://localhost/api/sessions/bulk-delete"));
+    const handled = await handleSessionsRequest(
+      req,
+      res,
+      context,
+      "POST",
+      "/api/sessions/bulk-delete",
+      new URL("http://localhost/api/sessions/bulk-delete"),
+    );
     expect(handled).toBe(true);
     expect(getStatusCode(res)).toBe(200);
     const body = getResponseBody(res) as Record<string, unknown>;
@@ -265,7 +314,14 @@ describe("POST /api/sessions/bulk-delete", () => {
     vi.mocked(context.sessionManager.getEngine as ReturnType<typeof vi.fn>).mockReturnValue(engine);
     const res = makeRes();
     const req = makeReq({ ids: ["s1"] });
-    await handleSessionsRequest(req, res, context, "POST", "/api/sessions/bulk-delete", new URL("http://localhost/api/sessions/bulk-delete"));
+    await handleSessionsRequest(
+      req,
+      res,
+      context,
+      "POST",
+      "/api/sessions/bulk-delete",
+      new URL("http://localhost/api/sessions/bulk-delete"),
+    );
     expect(engine.kill).toHaveBeenCalledWith("s1");
   });
 });
@@ -278,7 +334,14 @@ describe("POST /api/sessions/stub", () => {
     const context = makeContext();
     const res = makeRes();
     const req = makeReq({});
-    const handled = await handleSessionsRequest(req, res, context, "POST", "/api/sessions/stub", new URL("http://localhost/api/sessions/stub"));
+    const handled = await handleSessionsRequest(
+      req,
+      res,
+      context,
+      "POST",
+      "/api/sessions/stub",
+      new URL("http://localhost/api/sessions/stub"),
+    );
     expect(handled).toBe(true);
     expect(createSession).toHaveBeenCalled();
     expect(insertMessage).toHaveBeenCalledWith("s1", "assistant", expect.stringContaining("Say hi"));
@@ -290,7 +353,14 @@ describe("POST /api/sessions/stub", () => {
     const context = makeContext();
     const res = makeRes();
     const req = makeReq({ greeting: "Custom greeting!" });
-    await handleSessionsRequest(req, res, context, "POST", "/api/sessions/stub", new URL("http://localhost/api/sessions/stub"));
+    await handleSessionsRequest(
+      req,
+      res,
+      context,
+      "POST",
+      "/api/sessions/stub",
+      new URL("http://localhost/api/sessions/stub"),
+    );
     expect(insertMessage).toHaveBeenCalledWith("s1", "assistant", "Custom greeting!");
   });
 
@@ -299,7 +369,14 @@ describe("POST /api/sessions/stub", () => {
     const context = makeContext();
     const res = makeRes();
     const req = makeReq({ engine: "codex" });
-    await handleSessionsRequest(req, res, context, "POST", "/api/sessions/stub", new URL("http://localhost/api/sessions/stub"));
+    await handleSessionsRequest(
+      req,
+      res,
+      context,
+      "POST",
+      "/api/sessions/stub",
+      new URL("http://localhost/api/sessions/stub"),
+    );
     expect(createSession).toHaveBeenCalledWith(expect.objectContaining({ engine: "codex" }));
   });
 });
@@ -311,7 +388,14 @@ describe("POST /api/sessions", () => {
     const context = makeContext();
     const res = makeRes();
     const req = makeReq({});
-    const handled = await handleSessionsRequest(req, res, context, "POST", "/api/sessions", new URL("http://localhost/api/sessions"));
+    const handled = await handleSessionsRequest(
+      req,
+      res,
+      context,
+      "POST",
+      "/api/sessions",
+      new URL("http://localhost/api/sessions"),
+    );
     expect(handled).toBe(true);
     expect(getStatusCode(res)).toBe(400);
   });
@@ -330,7 +414,14 @@ describe("POST /api/sessions", () => {
     vi.mocked(context.sessionManager.getEngine as ReturnType<typeof vi.fn>).mockReturnValue(null);
     const res = makeRes();
     const req = makeReq({ prompt: "Hello" });
-    const handled = await handleSessionsRequest(req, res, context, "POST", "/api/sessions", new URL("http://localhost/api/sessions"));
+    const handled = await handleSessionsRequest(
+      req,
+      res,
+      context,
+      "POST",
+      "/api/sessions",
+      new URL("http://localhost/api/sessions"),
+    );
     expect(handled).toBe(true);
     expect(getStatusCode(res)).toBe(201);
     const body = getResponseBody(res) as Record<string, unknown>;
@@ -340,17 +431,20 @@ describe("POST /api/sessions", () => {
   it("creates session and dispatches run when engine found", async () => {
     const { dispatchWebSessionRun } = await import("../session-runner.js");
     const { updateSession } = await import("../../../sessions/registry.js");
-    vi.mocked(updateSession).mockReturnValue({ ok: true, value: {
-      id: "s1",
-      engine: "claude",
-      source: "web",
-      sourceRef: "web:1",
-      connector: "web",
-      status: "running",
-      sessionKey: "sk1",
-      createdAt: new Date().toISOString(),
-      lastActivity: new Date().toISOString(),
-    } as never });
+    vi.mocked(updateSession).mockReturnValue({
+      ok: true,
+      value: {
+        id: "s1",
+        engine: "claude",
+        source: "web",
+        sourceRef: "web:1",
+        connector: "web",
+        status: "running",
+        sessionKey: "sk1",
+        createdAt: new Date().toISOString(),
+        lastActivity: new Date().toISOString(),
+      } as never,
+    });
     const engine = makeEngine();
     const context = makeContext();
     vi.mocked(context.sessionManager.getEngine as ReturnType<typeof vi.fn>).mockReturnValue(engine);
@@ -381,9 +475,23 @@ describe("GET /api/sessions/:id", () => {
     const { getSessionHandler } = await import("../session-crud.js");
     const context = makeContext();
     const res = makeRes();
-    const handled = await handleSessionsRequest(makeReq(), res, context, "GET", "/api/sessions/s1", new URL("http://localhost/api/sessions/s1"));
+    const handled = await handleSessionsRequest(
+      makeReq(),
+      res,
+      context,
+      "GET",
+      "/api/sessions/s1",
+      new URL("http://localhost/api/sessions/s1"),
+    );
     expect(handled).toBe(true);
-    expect(getSessionHandler).toHaveBeenCalledWith(expect.anything(), res, context, expect.anything(), "s1", expect.anything());
+    expect(getSessionHandler).toHaveBeenCalledWith(
+      expect.anything(),
+      res,
+      context,
+      expect.anything(),
+      "s1",
+      expect.anything(),
+    );
   });
 });
 
@@ -395,7 +503,14 @@ describe("PUT /api/sessions/:id", () => {
     const context = makeContext();
     const res = makeRes();
     const req = makeReq({ title: "Updated" });
-    const handled = await handleSessionsRequest(req, res, context, "PUT", "/api/sessions/s1", new URL("http://localhost/api/sessions/s1"));
+    const handled = await handleSessionsRequest(
+      req,
+      res,
+      context,
+      "PUT",
+      "/api/sessions/s1",
+      new URL("http://localhost/api/sessions/s1"),
+    );
     expect(handled).toBe(true);
     expect(updateSessionHandler).toHaveBeenCalledWith(expect.anything(), res, context, expect.anything(), "s1");
   });
@@ -408,7 +523,14 @@ describe("DELETE /api/sessions/:id", () => {
     const { deleteSessionHandler } = await import("../session-crud.js");
     const context = makeContext();
     const res = makeRes();
-    const handled = await handleSessionsRequest(makeReq(), res, context, "DELETE", "/api/sessions/s1", new URL("http://localhost/api/sessions/s1"));
+    const handled = await handleSessionsRequest(
+      makeReq(),
+      res,
+      context,
+      "DELETE",
+      "/api/sessions/s1",
+      new URL("http://localhost/api/sessions/s1"),
+    );
     expect(handled).toBe(true);
     expect(deleteSessionHandler).toHaveBeenCalledWith(res, context, expect.anything(), "s1");
   });
@@ -421,7 +543,14 @@ describe("POST /api/sessions/:id/stop", () => {
     const { stopSession } = await import("../session-crud.js");
     const context = makeContext();
     const res = makeRes();
-    const handled = await handleSessionsRequest(makeReq(), res, context, "POST", "/api/sessions/s1/stop", new URL("http://localhost/api/sessions/s1/stop"));
+    const handled = await handleSessionsRequest(
+      makeReq(),
+      res,
+      context,
+      "POST",
+      "/api/sessions/s1/stop",
+      new URL("http://localhost/api/sessions/s1/stop"),
+    );
     expect(handled).toBe(true);
     expect(stopSession).toHaveBeenCalledWith(res, context, expect.anything(), "s1");
   });
@@ -434,7 +563,14 @@ describe("POST /api/sessions/:id/reset", () => {
     const { resetSession } = await import("../session-crud.js");
     const context = makeContext();
     const res = makeRes();
-    const handled = await handleSessionsRequest(makeReq(), res, context, "POST", "/api/sessions/s1/reset", new URL("http://localhost/api/sessions/s1/reset"));
+    const handled = await handleSessionsRequest(
+      makeReq(),
+      res,
+      context,
+      "POST",
+      "/api/sessions/s1/reset",
+      new URL("http://localhost/api/sessions/s1/reset"),
+    );
     expect(handled).toBe(true);
     expect(resetSession).toHaveBeenCalledWith(res, context, expect.anything(), "s1");
   });
@@ -447,7 +583,14 @@ describe("POST /api/sessions/:id/duplicate", () => {
     const { duplicateSessionHandler } = await import("../session-crud.js");
     const context = makeContext();
     const res = makeRes();
-    const handled = await handleSessionsRequest(makeReq(), res, context, "POST", "/api/sessions/s1/duplicate", new URL("http://localhost/api/sessions/s1/duplicate"));
+    const handled = await handleSessionsRequest(
+      makeReq(),
+      res,
+      context,
+      "POST",
+      "/api/sessions/s1/duplicate",
+      new URL("http://localhost/api/sessions/s1/duplicate"),
+    );
     expect(handled).toBe(true);
     expect(duplicateSessionHandler).toHaveBeenCalledWith(res, context, expect.anything(), "s1");
   });
@@ -460,7 +603,14 @@ describe("DELETE /api/sessions/:id/queue/:itemId", () => {
     const { handleCancelQueueItem } = await import("../session-queue-handlers.js");
     const context = makeContext();
     const res = makeRes();
-    const handled = await handleSessionsRequest(makeReq(), res, context, "DELETE", "/api/sessions/s1/queue/qi1", new URL("http://localhost/api/sessions/s1/queue/qi1"));
+    const handled = await handleSessionsRequest(
+      makeReq(),
+      res,
+      context,
+      "DELETE",
+      "/api/sessions/s1/queue/qi1",
+      new URL("http://localhost/api/sessions/s1/queue/qi1"),
+    );
     expect(handled).toBe(true);
     expect(handleCancelQueueItem).toHaveBeenCalledWith(res, context, expect.anything(), "s1", "qi1");
   });
@@ -473,7 +623,14 @@ describe("GET /api/sessions/:id/queue", () => {
     const { handleGetQueue } = await import("../session-queue-handlers.js");
     const context = makeContext();
     const res = makeRes();
-    const handled = await handleSessionsRequest(makeReq(), res, context, "GET", "/api/sessions/s1/queue", new URL("http://localhost/api/sessions/s1/queue"));
+    const handled = await handleSessionsRequest(
+      makeReq(),
+      res,
+      context,
+      "GET",
+      "/api/sessions/s1/queue",
+      new URL("http://localhost/api/sessions/s1/queue"),
+    );
     expect(handled).toBe(true);
     expect(handleGetQueue).toHaveBeenCalledWith(res, context, expect.anything(), "s1");
   });
@@ -486,7 +643,14 @@ describe("DELETE /api/sessions/:id/queue", () => {
     const { handleClearQueue } = await import("../session-queue-handlers.js");
     const context = makeContext();
     const res = makeRes();
-    const handled = await handleSessionsRequest(makeReq(), res, context, "DELETE", "/api/sessions/s1/queue", new URL("http://localhost/api/sessions/s1/queue"));
+    const handled = await handleSessionsRequest(
+      makeReq(),
+      res,
+      context,
+      "DELETE",
+      "/api/sessions/s1/queue",
+      new URL("http://localhost/api/sessions/s1/queue"),
+    );
     expect(handled).toBe(true);
     expect(handleClearQueue).toHaveBeenCalledWith(res, context, expect.anything(), "s1");
   });
@@ -499,7 +663,14 @@ describe("POST /api/sessions/:id/queue/pause", () => {
     const { handlePauseQueue } = await import("../session-queue-handlers.js");
     const context = makeContext();
     const res = makeRes();
-    const handled = await handleSessionsRequest(makeReq(), res, context, "POST", "/api/sessions/s1/queue/pause", new URL("http://localhost/api/sessions/s1/queue/pause"));
+    const handled = await handleSessionsRequest(
+      makeReq(),
+      res,
+      context,
+      "POST",
+      "/api/sessions/s1/queue/pause",
+      new URL("http://localhost/api/sessions/s1/queue/pause"),
+    );
     expect(handled).toBe(true);
     expect(handlePauseQueue).toHaveBeenCalledWith(res, context, expect.anything(), "s1");
   });
@@ -512,7 +683,14 @@ describe("POST /api/sessions/:id/queue/resume", () => {
     const { handleResumeQueue } = await import("../session-queue-handlers.js");
     const context = makeContext();
     const res = makeRes();
-    const handled = await handleSessionsRequest(makeReq(), res, context, "POST", "/api/sessions/s1/queue/resume", new URL("http://localhost/api/sessions/s1/queue/resume"));
+    const handled = await handleSessionsRequest(
+      makeReq(),
+      res,
+      context,
+      "POST",
+      "/api/sessions/s1/queue/resume",
+      new URL("http://localhost/api/sessions/s1/queue/resume"),
+    );
     expect(handled).toBe(true);
     expect(handleResumeQueue).toHaveBeenCalledWith(res, context, expect.anything(), "s1");
   });
@@ -525,7 +703,14 @@ describe("GET /api/sessions/:id/children", () => {
     const { getChildren } = await import("../session-crud.js");
     const context = makeContext();
     const res = makeRes();
-    const handled = await handleSessionsRequest(makeReq(), res, context, "GET", "/api/sessions/s1/children", new URL("http://localhost/api/sessions/s1/children"));
+    const handled = await handleSessionsRequest(
+      makeReq(),
+      res,
+      context,
+      "GET",
+      "/api/sessions/s1/children",
+      new URL("http://localhost/api/sessions/s1/children"),
+    );
     expect(handled).toBe(true);
     expect(getChildren).toHaveBeenCalledWith(res, context, expect.anything(), "s1");
   });
@@ -538,7 +723,14 @@ describe("GET /api/sessions/:id/transcript", () => {
     const { getTranscript } = await import("../session-crud.js");
     const context = makeContext();
     const res = makeRes();
-    const handled = await handleSessionsRequest(makeReq(), res, context, "GET", "/api/sessions/s1/transcript", new URL("http://localhost/api/sessions/s1/transcript"));
+    const handled = await handleSessionsRequest(
+      makeReq(),
+      res,
+      context,
+      "GET",
+      "/api/sessions/s1/transcript",
+      new URL("http://localhost/api/sessions/s1/transcript"),
+    );
     expect(handled).toBe(true);
     expect(getTranscript).toHaveBeenCalledWith(res, context, expect.anything(), "s1");
   });
@@ -552,7 +744,14 @@ describe("POST /api/sessions/:id/message", () => {
     const context = makeContext();
     const res = makeRes();
     const req = makeReq({ message: "New message" });
-    const handled = await handleSessionsRequest(req, res, context, "POST", "/api/sessions/s1/message", new URL("http://localhost/api/sessions/s1/message"));
+    const handled = await handleSessionsRequest(
+      req,
+      res,
+      context,
+      "POST",
+      "/api/sessions/s1/message",
+      new URL("http://localhost/api/sessions/s1/message"),
+    );
     expect(handled).toBe(true);
     expect(handlePostMessage).toHaveBeenCalledWith(
       expect.anything(),
@@ -578,7 +777,14 @@ describe("POST /api/sessions/:id/message", () => {
     });
     const res = makeRes();
     const req = makeReq({ message: "test" });
-    await handleSessionsRequest(req, res, context, "POST", "/api/sessions/s1/message", new URL("http://localhost/api/sessions/s1/message"));
+    await handleSessionsRequest(
+      req,
+      res,
+      context,
+      "POST",
+      "/api/sessions/s1/message",
+      new URL("http://localhost/api/sessions/s1/message"),
+    );
     // Call the captured functions to cover the arrow function lines
     expect(capturedGetEngine).not.toBeNull();
     expect(capturedGetEngine!("claude")).toBe(engine);
@@ -592,7 +798,14 @@ describe("unmatched routes", () => {
   it("returns false for unknown route", async () => {
     const context = makeContext();
     const res = makeRes();
-    const handled = await handleSessionsRequest(makeReq(), res, context, "GET", "/api/unknown", new URL("http://localhost/api/unknown"));
+    const handled = await handleSessionsRequest(
+      makeReq(),
+      res,
+      context,
+      "GET",
+      "/api/unknown",
+      new URL("http://localhost/api/unknown"),
+    );
     expect(handled).toBe(false);
   });
 });

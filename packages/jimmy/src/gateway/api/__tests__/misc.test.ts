@@ -1,7 +1,7 @@
 import type { ServerResponse } from "node:http";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { ApiContext } from "../../types.js";
 import type { JinnConfig } from "../../../shared/types.js";
+import type { ApiContext } from "../../types.js";
 
 // ── Mocks ──────────────────────────────────────────────────────────────────
 
@@ -130,7 +130,14 @@ describe("GET /api/status", () => {
     vi.mocked(listSessions).mockReturnValue([]);
     const context = makeContext();
     const res = makeRes();
-    const handled = await handleMiscRequest(makeReq(), res, context, "GET", "/api/status", new URL("http://localhost/api/status"));
+    const handled = await handleMiscRequest(
+      makeReq(),
+      res,
+      context,
+      "GET",
+      "/api/status",
+      new URL("http://localhost/api/status"),
+    );
     expect(handled).toBe(true);
     expect(getStatusCode(res)).toBe(200);
     const body = getResponseBody(res) as Record<string, unknown>;
@@ -154,12 +161,14 @@ describe("GET /api/status", () => {
   it("includes gemini engine when configured", async () => {
     const { listSessions } = await import("../../../sessions/registry.js");
     vi.mocked(listSessions).mockReturnValue([]);
-    const context = makeContext({ engines: {
-      default: "claude",
-      claude: { bin: "claude", model: "claude-3" },
-      codex: { bin: "codex", model: "codex" },
-      gemini: { bin: "gemini", model: "gemini-pro" },
-    }});
+    const context = makeContext({
+      engines: {
+        default: "claude",
+        claude: { bin: "claude", model: "claude-3" },
+        codex: { bin: "codex", model: "codex" },
+        gemini: { bin: "gemini", model: "gemini-pro" },
+      },
+    });
     const res = makeRes();
     await handleMiscRequest(makeReq(), res, context, "GET", "/api/status", new URL("http://localhost/api/status"));
     const body = getResponseBody(res) as Record<string, unknown>;
@@ -187,7 +196,14 @@ describe("GET /api/instances", () => {
     vi.mocked(loadInstances).mockReturnValue([]);
     const context = makeContext();
     const res = makeRes();
-    const handled = await handleMiscRequest(makeReq(), res, context, "GET", "/api/instances", new URL("http://localhost/api/instances"));
+    const handled = await handleMiscRequest(
+      makeReq(),
+      res,
+      context,
+      "GET",
+      "/api/instances",
+      new URL("http://localhost/api/instances"),
+    );
     expect(handled).toBe(true);
     const body = getResponseBody(res);
     expect(body).toEqual([]);
@@ -198,7 +214,14 @@ describe("GET /api/instances", () => {
     vi.mocked(loadInstances).mockReturnValue([{ name: "main", port: 7777 } as never]);
     const context = makeContext();
     const res = makeRes();
-    await handleMiscRequest(makeReq(), res, context, "GET", "/api/instances", new URL("http://localhost/api/instances"));
+    await handleMiscRequest(
+      makeReq(),
+      res,
+      context,
+      "GET",
+      "/api/instances",
+      new URL("http://localhost/api/instances"),
+    );
     const body = getResponseBody(res) as Array<Record<string, unknown>>;
     expect(body[0].current).toBe(true);
     expect(body[0].running).toBe(true);
@@ -211,7 +234,14 @@ describe("GET /api/instances", () => {
     vi.mocked(checkInstanceHealth).mockResolvedValue(false);
     const context = makeContext();
     const res = makeRes();
-    await handleMiscRequest(makeReq(), res, context, "GET", "/api/instances", new URL("http://localhost/api/instances"));
+    await handleMiscRequest(
+      makeReq(),
+      res,
+      context,
+      "GET",
+      "/api/instances",
+      new URL("http://localhost/api/instances"),
+    );
     const body = getResponseBody(res) as Array<Record<string, unknown>>;
     expect(body[0].current).toBe(false);
     expect(body[0].running).toBe(false);
@@ -228,7 +258,14 @@ describe("GET /api/config", () => {
       },
     });
     const res = makeRes();
-    const handled = await handleMiscRequest(makeReq(), res, context, "GET", "/api/config", new URL("http://localhost/api/config"));
+    const handled = await handleMiscRequest(
+      makeReq(),
+      res,
+      context,
+      "GET",
+      "/api/config",
+      new URL("http://localhost/api/config"),
+    );
     expect(handled).toBe(true);
     const body = getResponseBody(res) as Record<string, unknown>;
     const connectors = body.connectors as Record<string, Record<string, unknown>>;
@@ -329,7 +366,14 @@ describe("PUT /api/config", () => {
     const context = makeContext();
     const res = makeRes();
     const req = makeReq({ gateway: { port: 8080 } });
-    const handled = await handleMiscRequest(req, res, context, "PUT", "/api/config", new URL("http://localhost/api/config"));
+    const handled = await handleMiscRequest(
+      req,
+      res,
+      context,
+      "PUT",
+      "/api/config",
+      new URL("http://localhost/api/config"),
+    );
     expect(handled).toBe(true);
     expect(getStatusCode(res)).toBe(200);
     const body = getResponseBody(res) as Record<string, unknown>;
@@ -338,11 +382,20 @@ describe("PUT /api/config", () => {
 
   it("handles unreadable config file gracefully", async () => {
     const fs = await import("node:fs");
-    vi.mocked(fs.default.readFileSync).mockImplementation(() => { throw new Error("ENOENT"); });
+    vi.mocked(fs.default.readFileSync).mockImplementation(() => {
+      throw new Error("ENOENT");
+    });
     const context = makeContext();
     const res = makeRes();
     const req = makeReq({ gateway: { port: 9999 } });
-    const handled = await handleMiscRequest(req, res, context, "PUT", "/api/config", new URL("http://localhost/api/config"));
+    const handled = await handleMiscRequest(
+      req,
+      res,
+      context,
+      "PUT",
+      "/api/config",
+      new URL("http://localhost/api/config"),
+    );
     expect(handled).toBe(true);
     expect(getStatusCode(res)).toBe(200);
   });
@@ -356,7 +409,14 @@ describe("GET /api/logs", () => {
     vi.mocked(fs.default.existsSync).mockReturnValue(false);
     const context = makeContext();
     const res = makeRes();
-    const handled = await handleMiscRequest(makeReq(), res, context, "GET", "/api/logs", new URL("http://localhost/api/logs"));
+    const handled = await handleMiscRequest(
+      makeReq(),
+      res,
+      context,
+      "GET",
+      "/api/logs",
+      new URL("http://localhost/api/logs"),
+    );
     expect(handled).toBe(true);
     const body = getResponseBody(res) as Record<string, unknown>;
     expect(body.lines).toEqual([]);
@@ -389,7 +449,14 @@ describe("GET /api/activity", () => {
     vi.mocked(listSessions).mockReturnValue([]);
     const context = makeContext();
     const res = makeRes();
-    const handled = await handleMiscRequest(makeReq(), res, context, "GET", "/api/activity", new URL("http://localhost/api/activity"));
+    const handled = await handleMiscRequest(
+      makeReq(),
+      res,
+      context,
+      "GET",
+      "/api/activity",
+      new URL("http://localhost/api/activity"),
+    );
     expect(handled).toBe(true);
     const body = getResponseBody(res);
     expect(body).toEqual([]);
@@ -504,7 +571,14 @@ describe("GET /api/onboarding", () => {
     vi.mocked(fs.default.readdirSync).mockReturnValue([] as never);
     const context = makeContext();
     const res = makeRes();
-    const handled = await handleMiscRequest(makeReq(), res, context, "GET", "/api/onboarding", new URL("http://localhost/api/onboarding"));
+    const handled = await handleMiscRequest(
+      makeReq(),
+      res,
+      context,
+      "GET",
+      "/api/onboarding",
+      new URL("http://localhost/api/onboarding"),
+    );
     expect(handled).toBe(true);
     const body = getResponseBody(res) as Record<string, unknown>;
     expect(body.needed).toBe(true);
@@ -519,7 +593,14 @@ describe("GET /api/onboarding", () => {
     vi.mocked(fs.default.readdirSync).mockReturnValue([] as never);
     const context = makeContext({ portal: { onboarded: true } } as never);
     const res = makeRes();
-    await handleMiscRequest(makeReq(), res, context, "GET", "/api/onboarding", new URL("http://localhost/api/onboarding"));
+    await handleMiscRequest(
+      makeReq(),
+      res,
+      context,
+      "GET",
+      "/api/onboarding",
+      new URL("http://localhost/api/onboarding"),
+    );
     const body = getResponseBody(res) as Record<string, unknown>;
     expect(body.needed).toBe(false);
     expect(body.onboarded).toBe(true);
@@ -532,7 +613,14 @@ describe("GET /api/onboarding", () => {
     vi.mocked(fs.default.existsSync).mockReturnValue(false);
     const context = makeContext();
     const res = makeRes();
-    await handleMiscRequest(makeReq(), res, context, "GET", "/api/onboarding", new URL("http://localhost/api/onboarding"));
+    await handleMiscRequest(
+      makeReq(),
+      res,
+      context,
+      "GET",
+      "/api/onboarding",
+      new URL("http://localhost/api/onboarding"),
+    );
     const body = getResponseBody(res) as Record<string, unknown>;
     expect(body.needed).toBe(false);
   });
@@ -545,7 +633,14 @@ describe("GET /api/onboarding", () => {
     vi.mocked(fs.default.readdirSync).mockReturnValue(["alice.yaml"] as never);
     const context = makeContext();
     const res = makeRes();
-    await handleMiscRequest(makeReq(), res, context, "GET", "/api/onboarding", new URL("http://localhost/api/onboarding"));
+    await handleMiscRequest(
+      makeReq(),
+      res,
+      context,
+      "GET",
+      "/api/onboarding",
+      new URL("http://localhost/api/onboarding"),
+    );
     const body = getResponseBody(res) as Record<string, unknown>;
     expect(body.needed).toBe(false);
   });
@@ -558,7 +653,14 @@ describe("GET /api/onboarding", () => {
     vi.mocked(fs.default.readdirSync).mockReturnValue(["department.yaml"] as never);
     const context = makeContext();
     const res = makeRes();
-    await handleMiscRequest(makeReq(), res, context, "GET", "/api/onboarding", new URL("http://localhost/api/onboarding"));
+    await handleMiscRequest(
+      makeReq(),
+      res,
+      context,
+      "GET",
+      "/api/onboarding",
+      new URL("http://localhost/api/onboarding"),
+    );
     const body = getResponseBody(res) as Record<string, unknown>;
     // department.yaml is excluded → no employees → needed=true
     expect(body.needed).toBe(true);
@@ -581,7 +683,14 @@ describe("POST /api/onboarding", () => {
     const context = makeContext();
     const res = makeRes();
     const req = makeReq({ portalName: "MyPortal", operatorName: "Admin", language: "English" });
-    const handled = await handleMiscRequest(req, res, context, "POST", "/api/onboarding", new URL("http://localhost/api/onboarding"));
+    const handled = await handleMiscRequest(
+      req,
+      res,
+      context,
+      "POST",
+      "/api/onboarding",
+      new URL("http://localhost/api/onboarding"),
+    );
     expect(handled).toBe(true);
     expect(getStatusCode(res)).toBe(200);
     const body = getResponseBody(res) as Record<string, unknown>;
@@ -680,7 +789,14 @@ describe("/api/files", () => {
     vi.mocked(handleFilesRequest).mockResolvedValueOnce(true);
     const context = makeContext();
     const res = makeRes();
-    const handled = await handleMiscRequest(makeReq(), res, context, "GET", "/api/files/some-file", new URL("http://localhost/api/files/some-file"));
+    const handled = await handleMiscRequest(
+      makeReq(),
+      res,
+      context,
+      "GET",
+      "/api/files/some-file",
+      new URL("http://localhost/api/files/some-file"),
+    );
     expect(handled).toBe(true);
     expect(handleFilesRequest).toHaveBeenCalled();
   });
@@ -691,7 +807,14 @@ describe("/api/files", () => {
     const context = makeContext();
     const res = makeRes();
     // /api/files with unhandled → falls through to return false
-    const handled = await handleMiscRequest(makeReq(), res, context, "GET", "/api/files/", new URL("http://localhost/api/files/"));
+    const handled = await handleMiscRequest(
+      makeReq(),
+      res,
+      context,
+      "GET",
+      "/api/files/",
+      new URL("http://localhost/api/files/"),
+    );
     // Falls through to return false since no other handler matches
     expect(typeof handled).toBe("boolean");
   });
@@ -703,7 +826,14 @@ describe("GET /api/goals", () => {
   it("returns list of goals", async () => {
     const context = makeContext();
     const res = makeRes();
-    const handled = await handleMiscRequest(makeReq(), res, context, "GET", "/api/goals", new URL("http://localhost/api/goals"));
+    const handled = await handleMiscRequest(
+      makeReq(),
+      res,
+      context,
+      "GET",
+      "/api/goals",
+      new URL("http://localhost/api/goals"),
+    );
     expect(handled).toBe(true);
     expect(getStatusCode(res)).toBe(200);
   });
@@ -713,7 +843,14 @@ describe("GET /api/goals/tree", () => {
   it("returns goal tree", async () => {
     const context = makeContext();
     const res = makeRes();
-    const handled = await handleMiscRequest(makeReq(), res, context, "GET", "/api/goals/tree", new URL("http://localhost/api/goals/tree"));
+    const handled = await handleMiscRequest(
+      makeReq(),
+      res,
+      context,
+      "GET",
+      "/api/goals/tree",
+      new URL("http://localhost/api/goals/tree"),
+    );
     expect(handled).toBe(true);
     expect(getStatusCode(res)).toBe(200);
   });
@@ -724,7 +861,14 @@ describe("POST /api/goals", () => {
     const context = makeContext();
     const res = makeRes();
     const req = makeReq({ title: "New Goal" });
-    const handled = await handleMiscRequest(req, res, context, "POST", "/api/goals", new URL("http://localhost/api/goals"));
+    const handled = await handleMiscRequest(
+      req,
+      res,
+      context,
+      "POST",
+      "/api/goals",
+      new URL("http://localhost/api/goals"),
+    );
     expect(handled).toBe(true);
     expect(getStatusCode(res)).toBe(201);
   });
@@ -736,7 +880,14 @@ describe("GET /api/goals/:id", () => {
     vi.mocked(getGoal).mockReturnValueOnce(null as never);
     const context = makeContext();
     const res = makeRes();
-    const handled = await handleMiscRequest(makeReq(), res, context, "GET", "/api/goals/nonexistent", new URL("http://localhost/api/goals/nonexistent"));
+    const handled = await handleMiscRequest(
+      makeReq(),
+      res,
+      context,
+      "GET",
+      "/api/goals/nonexistent",
+      new URL("http://localhost/api/goals/nonexistent"),
+    );
     expect(handled).toBe(true);
     expect(getStatusCode(res)).toBe(404);
   });
@@ -746,7 +897,14 @@ describe("GET /api/goals/:id", () => {
     vi.mocked(getGoal).mockReturnValueOnce({ id: "g1", title: "Goal 1" } as never);
     const context = makeContext();
     const res = makeRes();
-    const handled = await handleMiscRequest(makeReq(), res, context, "GET", "/api/goals/g1", new URL("http://localhost/api/goals/g1"));
+    const handled = await handleMiscRequest(
+      makeReq(),
+      res,
+      context,
+      "GET",
+      "/api/goals/g1",
+      new URL("http://localhost/api/goals/g1"),
+    );
     expect(handled).toBe(true);
     expect(getStatusCode(res)).toBe(200);
   });
@@ -759,7 +917,14 @@ describe("PUT /api/goals/:id", () => {
     const context = makeContext();
     const res = makeRes();
     const req = makeReq({ title: "Updated" });
-    const handled = await handleMiscRequest(req, res, context, "PUT", "/api/goals/g1", new URL("http://localhost/api/goals/g1"));
+    const handled = await handleMiscRequest(
+      req,
+      res,
+      context,
+      "PUT",
+      "/api/goals/g1",
+      new URL("http://localhost/api/goals/g1"),
+    );
     expect(handled).toBe(true);
     expect(getStatusCode(res)).toBe(200);
   });
@@ -770,7 +935,14 @@ describe("PUT /api/goals/:id", () => {
     const context = makeContext();
     const res = makeRes();
     const req = makeReq({ title: "Updated" });
-    const handled = await handleMiscRequest(req, res, context, "PUT", "/api/goals/missing", new URL("http://localhost/api/goals/missing"));
+    const handled = await handleMiscRequest(
+      req,
+      res,
+      context,
+      "PUT",
+      "/api/goals/missing",
+      new URL("http://localhost/api/goals/missing"),
+    );
     expect(handled).toBe(true);
     expect(getStatusCode(res)).toBe(404);
   });
@@ -786,7 +958,14 @@ describe("PUT /api/goals/:id", () => {
         if (event === "end") cb();
       }),
     } as never;
-    const handled = await handleMiscRequest(req, res, context, "PUT", "/api/goals/g1", new URL("http://localhost/api/goals/g1"));
+    const handled = await handleMiscRequest(
+      req,
+      res,
+      context,
+      "PUT",
+      "/api/goals/g1",
+      new URL("http://localhost/api/goals/g1"),
+    );
     expect(handled).toBe(true);
     expect(getStatusCode(res)).toBe(400);
   });
@@ -796,7 +975,14 @@ describe("DELETE /api/goals/:id", () => {
   it("deletes goal and returns ok", async () => {
     const context = makeContext();
     const res = makeRes();
-    const handled = await handleMiscRequest(makeReq(), res, context, "DELETE", "/api/goals/g1", new URL("http://localhost/api/goals/g1"));
+    const handled = await handleMiscRequest(
+      makeReq(),
+      res,
+      context,
+      "DELETE",
+      "/api/goals/g1",
+      new URL("http://localhost/api/goals/g1"),
+    );
     expect(handled).toBe(true);
     const body = getResponseBody(res) as Record<string, unknown>;
     expect(body.status).toBe("ok");
@@ -809,7 +995,14 @@ describe("GET /api/costs/summary", () => {
   it("returns cost summary with default period", async () => {
     const context = makeContext();
     const res = makeRes();
-    const handled = await handleMiscRequest(makeReq(), res, context, "GET", "/api/costs/summary", new URL("http://localhost/api/costs/summary"));
+    const handled = await handleMiscRequest(
+      makeReq(),
+      res,
+      context,
+      "GET",
+      "/api/costs/summary",
+      new URL("http://localhost/api/costs/summary"),
+    );
     expect(handled).toBe(true);
     expect(getStatusCode(res)).toBe(200);
   });
@@ -817,21 +1010,42 @@ describe("GET /api/costs/summary", () => {
   it("accepts period=day", async () => {
     const context = makeContext();
     const res = makeRes();
-    const handled = await handleMiscRequest(makeReq(), res, context, "GET", "/api/costs/summary", new URL("http://localhost/api/costs/summary?period=day"));
+    const handled = await handleMiscRequest(
+      makeReq(),
+      res,
+      context,
+      "GET",
+      "/api/costs/summary",
+      new URL("http://localhost/api/costs/summary?period=day"),
+    );
     expect(handled).toBe(true);
   });
 
   it("accepts period=week", async () => {
     const context = makeContext();
     const res = makeRes();
-    const handled = await handleMiscRequest(makeReq(), res, context, "GET", "/api/costs/summary", new URL("http://localhost/api/costs/summary?period=week"));
+    const handled = await handleMiscRequest(
+      makeReq(),
+      res,
+      context,
+      "GET",
+      "/api/costs/summary",
+      new URL("http://localhost/api/costs/summary?period=week"),
+    );
     expect(handled).toBe(true);
   });
 
   it("falls back to month for invalid period", async () => {
     const context = makeContext();
     const res = makeRes();
-    const handled = await handleMiscRequest(makeReq(), res, context, "GET", "/api/costs/summary", new URL("http://localhost/api/costs/summary?period=invalid"));
+    const handled = await handleMiscRequest(
+      makeReq(),
+      res,
+      context,
+      "GET",
+      "/api/costs/summary",
+      new URL("http://localhost/api/costs/summary?period=invalid"),
+    );
     expect(handled).toBe(true);
   });
 });
@@ -840,7 +1054,14 @@ describe("GET /api/costs/by-employee", () => {
   it("returns costs by employee", async () => {
     const context = makeContext();
     const res = makeRes();
-    const handled = await handleMiscRequest(makeReq(), res, context, "GET", "/api/costs/by-employee", new URL("http://localhost/api/costs/by-employee"));
+    const handled = await handleMiscRequest(
+      makeReq(),
+      res,
+      context,
+      "GET",
+      "/api/costs/by-employee",
+      new URL("http://localhost/api/costs/by-employee"),
+    );
     expect(handled).toBe(true);
     expect(getStatusCode(res)).toBe(200);
   });
@@ -848,7 +1069,14 @@ describe("GET /api/costs/by-employee", () => {
   it("accepts period=week", async () => {
     const context = makeContext();
     const res = makeRes();
-    await handleMiscRequest(makeReq(), res, context, "GET", "/api/costs/by-employee", new URL("http://localhost/api/costs/by-employee?period=week"));
+    await handleMiscRequest(
+      makeReq(),
+      res,
+      context,
+      "GET",
+      "/api/costs/by-employee",
+      new URL("http://localhost/api/costs/by-employee?period=week"),
+    );
     expect(getStatusCode(res)).toBe(200);
   });
 });
@@ -859,7 +1087,14 @@ describe("GET /api/budgets", () => {
   it("returns empty budgets when none configured", async () => {
     const context = makeContext();
     const res = makeRes();
-    const handled = await handleMiscRequest(makeReq(), res, context, "GET", "/api/budgets", new URL("http://localhost/api/budgets"));
+    const handled = await handleMiscRequest(
+      makeReq(),
+      res,
+      context,
+      "GET",
+      "/api/budgets",
+      new URL("http://localhost/api/budgets"),
+    );
     expect(handled).toBe(true);
     const body = getResponseBody(res) as Record<string, unknown>;
     expect(body.employees).toEqual({});
@@ -892,7 +1127,14 @@ describe("PUT /api/budgets", () => {
     const context = makeContext();
     const res = makeRes();
     const req = makeReq({ alice: 200 });
-    const handled = await handleMiscRequest(req, res, context, "PUT", "/api/budgets", new URL("http://localhost/api/budgets"));
+    const handled = await handleMiscRequest(
+      req,
+      res,
+      context,
+      "PUT",
+      "/api/budgets",
+      new URL("http://localhost/api/budgets"),
+    );
     expect(handled).toBe(true);
     expect(getStatusCode(res)).toBe(200);
     const body = getResponseBody(res) as Record<string, unknown>;
@@ -902,7 +1144,9 @@ describe("PUT /api/budgets", () => {
   it("handles unreadable config file gracefully", async () => {
     const fs = await import("node:fs");
     const yaml = await import("js-yaml");
-    vi.mocked(fs.default.readFileSync).mockImplementation(() => { throw new Error("ENOENT"); });
+    vi.mocked(fs.default.readFileSync).mockImplementation(() => {
+      throw new Error("ENOENT");
+    });
     vi.mocked(yaml.default.dump).mockReturnValue("dumped:");
     vi.mocked(fs.default.writeFileSync).mockImplementation(() => {});
     const context = makeContext();
@@ -924,7 +1168,14 @@ describe("PUT /api/budgets", () => {
         if (event === "end") cb();
       }),
     } as never;
-    const handled = await handleMiscRequest(req, res, context, "PUT", "/api/budgets", new URL("http://localhost/api/budgets"));
+    const handled = await handleMiscRequest(
+      req,
+      res,
+      context,
+      "PUT",
+      "/api/budgets",
+      new URL("http://localhost/api/budgets"),
+    );
     expect(handled).toBe(true);
     expect(getStatusCode(res)).toBe(400);
   });
@@ -939,7 +1190,14 @@ describe("POST /api/budgets/:employee/override", () => {
       getConfig: vi.fn().mockReturnValue(config),
     } as unknown as ApiContext;
     const res = makeRes();
-    const handled = await handleMiscRequest(makeReq(), res, context, "POST", "/api/budgets/alice/override", new URL("http://localhost/api/budgets/alice/override"));
+    const handled = await handleMiscRequest(
+      makeReq(),
+      res,
+      context,
+      "POST",
+      "/api/budgets/alice/override",
+      new URL("http://localhost/api/budgets/alice/override"),
+    );
     expect(handled).toBe(true);
     expect(getStatusCode(res)).toBe(200);
   });
@@ -949,7 +1207,14 @@ describe("GET /api/budgets/events", () => {
   it("returns budget events", async () => {
     const context = makeContext();
     const res = makeRes();
-    const handled = await handleMiscRequest(makeReq(), res, context, "GET", "/api/budgets/events", new URL("http://localhost/api/budgets/events"));
+    const handled = await handleMiscRequest(
+      makeReq(),
+      res,
+      context,
+      "GET",
+      "/api/budgets/events",
+      new URL("http://localhost/api/budgets/events"),
+    );
     expect(handled).toBe(true);
     expect(getStatusCode(res)).toBe(200);
   });
@@ -961,7 +1226,14 @@ describe("unmatched routes", () => {
   it("returns false for unknown route", async () => {
     const context = makeContext();
     const res = makeRes();
-    const handled = await handleMiscRequest(makeReq(), res, context, "GET", "/api/unknown", new URL("http://localhost/api/unknown"));
+    const handled = await handleMiscRequest(
+      makeReq(),
+      res,
+      context,
+      "GET",
+      "/api/unknown",
+      new URL("http://localhost/api/unknown"),
+    );
     expect(handled).toBe(false);
   });
 });
