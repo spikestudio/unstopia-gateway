@@ -216,6 +216,25 @@ describe("downloadModel", () => {
     expect(onProgress).toHaveBeenCalledWith(100);
   });
 
+  // Coverage補完: 進捗ポーリングで stat.size > 0 → onProgress が呼ばれる
+  it("should report progress when temp file has size > 0 during download", async () => {
+    vi.mocked(fs.existsSync).mockReturnValue(false);
+    vi.mocked(fs.statSync).mockReturnValue({ size: 37_500_000 } as fs.Stats); // ~50% of tiny
+    // curl closes after 1500ms so the 1000ms interval fires first
+    const curl = new EventEmitter() as EventEmitter & { kill: () => void };
+    curl.kill = vi.fn();
+    spawnMock.mockReturnValue(curl);
+    setTimeout(() => curl.emit("close", 0), 1500);
+    const onProgress = vi.fn();
+    const p = downloadModel("tiny", onProgress);
+    // Advance past 1000ms interval
+    await vi.advanceTimersByTimeAsync(1100);
+    // Advance past curl close
+    await vi.advanceTimersByTimeAsync(500);
+    await p;
+    expect(onProgress).toHaveBeenCalledWith(expect.any(Number));
+  });
+
   // AC-E028-18: curl が非ゼロ終了 → 一時ファイル削除してエラー
   it("should delete temp file and throw when curl exits with non-zero code", async () => {
     vi.mocked(fs.existsSync).mockReturnValue(false);
