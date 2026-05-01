@@ -722,9 +722,7 @@ describe("GeminiEngine", () => {
 
         const resultPromise = engine.run({ prompt: "q", cwd: "/tmp" });
 
-        const output = JSON.stringify([
-          { type: "result", text: "text-field-answer", session_id: "gem-tf" },
-        ]);
+        const output = JSON.stringify([{ type: "result", text: "text-field-answer", session_id: "gem-tf" }]);
         proc.stdout.emit("data", Buffer.from(output));
         proc.exitCode = 0;
         proc.emit("close", 0);
@@ -740,9 +738,7 @@ describe("GeminiEngine", () => {
 
         const resultPromise = engine.run({ prompt: "q", cwd: "/tmp" });
 
-        const output = JSON.stringify([
-          { type: "content.text", content: "content-text-answer" },
-        ]);
+        const output = JSON.stringify([{ type: "content.text", content: "content-text-answer" }]);
         proc.stdout.emit("data", Buffer.from(output));
         proc.exitCode = 0;
         proc.emit("close", 0);

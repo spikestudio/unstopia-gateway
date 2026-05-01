@@ -820,12 +820,7 @@ describe("CodexEngine", () => {
 
       proc.stdout.emit(
         "data",
-        Buffer.from(
-          [
-            JSON.stringify({ type: "thread.started", thread_id: "th-be" }),
-            "\n",
-          ].join(""),
-        ),
+        Buffer.from([JSON.stringify({ type: "thread.started", thread_id: "th-be" }), "\n"].join("")),
       );
       // error without trailing newline
       proc.stdout.emit(
@@ -847,9 +842,7 @@ describe("CodexEngine", () => {
 
       proc.stdout.emit(
         "data",
-        Buffer.from(
-          [JSON.stringify({ type: "thread.started", thread_id: "th-btf" }), "\n"].join(""),
-        ),
+        Buffer.from([JSON.stringify({ type: "thread.started", thread_id: "th-btf" }), "\n"].join("")),
       );
       // turn.failed without trailing newline
       proc.stdout.emit(
@@ -933,7 +926,9 @@ describe("CodexEngine", () => {
 
       proc.stdout.emit(
         "data",
-        Buffer.from(`${JSON.stringify({ type: "item.completed", item: { type: "agent_message", text: "ok-se-cx" } })}\n`),
+        Buffer.from(
+          `${JSON.stringify({ type: "item.completed", item: { type: "agent_message", text: "ok-se-cx" } })}\n`,
+        ),
       );
       proc.exitCode = 0;
       proc.emit("close", 0);

@@ -1425,7 +1425,9 @@ describe("ClaudeEngine", () => {
         setTimeout(() => {
           proc2.stdout.emit(
             "data",
-            Buffer.from(`${JSON.stringify({ type: "result", result: "after-retry", session_id: "s-ol", num_turns: 1 })}\n`),
+            Buffer.from(
+              `${JSON.stringify({ type: "result", result: "after-retry", session_id: "s-ol", num_turns: 1 })}\n`,
+            ),
           );
           proc2.exitCode = 0;
           proc2.emit("close", 0);
@@ -1469,10 +1471,12 @@ describe("ClaudeEngine", () => {
       // Array where last element has is_error=true but no type:result event
       proc.stdout.emit(
         "data",
-        Buffer.from(JSON.stringify([
-          { type: "debug", msg: "start" },
-          { is_error: true, result: "something went wrong" },
-        ])),
+        Buffer.from(
+          JSON.stringify([
+            { type: "debug", msg: "start" },
+            { is_error: true, result: "something went wrong" },
+          ]),
+        ),
       );
       proc.exitCode = 1;
       proc.emit("close", 1);
@@ -1607,9 +1611,9 @@ describe("ClaudeEngine", () => {
       // Send data with empty lines (→ processor.process("", ...) returns null → continue)
       // and an invalid JSON line (→ null → continue)
       const events = [
-        "",                                                                        // empty line → null
+        "", // empty line → null
         "\n",
-        "not-valid-json",                                                          // bad JSON → null
+        "not-valid-json", // bad JSON → null
         "\n",
         JSON.stringify({ type: "result", result: "ok-skip", session_id: "sl-1" }), // valid result
         "\n",
@@ -1634,7 +1638,10 @@ describe("ClaudeEngine", () => {
       const bigStderr = "X".repeat(11 * 1024);
       proc.stderr.emit("data", Buffer.from(bigStderr));
 
-      proc.stdout.emit("data", Buffer.from(JSON.stringify({ type: "result", result: "ok-stderr", session_id: "se-1" })));
+      proc.stdout.emit(
+        "data",
+        Buffer.from(JSON.stringify({ type: "result", result: "ok-stderr", session_id: "se-1" })),
+      );
       proc.exitCode = 0;
       proc.emit("close", 0);
 
@@ -1717,10 +1724,7 @@ describe("ClaudeEngine", () => {
       const p = engine.run({ prompt: "q", cwd: "/tmp" });
 
       // Array with no type=result event
-      proc.stdout.emit(
-        "data",
-        Buffer.from(JSON.stringify([{ type: "debug", msg: "something" }])),
-      );
+      proc.stdout.emit("data", Buffer.from(JSON.stringify([{ type: "debug", msg: "something" }])));
       proc.exitCode = 1;
       proc.emit("close", 1);
 
@@ -1728,7 +1732,6 @@ describe("ClaudeEngine", () => {
       // 2nd parseClaudeJsonOutput succeeds → result.result="" (no text), no error
       expect(result.result).toBe("");
     });
-
   });
 
   describe("parseRateLimitInfo (exported function)", () => {
