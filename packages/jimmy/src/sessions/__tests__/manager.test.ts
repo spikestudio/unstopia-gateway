@@ -209,7 +209,9 @@ describe("SessionManager", () => {
       queue.enqueue("k1", () => firstDone);
 
       const connector = makeConnector({
-        getCapabilities: vi.fn().mockReturnValue({ reactions: true, threading: false, messageEdits: false, attachments: false }),
+        getCapabilities: vi
+          .fn()
+          .mockReturnValue({ reactions: true, threading: false, messageEdits: false, attachments: false }),
       });
 
       const routePromise = manager.route(baseMsg as never, connector);
@@ -226,11 +228,7 @@ describe("SessionManager", () => {
     it("attachments に localPath がある場合はフィルタリングして渡す", async () => {
       const msgWithAttachments = {
         ...baseMsg,
-        attachments: [
-          { localPath: "/tmp/file1.txt" },
-          { localPath: null },
-          { localPath: "/tmp/file2.txt" },
-        ],
+        attachments: [{ localPath: "/tmp/file1.txt" }, { localPath: null }, { localPath: "/tmp/file2.txt" }],
       };
 
       const result = await manager.route(msgWithAttachments as never, makeConnector());

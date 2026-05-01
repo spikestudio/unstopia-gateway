@@ -479,15 +479,11 @@ describe("forkEngineSession", () => {
   });
 
   it("engine='codex' のとき forkCodexSession が呼ばれる（ファイルなしでエラー）", () => {
-    expect(() => forkEngineSession("codex", "no-such-session", "/cwd")).toThrow(
-      "Codex session file not found",
-    );
+    expect(() => forkEngineSession("codex", "no-such-session", "/cwd")).toThrow("Codex session file not found");
   });
 
   it("engine='gemini' のとき forkGeminiSession が呼ばれる（ファイルなしでエラー）", () => {
-    expect(() => forkEngineSession("gemini", "no-such-session", "/cwd")).toThrow(
-      "Gemini session file not found",
-    );
+    expect(() => forkEngineSession("gemini", "no-such-session", "/cwd")).toThrow("Gemini session file not found");
   });
 
   it("サポートされていない engine はエラーをスローする", () => {

@@ -1355,7 +1355,18 @@ describe("runSession", () => {
         sessions: { rateLimitStrategy: "wait" },
       } as unknown as JinnConfig;
 
-      await runSession(session, makeMsg(), [], connector, makeTarget(), engines, config, () => new Map(), undefined, repos);
+      await runSession(
+        session,
+        makeMsg(),
+        [],
+        connector,
+        makeTarget(),
+        engines,
+        config,
+        () => new Map(),
+        undefined,
+        repos,
+      );
 
       // wait path と retry success の両方で replyMessage が呼ばれている
       const replyCalls = vi.mocked(connector.replyMessage).mock.calls;
@@ -1396,7 +1407,18 @@ describe("runSession", () => {
         sessions: { rateLimitStrategy: "wait" },
       } as unknown as JinnConfig;
 
-      await runSession(session, makeMsg(), [], connector, makeTarget(), engines, config, () => new Map(), undefined, repos);
+      await runSession(
+        session,
+        makeMsg(),
+        [],
+        connector,
+        makeTarget(),
+        engines,
+        config,
+        () => new Map(),
+        undefined,
+        repos,
+      );
 
       // wait path に入った（複数回 replyMessage が呼ばれている）
       expect(vi.mocked(connector.replyMessage).mock.calls.length).toBeGreaterThan(0);
@@ -1434,7 +1456,18 @@ describe("runSession", () => {
         sessions: { rateLimitStrategy: "wait" },
       } as unknown as JinnConfig;
 
-      await runSession(session, makeMsg(), [], connector, makeTarget(), engines, config, () => new Map(), undefined, repos);
+      await runSession(
+        session,
+        makeMsg(),
+        [],
+        connector,
+        makeTarget(),
+        engines,
+        config,
+        () => new Map(),
+        undefined,
+        repos,
+      );
 
       // error 状態なので retry engine.run は呼ばれない（最初の1回は呼ばれる）
       // 重要: 例外なく完了すること
@@ -1479,7 +1512,18 @@ describe("runSession", () => {
         sessions: { rateLimitStrategy: "wait" },
       } as unknown as JinnConfig;
 
-      await runSession(session, makeMsg(), [], connector, makeTarget(), engines, config, () => new Map(), undefined, repos);
+      await runSession(
+        session,
+        makeMsg(),
+        [],
+        connector,
+        makeTarget(),
+        engines,
+        config,
+        () => new Map(),
+        undefined,
+        repos,
+      );
 
       // 例外なく完了すること
       expect(true).toBe(true);
@@ -1551,7 +1595,18 @@ describe("runSession", () => {
         sessions: { rateLimitStrategy: "wait" },
       } as unknown as JinnConfig;
 
-      await runSession(session, makeMsg(), [], connector, makeTarget(), engines, config, () => new Map(), undefined, undefined);
+      await runSession(
+        session,
+        makeMsg(),
+        [],
+        connector,
+        makeTarget(),
+        engines,
+        config,
+        () => new Map(),
+        undefined,
+        undefined,
+      );
 
       // replyMessage が呼ばれている（待機中通知または期限切れ通知）
       expect(vi.mocked(connector.replyMessage)).toHaveBeenCalled();
