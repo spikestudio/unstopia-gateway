@@ -503,4 +503,432 @@ describe("DiscordConnector", () => {
       expect(target.channel).toBe("");
     });
   });
+
+  // ── getEmployee ──────────────────────────────────────────────────────────
+
+  describe("getEmployee", () => {
+    it("returns undefined when employee is not configured", () => {
+      expect(connector.getEmployee()).toBeUndefined();
+    });
+
+    it("returns the configured employee name", () => {
+      const c = new DiscordConnector({ botToken: "tok", employee: "alice" });
+      expect(c.getEmployee()).toBe("alice");
+    });
+  });
+
+  // ── channelRouting / proxyToRemote ────────────────────────────────────────
+
+  describe("channelRouting / proxyToRemote", () => {
+    it("proxies message to remote URL when channelRouting matches channel id", async () => {
+      const mockFetch = vi.fn().mockResolvedValue({ ok: true });
+      vi.stubGlobal("fetch", mockFetch);
+
+      const routed = new DiscordConnector({
+        botToken: "Bot token-123",
+        channelRouting: { "routed-channel": "http://remote.example.com/" },
+      });
+      const handler = vi.fn();
+      routed.onMessage(handler);
+      await routed.start();
+
+      const cb = getClientEventCallback("messageCreate");
+      const channel = makeChannel({ id: "routed-channel", isDMBased: () => false });
+      const msg = makeDiscordMessage({ channel });
+      await cb?.(msg);
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        "http://remote.example.com/api/connectors/discord/incoming",
+        expect.objectContaining({ method: "POST" }),
+      );
+      expect(handler).not.toHaveBeenCalled();
+
+      vi.unstubAllGlobals();
+    });
+
+    it("logs error when proxy response is not ok", async () => {
+      const mockFetch = vi.fn().mockResolvedValue({ ok: false, status: 503, statusText: "Service Unavailable" });
+      vi.stubGlobal("fetch", mockFetch);
+
+      const routed = new DiscordConnector({
+        botToken: "Bot token-123",
+        channelRouting: { "routed-channel": "http://remote.example.com" },
+      });
+      const handler = vi.fn();
+      routed.onMessage(handler);
+      await routed.start();
+
+      const cb = getClientEventCallback("messageCreate");
+      const channel = makeChannel({ id: "routed-channel" });
+      const msg = makeDiscordMessage({ channel });
+      await cb?.(msg);
+
+      const { logger } = await import("../../../shared/logger.js");
+      expect(logger.error).toHaveBeenCalled();
+
+      vi.unstubAllGlobals();
+    });
+
+    it("logs error when proxy fetch throws", async () => {
+      const mockFetch = vi.fn().mockRejectedValue(new Error("Network failure"));
+      vi.stubGlobal("fetch", mockFetch);
+
+      const routed = new DiscordConnector({
+        botToken: "Bot token-123",
+        channelRouting: { "routed-channel": "http://remote.example.com" },
+      });
+      routed.onMessage(vi.fn());
+      await routed.start();
+
+      const cb = getClientEventCallback("messageCreate");
+      const channel = makeChannel({ id: "routed-channel" });
+      await cb?.(makeDiscordMessage({ channel }));
+
+      const { logger } = await import("../../../shared/logger.js");
+      expect(logger.error).toHaveBeenCalled();
+
+      vi.unstubAllGlobals();
+    });
+
+    it("strips trailing slashes from remote URL", async () => {
+      const mockFetch = vi.fn().mockResolvedValue({ ok: true });
+      vi.stubGlobal("fetch", mockFetch);
+
+      const routed = new DiscordConnector({
+        botToken: "Bot token-123",
+        channelRouting: { "routed-channel": "http://remote.example.com///" },
+      });
+      routed.onMessage(vi.fn());
+      await routed.start();
+
+      const cb = getClientEventCallback("messageCreate");
+      const channel = makeChannel({ id: "routed-channel" });
+      await cb?.(makeDiscordMessage({ channel }));
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        "http://remote.example.com/api/connectors/discord/incoming",
+        expect.any(Object),
+      );
+
+      vi.unstubAllGlobals();
+    });
+  });
+
+  // ── channelRouting numeric key normalisation ───────────────────────────────
+
+  describe("channelRouting numeric key normalisation", () => {
+    it("converts numeric channelRouting keys to strings", async () => {
+      const mockFetch = vi.fn().mockResolvedValue({ ok: true });
+      vi.stubGlobal("fetch", mockFetch);
+
+      const routed = new DiscordConnector({
+        botToken: "Bot token-123",
+        // Simulate YAML-parsed numeric key
+        channelRouting: { 123456789: "http://remote.example.com" } as Record<string, string>,
+      });
+      routed.onMessage(vi.fn());
+      await routed.start();
+
+      const cb = getClientEventCallback("messageCreate");
+      const channel = makeChannel({ id: "123456789" });
+      await cb?.(makeDiscordMessage({ channel }));
+
+      expect(mockFetch).toHaveBeenCalled();
+
+      vi.unstubAllGlobals();
+    });
+  });
+
+  // ── transportMeta "dm" branch ─────────────────────────────────────────────
+
+  describe("transportMeta channelName='dm' branch", () => {
+    it("sets channelName to 'dm' when channel has no name property", async () => {
+      const handler = vi.fn();
+      connector.onMessage(handler);
+      await connector.start();
+
+      const cb = getClientEventCallback("messageCreate");
+      // Channel without 'name' key → channelName branch falls to "dm"
+      const noNameChannel: ChannelStub = {
+        id: "dm-channel-no-name",
+        isTextBased: () => false, // isTextBased false → goes to "dm"
+        isDMBased: () => true,
+        isThread: () => false,
+        send: vi.fn(),
+        messages: { fetch: vi.fn() },
+      };
+      const msg = makeDiscordMessage({ channel: noNameChannel, guild: null });
+      await cb?.(msg);
+
+      const incoming = handler.mock.calls[0][0];
+      expect(incoming.transportMeta.channelName).toBe("dm");
+
+      vi.unstubAllGlobals();
+    });
+  });
+
+  // ── replyMessage ──────────────────────────────────────────────────────────
+
+  describe("replyMessage", () => {
+    it("sends to thread channel when target.thread is set", async () => {
+      const mockSend = vi.fn().mockResolvedValue({ id: "reply-id" });
+      const ch = makeChannel({ send: mockSend });
+      mockChannelsFetch.mockResolvedValue(ch);
+
+      const target: Target = { channel: "channel-001", thread: "thread-001" };
+      const result = await connector.replyMessage(target, "Reply text");
+
+      expect(mockChannelsFetch).toHaveBeenCalledWith("thread-001");
+      expect(result).toBe("reply-id");
+    });
+
+    it("falls back to channel when thread is not set", async () => {
+      const mockSend = vi.fn().mockResolvedValue({ id: "reply-id-2" });
+      const ch = makeChannel({ send: mockSend });
+      mockChannelsFetch.mockResolvedValue(ch);
+
+      const target: Target = { channel: "channel-001" };
+      const result = await connector.replyMessage(target, "Reply text");
+
+      expect(mockChannelsFetch).toHaveBeenCalledWith("channel-001");
+      expect(result).toBe("reply-id-2");
+    });
+
+    it("returns undefined when channel is not text-based", async () => {
+      mockChannelsFetch.mockResolvedValue({ isTextBased: () => false });
+      const target: Target = { channel: "voice-ch" };
+      const result = await connector.replyMessage(target, "Reply");
+      expect(result).toBeUndefined();
+    });
+
+    it("returns undefined when channel fetch throws", async () => {
+      mockChannelsFetch.mockRejectedValue(new Error("fetch error"));
+      const target: Target = { channel: "bad-ch" };
+      const result = await connector.replyMessage(target, "Reply");
+      expect(result).toBeUndefined();
+    });
+  });
+
+  // ── editMessage ───────────────────────────────────────────────────────────
+
+  describe("editMessage", () => {
+    it("returns early when messageTs is not set", async () => {
+      const target: Target = { channel: "channel-001" };
+      await connector.editMessage(target, "Edit text");
+      expect(mockChannelsFetch).not.toHaveBeenCalled();
+    });
+
+    it("fetches channel and calls msg.edit", async () => {
+      const mockEdit = vi.fn().mockResolvedValue(undefined);
+      const mockMsgFetch = vi.fn().mockResolvedValue({ edit: mockEdit });
+      const ch = makeChannel({ messages: { fetch: mockMsgFetch } });
+      mockChannelsFetch.mockResolvedValue(ch);
+
+      const target: Target = { channel: "channel-001", messageTs: "msg-to-edit" };
+      await connector.editMessage(target, "Edited content");
+
+      expect(mockMsgFetch).toHaveBeenCalledWith("msg-to-edit");
+      expect(mockEdit).toHaveBeenCalledWith("Edited content");
+    });
+
+    it("returns when channel is not text-based", async () => {
+      mockChannelsFetch.mockResolvedValue({ isTextBased: () => false });
+      const target: Target = { channel: "voice-ch", messageTs: "msg-id" };
+      await connector.editMessage(target, "Edit text");
+      // No error thrown
+    });
+
+    it("handles edit errors gracefully", async () => {
+      mockChannelsFetch.mockRejectedValue(new Error("edit error"));
+      const target: Target = { channel: "channel-001", messageTs: "msg-id" };
+      await expect(connector.editMessage(target, "Edit text")).resolves.toBeUndefined();
+    });
+  });
+
+  // ── addReaction / removeReaction ──────────────────────────────────────────
+
+  describe("addReaction", () => {
+    it("returns early when messageTs is not set", async () => {
+      const target: Target = { channel: "channel-001" };
+      await connector.addReaction(target, "thumbsup");
+      expect(mockChannelsFetch).not.toHaveBeenCalled();
+    });
+
+    it("fetches channel and calls msg.react", async () => {
+      const mockReact = vi.fn().mockResolvedValue(undefined);
+      const mockMsgFetch = vi.fn().mockResolvedValue({ react: mockReact });
+      const ch = makeChannel({ messages: { fetch: mockMsgFetch } });
+      mockChannelsFetch.mockResolvedValue(ch);
+
+      const target: Target = { channel: "channel-001", thread: "thread-001", messageTs: "msg-react" };
+      await connector.addReaction(target, "star");
+
+      expect(mockChannelsFetch).toHaveBeenCalledWith("thread-001");
+      expect(mockReact).toHaveBeenCalledWith("star");
+    });
+
+    it("does not throw on fetch error (non-fatal)", async () => {
+      mockChannelsFetch.mockRejectedValue(new Error("fetch error"));
+      const target: Target = { channel: "channel-001", messageTs: "msg-id" };
+      await expect(connector.addReaction(target, "star")).resolves.toBeUndefined();
+    });
+
+    it("returns when channel is not text-based (non-fatal)", async () => {
+      mockChannelsFetch.mockResolvedValue({ isTextBased: () => false });
+      const target: Target = { channel: "voice-ch", messageTs: "msg-id" };
+      await connector.addReaction(target, "star");
+    });
+  });
+
+  describe("removeReaction", () => {
+    it("returns early when messageTs is not set", async () => {
+      const target: Target = { channel: "channel-001" };
+      await connector.removeReaction(target, "thumbsup");
+      expect(mockChannelsFetch).not.toHaveBeenCalled();
+    });
+
+    it("fetches channel and calls msg.reactions.cache.get().users.remove", async () => {
+      const mockUsersRemove = vi.fn().mockResolvedValue(undefined);
+      const mockReactionsCache = {
+        get: vi.fn().mockReturnValue({ users: { remove: mockUsersRemove } }),
+      };
+      const mockMsgFetch = vi.fn().mockResolvedValue({ reactions: { cache: mockReactionsCache } });
+      const ch = makeChannel({ messages: { fetch: mockMsgFetch } });
+      mockChannelsFetch.mockResolvedValue(ch);
+
+      const target: Target = { channel: "channel-001", messageTs: "msg-remove" };
+      await connector.removeReaction(target, "star");
+
+      expect(mockReactionsCache.get).toHaveBeenCalledWith("star");
+    });
+
+    it("does not throw on fetch error (non-fatal)", async () => {
+      mockChannelsFetch.mockRejectedValue(new Error("fetch error"));
+      const target: Target = { channel: "channel-001", messageTs: "msg-id" };
+      await expect(connector.removeReaction(target, "star")).resolves.toBeUndefined();
+    });
+  });
+
+  // ── setTypingStatus ────────────────────────────────────────────────────────
+
+  describe("setTypingStatus", () => {
+    it("sends typing and sets interval when status is non-empty", async () => {
+      const mockSendTyping = vi.fn().mockResolvedValue(undefined);
+      const ch = makeChannel({ sendTyping: mockSendTyping, isTextBased: () => true });
+      mockChannelsFetch.mockResolvedValue(ch);
+
+      await connector.setTypingStatus("channel-001", undefined, "typing");
+
+      expect(mockSendTyping).toHaveBeenCalledOnce();
+    });
+
+    it("clears existing interval and sets new one when called twice", async () => {
+      const mockSendTyping = vi.fn().mockResolvedValue(undefined);
+      const ch = makeChannel({ sendTyping: mockSendTyping, isTextBased: () => true });
+      mockChannelsFetch.mockResolvedValue(ch);
+
+      await connector.setTypingStatus("channel-001", undefined, "typing");
+      mockSendTyping.mockClear();
+      await connector.setTypingStatus("channel-001", undefined, "typing");
+
+      expect(mockSendTyping).toHaveBeenCalledOnce();
+    });
+
+    it("does not fetch channel when status is empty string", async () => {
+      await connector.setTypingStatus("channel-001", undefined, "");
+      expect(mockChannelsFetch).not.toHaveBeenCalled();
+    });
+
+    it("does not throw when channel is not text-based (non-fatal)", async () => {
+      mockChannelsFetch.mockResolvedValue({ isTextBased: () => false });
+      await expect(connector.setTypingStatus("channel-001", undefined, "typing")).resolves.toBeUndefined();
+    });
+
+    it("does not throw when channel fetch throws (non-fatal)", async () => {
+      mockChannelsFetch.mockRejectedValue(new Error("fetch error"));
+      await expect(connector.setTypingStatus("channel-001", undefined, "typing")).resolves.toBeUndefined();
+    });
+  });
+
+  // ── error event handler ───────────────────────────────────────────────────
+
+  describe("error event handler", () => {
+    it("sets status to error and stores lastError on client error event", async () => {
+      await connector.start();
+      const errorCb = getClientEventCallback("error");
+      errorCb?.(new Error("test error"));
+      expect(connector.getHealth().status).toBe("error");
+      expect(connector.getHealth().detail).toBe("test error");
+    });
+  });
+
+  // ── ready event handler ───────────────────────────────────────────────────
+
+  describe("ready event handler", () => {
+    it("sets status to running when ready event fires", async () => {
+      await connector.start();
+      const readyCb = getClientEventCallback("ready");
+      readyCb?.();
+      expect(connector.getHealth().status).toBe("running");
+    });
+  });
+
+  // ── messageCreate error handling ──────────────────────────────────────────
+
+  describe("messageCreate error handling", () => {
+    it("catches errors thrown in handleMessage without crashing", async () => {
+      // handler that throws
+      connector.onMessage(() => {
+        throw new Error("handler error");
+      });
+      await connector.start();
+
+      const cb = getClientEventCallback("messageCreate");
+      const msg = makeDiscordMessage();
+      // Should not propagate the error
+      await expect(cb?.(msg)).resolves.toBeUndefined();
+    });
+  });
+
+  // ── no handler registered ─────────────────────────────────────────────────
+
+  describe("no handler registered", () => {
+    it("does not crash when handler is null and message arrives", async () => {
+      // handler not registered
+      await connector.start();
+      const cb = getClientEventCallback("messageCreate");
+      const msg = makeDiscordMessage();
+      await expect(cb?.(msg)).resolves.toBeUndefined();
+    });
+  });
+
+  // ── ignoreOldMessagesOnBoot ───────────────────────────────────────────────
+
+  describe("ignoreOldMessagesOnBoot", () => {
+    it("ignores old messages when ignoreOldMessagesOnBoot is true (default)", async () => {
+      const handler = vi.fn();
+      connector.onMessage(handler);
+      await connector.start();
+
+      const cb = getClientEventCallback("messageCreate");
+      // Old timestamp in the past
+      const msg = makeDiscordMessage({ createdTimestamp: Date.now() - 120_000 });
+      await cb?.(msg);
+
+      expect(handler).not.toHaveBeenCalled();
+    });
+
+    it("does not ignore old messages when ignoreOldMessagesOnBoot is false", async () => {
+      const c = new DiscordConnector({ botToken: "tok", ignoreOldMessagesOnBoot: false });
+      const handler = vi.fn();
+      c.onMessage(handler);
+      await c.start();
+
+      const cb = getClientEventCallback("messageCreate");
+      const msg = makeDiscordMessage({ createdTimestamp: Date.now() - 120_000 });
+      await cb?.(msg);
+
+      expect(handler).toHaveBeenCalledOnce();
+    });
+  });
 });

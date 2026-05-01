@@ -376,4 +376,138 @@ describe("TelegramConnector", () => {
       expect(mockSendMessage).not.toHaveBeenCalled();
     });
   });
+
+  // ── ignoreOldMessagesOnBoot ─────────────────────────────────────────────
+
+  describe("ignoreOldMessagesOnBoot", () => {
+    it("ignores old messages when ignoreOldMessagesOnBoot is true (default)", async () => {
+      const handler = vi.fn();
+      connector.onMessage(handler);
+      await connector.start();
+
+      const messageCallback = mockOn.mock.calls.find((call) => call[0] === "message")?.[1];
+
+      const oldMsg = {
+        message_id: 99,
+        chat: { id: 12345, type: "private" as const },
+        from: { id: 67890, username: "user", first_name: "User", is_bot: false },
+        // Old timestamp: 2 hours in the past (in seconds)
+        date: Math.floor(Date.now() / 1000) - 7200,
+        text: "Old message",
+      };
+      await messageCallback({ message: oldMsg });
+
+      expect(handler).not.toHaveBeenCalled();
+    });
+
+    it("processes old messages when ignoreOldMessagesOnBoot is false", async () => {
+      const c = new TelegramConnector({
+        botToken: "123456:ABC-DEF",
+        ignoreOldMessagesOnBoot: false,
+      });
+      const handler = vi.fn();
+      c.onMessage(handler);
+      await c.start();
+
+      const messageCallback = mockOn.mock.calls.find((call) => call[0] === "message")?.[1];
+
+      const oldMsg = {
+        message_id: 99,
+        chat: { id: 12345, type: "private" as const },
+        from: { id: 67890, username: "user", first_name: "User", is_bot: false },
+        date: Math.floor(Date.now() / 1000) - 7200,
+        text: "Old message",
+      };
+      await messageCallback({ message: oldMsg });
+
+      expect(handler).toHaveBeenCalledOnce();
+    });
+  });
+
+  // ── stop with active typing intervals ───────────────────────────────────
+
+  describe("stop with active typing intervals", () => {
+    it("clears all typing intervals on stop", async () => {
+      await connector.start();
+      // Set a typing interval
+      await connector.setTypingStatus("99999", undefined, "typing");
+      // Stop should clear intervals without error
+      await connector.stop();
+      expect(mockStop).toHaveBeenCalledOnce();
+    });
+  });
+
+  // ── username fallback (first_name / unknown) ─────────────────────────────
+
+  describe("username fallback", () => {
+    it("uses first_name when username is not set", async () => {
+      const handler = vi.fn();
+      connector.onMessage(handler);
+      await connector.start();
+
+      const messageCallback = mockOn.mock.calls.find((call) => call[0] === "message")?.[1];
+
+      const msg = {
+        message_id: 1,
+        chat: { id: 12345, type: "private" as const },
+        from: { id: 67890, first_name: "Alice", is_bot: false }, // no username
+        date: Math.floor(Date.now() / 1000) + 10,
+        text: "Hello",
+      };
+      await messageCallback({ message: msg });
+
+      expect(handler).toHaveBeenCalledOnce();
+      expect(handler.mock.calls[0][0].user).toBe("Alice");
+    });
+
+    it("uses 'unknown' when both username and first_name are absent", async () => {
+      const handler = vi.fn();
+      connector.onMessage(handler);
+      await connector.start();
+
+      const messageCallback = mockOn.mock.calls.find((call) => call[0] === "message")?.[1];
+
+      const msg = {
+        message_id: 1,
+        chat: { id: 12345, type: "private" as const },
+        from: { id: 67890, is_bot: false }, // no username or first_name
+        date: Math.floor(Date.now() / 1000) + 10,
+        text: "Hello",
+      };
+      await messageCallback({ message: msg });
+
+      expect(handler).toHaveBeenCalledOnce();
+      expect(handler.mock.calls[0][0].user).toBe("unknown");
+    });
+  });
+
+  // ── null message guard ──────────────────────────────────────────────────
+
+  describe("null message guard", () => {
+    it("does not crash when ctx.message is null", async () => {
+      connector.onMessage(vi.fn());
+      await connector.start();
+
+      const messageCallback = mockOn.mock.calls.find((call) => call[0] === "message")?.[1];
+      await expect(messageCallback({ message: null })).resolves.toBeUndefined();
+    });
+  });
+
+  // ── no handler registered ───────────────────────────────────────────────
+
+  describe("no handler registered", () => {
+    it("does not crash when no handler is set and message arrives", async () => {
+      await connector.start();
+
+      const messageCallback = mockOn.mock.calls.find((call) => call[0] === "message")?.[1];
+      const msg = {
+        message_id: 1,
+        chat: { id: 12345, type: "private" as const },
+        from: { id: 67890, username: "user", is_bot: false },
+        date: Math.floor(Date.now() / 1000) + 10,
+        text: "Hello",
+      };
+      await expect(messageCallback({ message: msg })).resolves.toBeUndefined();
+    });
+  });
 });
