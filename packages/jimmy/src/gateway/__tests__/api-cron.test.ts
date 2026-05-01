@@ -200,4 +200,57 @@ describe("handleCronRequest", () => {
       expect(handled).toBe(false);
     });
   });
+
+  describe("GET /api/cron — lastRun あり", () => {
+    it("CRON_RUNS ファイルがある場合は lastRun を返す", async () => {
+      const lastRunEntry = { status: "success", ts: Date.now() };
+      vi.mocked(loadJobs).mockReturnValue([sampleJob] as never);
+      vi.mocked(fs.existsSync).mockReturnValue(true);
+      vi.mocked(fs.readFileSync).mockReturnValue(`${JSON.stringify(lastRunEntry)}\n` as never);
+      const { res, written } = makeRes();
+
+      await handleCronRequest(makeReq(), res, makeContext(), "GET", "/api/cron");
+
+      const body = written().body as Array<{ lastRun: Record<string, unknown> | null }>;
+      expect(body[0].lastRun).not.toBeNull();
+      expect(body[0].lastRun?.status).toBe("success");
+    });
+
+    it("run ファイルがあるが空の場合は lastRun: null を返す", async () => {
+      vi.mocked(loadJobs).mockReturnValue([sampleJob] as never);
+      vi.mocked(fs.existsSync).mockReturnValue(true);
+      vi.mocked(fs.readFileSync).mockReturnValue("" as never);
+      const { res, written } = makeRes();
+
+      await handleCronRequest(makeReq(), res, makeContext(), "GET", "/api/cron");
+
+      const body = written().body as Array<{ lastRun: null }>;
+      expect(body[0].lastRun).toBeNull();
+    });
+
+    it("run ファイルの最終行が不正 JSON の場合は lastRun: null を返す", async () => {
+      vi.mocked(loadJobs).mockReturnValue([sampleJob] as never);
+      vi.mocked(fs.existsSync).mockReturnValue(true);
+      vi.mocked(fs.readFileSync).mockReturnValue("not-json\n" as never);
+      const { res, written } = makeRes();
+
+      await handleCronRequest(makeReq(), res, makeContext(), "GET", "/api/cron");
+
+      const body = written().body as Array<{ lastRun: null }>;
+      expect(body[0].lastRun).toBeNull();
+    });
+  });
+
+  describe("POST /api/cron/:id/trigger — runCronJob エラー時", () => {
+    it("runCronJob が reject してもレスポンスは triggered: true を返す", async () => {
+      vi.mocked(loadJobs).mockReturnValue([{ ...sampleJob }] as never);
+      vi.mocked(runCronJob).mockRejectedValue(new Error("trigger error"));
+      const { res, written } = makeRes();
+
+      const handled = await handleCronRequest(makeReq(), res, makeContext(), "POST", "/api/cron/job-1/trigger");
+
+      expect(handled).toBe(true);
+      expect((written().body as { triggered: boolean }).triggered).toBe(true);
+    });
+  });
 });

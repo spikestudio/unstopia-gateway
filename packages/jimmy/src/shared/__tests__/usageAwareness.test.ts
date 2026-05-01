@@ -116,7 +116,7 @@ describe("getClaudeExpectedResetAt", () => {
     fs.writeFileSync(STATE_PATH, JSON.stringify({ lastResetsAt: futureReset }));
     const result = getClaudeExpectedResetAt();
     expect(result).toBeInstanceOf(Date);
-    expect(result!.toISOString()).toBe(futureReset);
+    expect(result?.toISOString()).toBe(futureReset);
   });
 
   it("now パラメータを使って比較できる", () => {

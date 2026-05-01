@@ -1525,7 +1525,7 @@ describe("ClaudeEngine", () => {
 
         const env = mockSpawn.mock.lastCall?.[2]?.env as Record<string, string | undefined>;
         // undefined value should not be included
-        expect(env["__UNDEF_TEST__"]).toBeUndefined();
+        expect(env.__UNDEF_TEST__).toBeUndefined();
       } finally {
         mockEntries.mockRestore();
       }
