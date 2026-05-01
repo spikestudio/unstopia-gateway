@@ -11,6 +11,7 @@
 
 - branch カバレッジを現状 50% から 80% に向上させる（unit test で到達可能な上限）
 - 対象モジュール優先順: `src/mcp`（0%）、`src/stt`（0%）、`src/cli`（3%）、`src/gateway/api`（31%）、`src/gateway`（33%）、`src/sessions`（66%）、`src/engines`（78%）
+- `src/connectors`（discord: 51.38%, slack: 70%, whatsapp: 66.4%, telegram: 82.89%）のカバレッジ向上
 - `src/shared`（87%）、`src/cron`（96%）は既に高いため対象外
 
 ## 2. Epic マッピング
@@ -24,6 +25,7 @@
 | E5 | src/gateway テストカバレッジ向上 Epic | ・`src/gateway`（33% → 90%以上）のテスト追加 | MUST |
 | E6 | src/sessions テストカバレッジ向上 Epic | ・`src/sessions`（66% → 90%以上）のテスト追加 | MUST |
 | E7 | src/engines テストカバレッジ向上 Epic | ・`src/engines`（78% → 90%以上）のテスト追加 | MUST |
+| E8 | src/connectors テストカバレッジ向上 Epic | ・`src/connectors`（discord: 51.38%, slack: 70%, whatsapp: 66.4%, telegram: 82.89% → 各 90%以上）のテスト追加 | MUST |
 
 ## 3. Won't Have（スコープ外）
 
