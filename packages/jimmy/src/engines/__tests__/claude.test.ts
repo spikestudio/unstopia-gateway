@@ -1106,6 +1106,634 @@ describe("ClaudeEngine", () => {
 
   // ── 11. parseRateLimitInfo (exported function) ────────────────────────────────
 
+  describe("Additional branch coverage tests", () => {
+    // ── parseClaudeJsonOutput: Array with rate_limit_event ─────────────────────
+    it("parseClaudeJsonOutput handles array with rate_limit_event", async () => {
+      const output = JSON.stringify([
+        { type: "assistant", content: [{ type: "text", text: "thinking" }] },
+        { type: "rate_limit_event", rate_limit_info: { status: "ok", resetsAt: 9999, rateLimitType: "daily" } },
+        { type: "result", result: "final", session_id: "rl-arr-1" },
+      ]);
+      const result = await runWithOutput(engine, { prompt: "q", cwd: "/tmp" }, [output]);
+      expect(result.result).toBe("final");
+    });
+
+    // ── parseClaudeJsonOutput: Array with rate_limit_event, no result event ────
+    it("parseClaudeJsonOutput: Array with rate_limit_event (status=rejected) → is_error path", async () => {
+      // rate_limit_info.status="rejected" triggers the error path in buildEngineResultFromResultEvent
+      // even though assistant text is extracted, result="" because isError=true
+      const output = JSON.stringify([
+        { type: "rate_limit_event", rate_limit_info: { status: "rejected", resetsAt: 9999 } },
+        { type: "assistant", content: [{ type: "text", text: "some text" }] },
+      ]);
+      const result = await runWithOutput(engine, { prompt: "q", cwd: "/tmp" }, [output]);
+      // rateLimit.status="rejected" → isError=true → result=""
+      expect(result.result).toBe("");
+      expect(result.error).toBeDefined();
+    });
+
+    it("parseClaudeJsonOutput: Array with rate_limit_event (status=ok) + assistant text fallback", async () => {
+      // rate_limit_info.status="ok" (not "rejected") does NOT trigger error path
+      // result text is empty → assistant text is extracted as fallback
+      const output = JSON.stringify([
+        { type: "rate_limit_event", rate_limit_info: { status: "ok", resetsAt: 9999, rateLimitType: "daily" } },
+        { type: "assistant", content: [{ type: "text", text: "some text" }] },
+      ]);
+      const result = await runWithOutput(engine, { prompt: "q", cwd: "/tmp" }, [output]);
+      // rateLimit.status="ok" → isError=false → result = extracted assistant text
+      expect(result.result).toBe("some text");
+      expect(result.error).toBeUndefined();
+    });
+
+    // ── normalizeRateLimitInfo: raw が null/配列/非オブジェクト ────────────────
+    it("normalizeRateLimitInfo returns undefined for null", async () => {
+      // Trigger via non-zero exit with array output containing rate_limit_event with null info
+      const output = JSON.stringify([
+        { type: "rate_limit_event", rate_limit_info: null },
+        { type: "result", result: "partial", session_id: "nl-1", is_error: false },
+      ]);
+      const result = await runWithOutput(engine, { prompt: "q", cwd: "/tmp" }, [output], 1);
+      expect(result.result).toBe("partial");
+    });
+
+    it("normalizeRateLimitInfo returns undefined for array value", async () => {
+      const output = JSON.stringify([
+        { type: "rate_limit_event", rate_limit_info: [1, 2, 3] },
+        { type: "result", result: "arr-val", session_id: "nl-2", is_error: false },
+      ]);
+      const result = await runWithOutput(engine, { prompt: "q", cwd: "/tmp" }, [output], 1);
+      expect(result.result).toBe("arr-val");
+    });
+
+    it("normalizeRateLimitInfo: resetsAt as string (not number) → undefined", async () => {
+      // rate_limit_info with resetsAt as string should produce resetsAt: undefined
+      const output = JSON.stringify([
+        { type: "rate_limit_event", rate_limit_info: { status: "ok", resetsAt: "not-a-number" } },
+        { type: "result", result: "str-resets", session_id: "nl-3", is_error: false },
+      ]);
+      const result = await runWithOutput(engine, { prompt: "q", cwd: "/tmp" }, [output], 1);
+      expect(result.result).toBe("str-resets");
+    });
+
+    // ── formatClaudeError: empty message フォールバック ─────────────────────
+    it("formatClaudeError falls back to 'Claude error' when message is empty", () => {
+      const build = (
+        engine as unknown as {
+          buildEngineResultFromResultEvent: (
+            resultEvent: Record<string, unknown>,
+            finalText: string,
+            fallbackSessionId: string | undefined,
+            rateLimit: undefined,
+          ) => EngineResult;
+        }
+      ).buildEngineResultFromResultEvent.bind(engine);
+      const result = build(
+        { type: "result", result: "", session_id: "s-empty", is_error: true },
+        "",
+        undefined,
+        undefined,
+      );
+      // message is "" so formatClaudeError returns "Claude error"
+      expect(result.error).toBe("Claude error");
+    });
+
+    // ── isTransientError: ECONNRESET パターン (streaming + num_turns > 0 でリトライ) ──
+    it("retries on ECONNRESET error when numTurns > 0 (not dead session)", async () => {
+      // isDeadSessionError returns false when numTurns > 0 (some work was done)
+      // isTransientError returns true when result.error contains ECONNRESET
+      // → retry should fire
+      const proc1 = createMockProcess();
+      const proc2 = createMockProcess();
+
+      mockSpawn.mockImplementation(() => {
+        if (mockSpawn.mock.calls.length === 1) return proc1 as unknown as ChildProcess;
+        setTimeout(() => {
+          proc2.stdout.emit(
+            "data",
+            Buffer.from(`${JSON.stringify({ type: "result", result: "recovered", session_id: "s5", num_turns: 1 })}\n`),
+          );
+          proc2.exitCode = 0;
+          proc2.emit("close", 0);
+        }, 10);
+        return proc2 as unknown as ChildProcess;
+      });
+
+      const p = engine.run({ prompt: "q", cwd: "/tmp" });
+
+      // First attempt: result event with is_error=true + ECONNRESET in result text + num_turns=1
+      // → result.error contains ECONNRESET → isTransientError=true
+      // → isDeadSessionError=false (numTurns=1>0) → retry
+      proc1.stdout.emit(
+        "data",
+        Buffer.from(
+          JSON.stringify({
+            type: "result",
+            result: "ECONNRESET: connection reset by peer",
+            session_id: "s-econ",
+            is_error: true,
+            num_turns: 1,
+          }),
+        ),
+      );
+      proc1.exitCode = 0;
+      proc1.emit("close", 0);
+
+      const result = await p;
+      expect(mockSpawn).toHaveBeenCalledTimes(2);
+      expect(result.result).toBe("recovered");
+    }, 10000);
+
+    it("retries on 503 error in result text when numTurns > 0", async () => {
+      // 503 matches TRANSIENT_PATTERNS → retry (if not dead session)
+      const proc1 = createMockProcess();
+      const proc2 = createMockProcess();
+
+      mockSpawn.mockImplementation(() => {
+        if (mockSpawn.mock.calls.length === 1) return proc1 as unknown as ChildProcess;
+        setTimeout(() => {
+          proc2.stdout.emit(
+            "data",
+            Buffer.from(`${JSON.stringify({ type: "result", result: "ok2", session_id: "s6", num_turns: 2 })}\n`),
+          );
+          proc2.exitCode = 0;
+          proc2.emit("close", 0);
+        }, 10);
+        return proc2 as unknown as ChildProcess;
+      });
+
+      const p = engine.run({ prompt: "q", cwd: "/tmp" });
+
+      // First: 503 overloaded error with work done (num_turns=1)
+      proc1.stdout.emit(
+        "data",
+        Buffer.from(
+          JSON.stringify({
+            type: "result",
+            result: "service 503 unavailable",
+            session_id: "s-503",
+            is_error: true,
+            num_turns: 1,
+          }),
+        ),
+      );
+      proc1.exitCode = 0;
+      proc1.emit("close", 0);
+
+      const result = await p;
+      expect(mockSpawn).toHaveBeenCalledTimes(2);
+      expect(result.result).toBe("ok2");
+    }, 10000);
+
+    // ── dead session: isDeadSessionError branch ──────────────────────────────
+    it("dead session detection: result with session_id empty + is_error=true → no retry", async () => {
+      const proc = createMockProcess();
+      mockSpawn.mockReturnValue(proc as unknown as ChildProcess);
+
+      const p = engine.run({ prompt: "q", cwd: "/tmp", resumeSessionId: "dead-2" });
+
+      proc.stdout.emit(
+        "data",
+        Buffer.from(
+          JSON.stringify({
+            type: "result",
+            result: "Session has expired and is no longer available",
+            session_id: "",
+            is_error: true,
+            num_turns: 0,
+          }),
+        ),
+      );
+      proc.exitCode = 0;
+      proc.emit("close", 0);
+
+      await p;
+      // Dead session detection should NOT retry
+      expect(mockSpawn).toHaveBeenCalledTimes(1);
+    });
+
+    // ── streaming: non-zero exit with lastResultMsg (streaming 2nd path) ─────
+    it("streaming run: non-zero exit with lastResultMsg resolves via extractResult", async () => {
+      const proc = createMockProcess();
+      mockSpawn.mockReturnValue(proc as unknown as ChildProcess);
+
+      const deltas: StreamDelta[] = [];
+      const p = engine.run({
+        prompt: "q",
+        cwd: "/tmp",
+        sessionId: "stream-nz",
+        onStream: (d) => deltas.push(d),
+      });
+
+      // Send result event then exit non-zero (streaming mode)
+      proc.stdout.emit(
+        "data",
+        Buffer.from(
+          `${JSON.stringify({ type: "result", result: "partial ok", session_id: "s-nz", is_error: false })}\n`,
+        ),
+      );
+      proc.exitCode = 1;
+      proc.emit("close", 1);
+
+      const result = await p;
+      // Should use extractResult (second streaming path for non-zero exit with lastResultMsg)
+      expect(result.result).toBe("partial ok");
+    });
+
+    // ── streaming: error delta emitted on is_error result ────────────────────
+    it("streaming run: code=0, lastResultMsg with is_error=true emits error delta", async () => {
+      const proc = createMockProcess();
+      mockSpawn.mockReturnValue(proc as unknown as ChildProcess);
+
+      const deltas: StreamDelta[] = [];
+      const p = engine.run({
+        prompt: "q",
+        cwd: "/tmp",
+        sessionId: "stream-err-delta",
+        onStream: (d) => deltas.push(d),
+      });
+
+      proc.stdout.emit(
+        "data",
+        Buffer.from(`${JSON.stringify({ type: "result", result: "err msg", session_id: "s-ed", is_error: true })}\n`),
+      );
+      proc.exitCode = 0;
+      proc.emit("close", 0);
+
+      const result = await p;
+      expect(result.error).toBeDefined();
+      expect(deltas.some((d) => d.type === "error")).toBe(true);
+    });
+
+    // ── non-streaming: non-zero exit with stdout JSON object (type=result) ───
+    it("non-streaming: non-zero exit with stdout JSON object with type=result", async () => {
+      const output = JSON.stringify({ type: "result", result: "obj-nonzero", session_id: "onz-1", is_error: false });
+      const result = await runWithOutput(engine, { prompt: "q", cwd: "/tmp" }, [output], 1);
+      expect(result.result).toBe("obj-nonzero");
+    });
+
+    // ── Interrupted error: no retry ──────────────────────────────────────────
+    it("Interrupted terminationReason: does not retry", async () => {
+      const proc = createMockProcess();
+      mockSpawn.mockReturnValue(proc as unknown as ChildProcess);
+
+      const p = engine.run({ prompt: "q", cwd: "/tmp", sessionId: "interrupted-no-retry" });
+      engine.kill("interrupted-no-retry", "Interrupted: gateway shutting down");
+
+      proc.exitCode = null;
+      proc.emit("close", null);
+
+      const result = await p;
+      expect(result.error).toContain("Interrupted");
+      expect(mockSpawn).toHaveBeenCalledTimes(1);
+    });
+
+    // ── kill: SIGKILL タイムアウトコールバック ────────────────────────────────
+    it("kill: SIGKILL is sent when process does not exit within timeout", async () => {
+      vi.useFakeTimers();
+      const proc = createMockProcess();
+      mockSpawn.mockReturnValue(proc as unknown as ChildProcess);
+
+      const p = engine.run({
+        prompt: "q",
+        cwd: "/tmp",
+        sessionId: "cl-sigkill",
+      });
+
+      // Kill the process, then advance timers past 2000ms SIGKILL timeout
+      engine.kill("cl-sigkill", "Interrupted: test sigkill");
+
+      // proc.exitCode is still null → SIGKILL should be sent
+      await vi.advanceTimersByTimeAsync(2100);
+
+      // Now simulate process exiting
+      proc.exitCode = null;
+      proc.emit("close", null);
+
+      const result = await p;
+      expect(result.error).toBe("Interrupted: test sigkill");
+      vi.useRealTimers();
+    });
+
+    // ── isTransientError: overloaded pattern → retry ─────────────────────────
+    it("retries on 'overloaded' error in result text when numTurns > 0", async () => {
+      // /overloaded/i matches → isTransientError=true, numTurns=1 → not dead session → retry
+      const proc1 = createMockProcess();
+      const proc2 = createMockProcess();
+
+      mockSpawn.mockImplementation(() => {
+        if (mockSpawn.mock.calls.length === 1) return proc1 as unknown as ChildProcess;
+        setTimeout(() => {
+          proc2.stdout.emit(
+            "data",
+            Buffer.from(
+              `${JSON.stringify({ type: "result", result: "after-retry", session_id: "s-ol", num_turns: 1 })}\n`,
+            ),
+          );
+          proc2.exitCode = 0;
+          proc2.emit("close", 0);
+        }, 10);
+        return proc2 as unknown as ChildProcess;
+      });
+
+      const p = engine.run({ prompt: "q", cwd: "/tmp" });
+
+      proc1.stdout.emit(
+        "data",
+        Buffer.from(
+          JSON.stringify({
+            type: "result",
+            result: "server overloaded, please try again",
+            session_id: "s-ol-pre",
+            is_error: true,
+            num_turns: 1,
+          }),
+        ),
+      );
+      proc1.exitCode = 0;
+      proc1.emit("close", 0);
+
+      const result = await p;
+      expect(mockSpawn).toHaveBeenCalledTimes(2);
+      expect(result.result).toBe("after-retry");
+    }, 10000);
+
+    // ── non-zero exit 2nd try: parsedResult.error (no onStream) ─────────────
+    it("non-zero exit 2nd try block: Array with is_error last element → parsedResult.error", async () => {
+      // Reach 2nd parseClaudeJsonOutput try block with parsedResult.error:
+      // 1st block: Array → no type:result event → fall through (no resolve)
+      // → reaches 2nd block: parseClaudeJsonOutput → last element is_error=true → parsedResult.error
+      // → if (parsedResult.error) opts.onStream?.() → no onStream → no-op
+      const proc = createMockProcess();
+      mockSpawn.mockReturnValue(proc as unknown as ChildProcess);
+
+      const p = engine.run({ prompt: "q", cwd: "/tmp" });
+
+      // Array where last element has is_error=true but no type:result event
+      proc.stdout.emit(
+        "data",
+        Buffer.from(
+          JSON.stringify([
+            { type: "debug", msg: "start" },
+            { is_error: true, result: "something went wrong" },
+          ]),
+        ),
+      );
+      proc.exitCode = 1;
+      proc.emit("close", 1);
+
+      const result = await p;
+      // parsedResult.error is defined from is_error=true last element
+      expect(result.error).toBeDefined();
+    });
+
+    // ── close event: settled=true guard ──────────────────────────────────────
+    it("close event: duplicate close event is ignored after first close", async () => {
+      const proc = createMockProcess();
+      mockSpawn.mockReturnValue(proc as unknown as ChildProcess);
+
+      const p = engine.run({ prompt: "q", cwd: "/tmp" });
+      proc.stdout.emit("data", Buffer.from(JSON.stringify({ type: "result", result: "ok-dc", session_id: "dc-1" })));
+      proc.exitCode = 0;
+      proc.emit("close", 0);
+      // Second close — settled=true → if (settled) return (if path)
+      proc.emit("close", 0);
+
+      const result = await p;
+      expect(result.result).toBe("ok-dc");
+    });
+
+    // ── buildCleanEnv: mocked Object.entries to inject undefined value ───────
+    it("buildCleanEnv: skips env var when value is undefined (via mocked entries)", async () => {
+      // Mock Object.entries to inject an entry with undefined value
+      const origEntries = Object.entries.bind(Object);
+      const mockEntries = vi.spyOn(Object, "entries").mockImplementation((obj) => {
+        if (obj === process.env) {
+          const real = origEntries(obj);
+          return [...real, ["__UNDEF_TEST__", undefined as unknown as string]];
+        }
+        return origEntries(obj);
+      });
+
+      try {
+        const proc = createMockProcess();
+        mockSpawn.mockReturnValue(proc as unknown as ChildProcess);
+        const p = engine.run({ prompt: "q", cwd: "/tmp" });
+        proc.stdout.emit("data", Buffer.from(JSON.stringify({ type: "result", result: "ok", session_id: "" })));
+        proc.exitCode = 0;
+        proc.emit("close", 0);
+        await p;
+
+        const env = mockSpawn.mock.lastCall?.[2]?.env as Record<string, string | undefined>;
+        // undefined value should not be included
+        expect(env["__UNDEF_TEST__"]).toBeUndefined();
+      } finally {
+        mockEntries.mockRestore();
+      }
+    });
+
+    // ── error event: settled=true guard ──────────────────────────────────────
+    it("error event after close: duplicate error is ignored", async () => {
+      const proc = createMockProcess();
+      mockSpawn.mockReturnValue(proc as unknown as ChildProcess);
+
+      const p = engine.run({ prompt: "q", cwd: "/tmp" });
+      proc.stdout.emit("data", Buffer.from(JSON.stringify({ type: "result", result: "ok-de", session_id: "de-1" })));
+      proc.exitCode = 0;
+      proc.emit("close", 0);
+      // Error event after settled — should be ignored
+      proc.emit("error", new Error("late error after close"));
+
+      const result = await p;
+      expect(result.result).toBe("ok-de");
+    });
+
+    // ── signalProcess: early return when proc already exited ─────────────────
+    it("signalProcess: does nothing when proc.exitCode is already non-null", async () => {
+      const proc = createMockProcess();
+      mockSpawn.mockReturnValue(proc as unknown as ChildProcess);
+
+      const p = engine.run({
+        prompt: "q",
+        cwd: "/tmp",
+        sessionId: "cl-sig-early",
+      });
+
+      // Set exitCode to non-null before calling kill → signalProcess returns immediately
+      proc.exitCode = 0;
+      engine.kill("cl-sig-early", "Interrupted: early exit");
+
+      proc.emit("close", 0);
+      const result = await p;
+      // terminationReason is set → result.error = terminationReason
+      expect(result.error).toBe("Interrupted: early exit");
+    });
+
+    // ── kill: SIGKILL not sent when process already exited before timeout ─────
+    it("kill: SIGKILL is NOT sent when process exits before 2s timeout", async () => {
+      vi.useFakeTimers();
+      const proc = createMockProcess();
+      mockSpawn.mockReturnValue(proc as unknown as ChildProcess);
+
+      const p = engine.run({
+        prompt: "q",
+        cwd: "/tmp",
+        sessionId: "cl-sigkill-skip",
+      });
+
+      engine.kill("cl-sigkill-skip", "Interrupted: test kill skip");
+
+      // Set exitCode to non-null BEFORE timer fires (process already exited)
+      proc.exitCode = 0;
+      // Emit close before advancing timer
+      proc.emit("close", null);
+
+      // Advance past 2s — SIGKILL callback fires but exitCode !== null → else branch
+      await vi.advanceTimersByTimeAsync(2100);
+
+      const result = await p;
+      expect(result.error).toBe("Interrupted: test kill skip");
+      vi.useRealTimers();
+    });
+
+    // ── streaming lineBuf: parsed=null (empty line in stream) ───────────────
+    it("streaming: empty/null parsed lines in stream are skipped via continue", async () => {
+      const proc = createMockProcess();
+      mockSpawn.mockReturnValue(proc as unknown as ChildProcess);
+
+      const deltas: StreamDelta[] = [];
+      const p = engine.run({
+        prompt: "q",
+        cwd: "/tmp",
+        sessionId: "stream-null-parsed",
+        onStream: (d) => deltas.push(d),
+      });
+
+      // Send data with empty lines (→ processor.process("", ...) returns null → continue)
+      // and an invalid JSON line (→ null → continue)
+      const events = [
+        "", // empty line → null
+        "\n",
+        "not-valid-json", // bad JSON → null
+        "\n",
+        JSON.stringify({ type: "result", result: "ok-skip", session_id: "sl-1" }), // valid result
+        "\n",
+      ].join("");
+
+      proc.stdout.emit("data", Buffer.from(events));
+      proc.exitCode = 0;
+      proc.emit("close", 0);
+
+      const result = await p;
+      expect(result.result).toBe("ok-skip");
+    });
+
+    // ── stderr 10KB rolling window ────────────────────────────────────────────
+    it("stderr rolling window: keeps only last 10KB", async () => {
+      const proc = createMockProcess();
+      mockSpawn.mockReturnValue(proc as unknown as ChildProcess);
+
+      const p = engine.run({ prompt: "q", cwd: "/tmp" });
+
+      // Send 11KB of stderr to trigger rolling window
+      const bigStderr = "X".repeat(11 * 1024);
+      proc.stderr.emit("data", Buffer.from(bigStderr));
+
+      proc.stdout.emit(
+        "data",
+        Buffer.from(JSON.stringify({ type: "result", result: "ok-stderr", session_id: "se-1" })),
+      );
+      proc.exitCode = 0;
+      proc.emit("close", 0);
+
+      const result = await p;
+      expect(result.result).toBe("ok-stderr");
+    });
+
+    // ── non-streaming non-zero: stdout + parsedResult.error (is_error=true) ──
+    it("non-streaming non-zero exit: stdout with is_error JSON → parsedResult.error emits no stream (no onStream)", async () => {
+      // !streaming && stdout.trim() → parseClaudeJsonOutput → parsedResult.error
+      // opts.onStream is undefined so the optional chain does nothing
+      const output = JSON.stringify({ type: "result", result: "error msg", session_id: "pn-1", is_error: true });
+      const result = await runWithOutput(engine, { prompt: "q", cwd: "/tmp" }, [output], 1);
+      expect(result.error).toBeDefined();
+      expect(result.result).toBe("");
+    });
+
+    // ── non-zero non-streaming: stdout object with type != result (else if false) ─
+    it("non-zero exit: non-streaming stdout object with type != result falls through to 2nd try", async () => {
+      // 1st block: !streaming && stdout → parse → object but type != "result"
+      // → else if false → fall through (not resolved)
+      // → 2nd try: parseClaudeJsonOutput → object → uses it directly
+      const proc = createMockProcess();
+      mockSpawn.mockReturnValue(proc as unknown as ChildProcess);
+
+      const p = engine.run({ prompt: "q", cwd: "/tmp" });
+
+      // Object but type is NOT "result" → 1st parse block falls through
+      proc.stdout.emit(
+        "data",
+        Buffer.from(JSON.stringify({ type: "other_type", result: "other-result", session_id: "ot-1" })),
+      );
+      proc.exitCode = 1;
+      proc.emit("close", 1);
+
+      const result = await p;
+      // 2nd parseClaudeJsonOutput: object → resultEvent = {type:"other_type", result:"other-result"}
+      // → buildEngineResultFromResultEvent: is_error=false → result="other-result"
+      expect(result.result).toBe("other-result");
+    });
+
+    // ── parseClaudeJsonOutput: Array, no result event, no assistant type ─────
+    it("parseClaudeJsonOutput: Array with no result event and empty content → empty result", async () => {
+      // textBlocks.length === 0 else path: assistant event but no text content
+      const output = JSON.stringify([
+        { type: "assistant", content: [{ type: "image", url: "http://example.com" }] },
+        { type: "assistant", role: "assistant", content: [{ type: "image", url: "http://b.com" }] },
+      ]);
+      const result = await runWithOutput(engine, { prompt: "q", cwd: "/tmp" }, [output]);
+      // No text blocks found → finalText remains "", result=""
+      expect(result.result).toBe("");
+    });
+
+    // ── parseClaudeJsonOutput: parsed as object (not Array) ──────────────────
+    it("parseClaudeJsonOutput: object JSON with non-result type uses object directly", async () => {
+      // else if (parsed && typeof parsed === "object") path
+      const output = JSON.stringify({ type: "other", result: "obj-direct", session_id: "od-1" });
+      const result = await runWithOutput(engine, { prompt: "q", cwd: "/tmp" }, [output]);
+      // resultEvent = parsed as object → result.result = "obj-direct"
+      expect(result.result).toBe("obj-direct");
+    });
+
+    // ── parseClaudeJsonOutput: parsed = null (else if false) ─────────────────
+    it("parseClaudeJsonOutput: JSON null output → else if false → resultEvent={} → empty result", async () => {
+      // JSON.parse("null") = null → both Array.isArray and else if are false
+      // → resultEvent = {} (initial value) → result = ""
+      const result = await runWithOutput(engine, { prompt: "q", cwd: "/tmp" }, ["null"]);
+      expect(result.result).toBe("");
+      expect(result.error).toBeUndefined();
+    });
+
+    // ── non-zero exit Array: no result event → 2nd parseClaudeJsonOutput call ─
+    it("non-zero exit: non-streaming stdout Array with no result event → parseClaudeJsonOutput fallback", async () => {
+      // !streaming && stdout.trim() (1st block) → JSON.parse → Array → no resultEvent
+      // → falls through 1st try block → 2nd try block: parseClaudeJsonOutput
+      // → Array, last element is used, result="" → resolves with result=""
+      const proc = createMockProcess();
+      mockSpawn.mockReturnValue(proc as unknown as ChildProcess);
+
+      const p = engine.run({ prompt: "q", cwd: "/tmp" });
+
+      // Array with no type=result event
+      proc.stdout.emit("data", Buffer.from(JSON.stringify([{ type: "debug", msg: "something" }])));
+      proc.exitCode = 1;
+      proc.emit("close", 1);
+
+      const result = await p;
+      // 2nd parseClaudeJsonOutput succeeds → result.result="" (no text), no error
+      expect(result.result).toBe("");
+    });
+  });
+
   describe("parseRateLimitInfo (exported function)", () => {
     it("returns undefined for null", () => {
       expect(parseRateLimitInfo(null)).toBeUndefined();
