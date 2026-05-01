@@ -389,10 +389,7 @@ describe("findPidOnPort() via stop() — win32 branch", () => {
 
     const result = stop(7777);
     // Should have called execSync with the linux lsof command (without /usr/sbin/)
-    expect(fakeExecSync).toHaveBeenCalledWith(
-      expect.stringContaining("lsof"),
-      expect.any(Object),
-    );
+    expect(fakeExecSync).toHaveBeenCalledWith(expect.stringContaining("lsof"), expect.any(Object));
     expect(result).toBe(true);
   });
 });

@@ -4,7 +4,16 @@ import { makeContext, makeReq, makeRes } from "./http-test-helpers.js";
 
 // ── Hoisted mocks ──────────────────────────────────────────────────────────────
 
-const { fsMock, mockSpawn, mockInsertFile, mockGetFile, mockListFiles, mockDeleteFile, mockBusboy, mockBusboyInstance } = vi.hoisted(() => {
+const {
+  fsMock,
+  mockSpawn,
+  mockInsertFile,
+  mockGetFile,
+  mockListFiles,
+  mockDeleteFile,
+  mockBusboy,
+  mockBusboyInstance,
+} = vi.hoisted(() => {
   const { EventEmitter } = require("node:events");
 
   const fsMock = {
@@ -29,7 +38,16 @@ const { fsMock, mockSpawn, mockInsertFile, mockGetFile, mockListFiles, mockDelet
 
   const mockBusboy = vi.fn(() => mockBusboyInstance);
 
-  return { fsMock, mockSpawn, mockInsertFile, mockGetFile, mockListFiles, mockDeleteFile, mockBusboy, mockBusboyInstance };
+  return {
+    fsMock,
+    mockSpawn,
+    mockInsertFile,
+    mockGetFile,
+    mockListFiles,
+    mockDeleteFile,
+    mockBusboy,
+    mockBusboyInstance,
+  };
 });
 
 // ── Mocks ─────────────────────────────────────────────────────────────────────
@@ -167,19 +185,10 @@ describe("GET /api/files/:id (download)", () => {
 
     const req = makeReq();
 
-    const handled = await handleFilesRequest(
-      req,
-      resMock as never,
-      "/api/files/file-id-1",
-      "GET",
-      makeContext(),
-    );
+    const handled = await handleFilesRequest(req, resMock as never, "/api/files/file-id-1", "GET", makeContext());
 
     expect(handled).toBe(true);
-    expect(resMock.writeHead).toHaveBeenCalledWith(
-      200,
-      expect.objectContaining({ "Content-Type": "text/plain" }),
-    );
+    expect(resMock.writeHead).toHaveBeenCalledWith(200, expect.objectContaining({ "Content-Type": "text/plain" }));
     expect(fakeStream.pipe).toHaveBeenCalledWith(resMock);
   });
 });
@@ -660,9 +669,8 @@ describe("POST /api/files/transfer — resolveFileSpec managed file ID", () => {
 
     // First existsSync: path expansion fails, so treat as file ID
     fsMock.existsSync
-      .mockReturnValueOnce(false)  // spec.file path doesn't exist
-      .mockReturnValueOnce(true)   // managed filePath on disk exists
-    ;
+      .mockReturnValueOnce(false) // spec.file path doesn't exist
+      .mockReturnValueOnce(true); // managed filePath on disk exists
     fsMock.statSync.mockReturnValue({ size: 20 });
     fsMock.readFileSync.mockReturnValue(Buffer.from("managed content"));
     mockGetFile.mockReturnValue(managedMeta);
@@ -694,9 +702,8 @@ describe("POST /api/files/transfer — resolveFileSpec managed file ID", () => {
     const managedMeta = { id: "managed-id-2", filename: "missing.txt", mimetype: "text/plain", path: null };
 
     fsMock.existsSync
-      .mockReturnValueOnce(false)  // spec.file path doesn't exist
-      .mockReturnValueOnce(false)  // managed filePath also doesn't exist on disk
-    ;
+      .mockReturnValueOnce(false) // spec.file path doesn't exist
+      .mockReturnValueOnce(false); // managed filePath also doesn't exist on disk
     mockGetFile.mockReturnValue(managedMeta);
 
     const req = makeReq(JSON.stringify({ destination: remoteUrl, file: "managed-id-2" }));
@@ -721,9 +728,8 @@ describe("POST /api/files/transfer — resolveFileSpec managed file ID", () => {
     const managedMeta = { id: "managed-id-3", filename: "huge.bin", mimetype: "application/octet-stream", path: null };
 
     fsMock.existsSync
-      .mockReturnValueOnce(false)  // spec.file path doesn't exist
-      .mockReturnValueOnce(true)   // managed filePath exists
-    ;
+      .mockReturnValueOnce(false) // spec.file path doesn't exist
+      .mockReturnValueOnce(true); // managed filePath exists
     fsMock.statSync.mockReturnValue({ size: 52 * 1024 * 1024 }); // 52 MB
     mockGetFile.mockReturnValue(managedMeta);
 
