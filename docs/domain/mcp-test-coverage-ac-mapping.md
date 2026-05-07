@@ -49,7 +49,7 @@
 | AC-E027-28 | `gateway.enabled !== false`（デフォルト）のとき gateway サーバーが登録される | 不変条件 |
 | AC-E027-29 | `custom` エントリが有効かつ URL ベースのとき `type: "sse"` が付与されて登録される | 不変条件（+ 計算ロジック） |
 | AC-E027-30 | `custom` エントリが `enabled === false` のとき登録されない | 不変条件 |
-| AC-E027-31 | `writeMcpConfigFile` が `JINN_HOME/tmp/mcp/{sessionId}.json` を生成する | 操作 |
+| AC-E027-31 | `writeMcpConfigFile` が `GATEWAY_HOME/tmp/mcp/{sessionId}.json` を生成する | 操作 |
 | AC-E027-32 | `cleanupMcpConfigFile` がファイルを削除する | 操作 |
 | AC-E027-33 | `cleanupMcpConfigFile` を存在しないセッションIDで呼び出してもエラーが発生しない | 不変条件 |
 | AC-E027-34 | 存在しないツール名で `result.isError: true` が返る | 不変条件 |
