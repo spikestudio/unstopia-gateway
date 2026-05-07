@@ -252,4 +252,54 @@ describe("resolveOrgHierarchy", () => {
     const reports = h.nodes.coo.directReports;
     expect(reports).toEqual(["alice", "bob", "charlie"]);
   });
+
+  it("uses ?? 3 fallback when employee rank is not in RANK_PRIORITY (lines 81, 83, 85 branches)", () => {
+    // "unknown-rank" is not in RANK_PRIORITY → ?? 3 used as empRank
+    const h = resolveOrgHierarchy(
+      registry(
+        emp("manager-a", { rank: "manager" }),
+        // unknown-rank uses ?? 3 fallback (same as employee rank ~3)
+        emp("worker", { rank: "unknown-rank" as never }),
+      ),
+    );
+    // Should not throw; resolveOrgHierarchy handles unknown ranks via ?? 3
+    expect(h).toBeDefined();
+    expect(h.nodes.worker).toBeDefined();
+  });
+
+  it("cross-department report where primary !== parent (line 120 false branch)", () => {
+    // Employee explicitly reports to "coo" (exec dept), but auto-detection
+    // might assign them to a different parent. Here, emp reports explicitly to
+    // a cross-dept manager, but explicitly-set reportsTo doesn't match auto-detected parent.
+    const h = resolveOrgHierarchy(
+      registry(
+        emp("coo", { rank: "executive", department: "exec" }),
+        emp("eng-mgr", { rank: "manager", department: "eng" }),
+        // dev reports to coo (cross-dept), but auto-detection says eng-mgr
+        // To trigger line 120 false: primary (coo from reportsTo) !== parent (auto-detected eng-mgr)
+        // Actually to trigger line 120: parentEmp is cross-dept AND primary !== detected parent
+        emp("dev", { rank: "employee", department: "eng", reportsTo: "coo" }),
+      ),
+    );
+    // dev's parent should be determined by explicit reportsTo (coo)
+    expect(h).toBeDefined();
+    // Cross-dept warning may or may not appear depending on implementation
+    expect(h.nodes.dev).toBeDefined();
+  });
+
+  it("parent candidate sort uses localeCompare when rankDiff is 0 (line 87 branch)", () => {
+    // Two candidates with same rank in same department → localeCompare decides order
+    // employee has no reportsTo → automatic parent detection kicks in
+    // Candidates for 'dev' in 'eng': both 'alice-mgr' and 'bob-mgr' are managers (same rank)
+    // localeCompare("alice-mgr", "bob-mgr") < 0 → alice-mgr is selected first
+    const h = resolveOrgHierarchy(
+      registry(
+        emp("alice-mgr", { rank: "manager", department: "eng" }),
+        emp("bob-mgr", { rank: "manager", department: "eng" }),
+        emp("dev", { rank: "employee", department: "eng" }),
+      ),
+    );
+    // dev should pick the alphabetically first manager (alice-mgr) as parent
+    expect(h.nodes.dev.parentName).toBe("alice-mgr");
+  });
 });

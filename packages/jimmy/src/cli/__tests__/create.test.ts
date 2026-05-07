@@ -180,4 +180,23 @@ describe("runCreate", () => {
 
     mockConsoleLog.mockRestore();
   });
+
+  it("should log error and exit(1) when execFileSync throws (lines 51-52 catch branch)", async () => {
+    mockExecFileSync.mockImplementation(() => {
+      throw new Error("setup failed");
+    });
+
+    const mockExit = vi.spyOn(process, "exit").mockImplementation(() => {
+      throw new Error("process.exit(1)");
+    });
+    const mockConsoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    await expect(runCreate("atlas")).rejects.toThrow("process.exit(1)");
+
+    expect(mockExit).toHaveBeenCalledWith(1);
+    expect(mockConsoleError).toHaveBeenCalledWith(expect.stringContaining("Failed to run setup"));
+
+    mockExit.mockRestore();
+    mockConsoleError.mockRestore();
+  });
 });

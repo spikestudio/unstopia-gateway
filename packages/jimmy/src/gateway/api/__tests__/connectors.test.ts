@@ -508,3 +508,95 @@ describe("unmatched routes", () => {
     expect(handled).toBe(false);
   });
 });
+
+// ── POST /api/connectors/:id/incoming — non-array attachments (line 85 false branch) ──
+
+describe("POST /api/connectors/:id/incoming — attachments not an array (line 85 false branch)", () => {
+  it("treats non-array attachments as empty array", async () => {
+    const deliverMessage = vi.fn();
+    const connector = { ...makeConnector(), deliverMessage };
+    const connectors = new Map([["discord", connector]]);
+    const context = makeContext(connectors as never);
+    const res = makeRes();
+    // attachments is a string (not array) → false branch → []
+    const req = makeReq({
+      sessionKey: "sk1",
+      channel: "ch1",
+      user: "u1",
+      userId: "u1",
+      text: "Hello",
+      attachments: "not-an-array",
+    });
+    await handleConnectorsRequest(req, res, context, "POST", "/api/connectors/discord/incoming");
+    expect(deliverMessage).toHaveBeenCalled();
+    const body = getResponseBody(res) as Record<string, unknown>;
+    expect(body.status).toBe("delivered");
+  });
+});
+
+// ── POST /api/connectors/:id/proxy — readJsonBody failure (line 135 branch) ──
+
+describe("POST /api/connectors/:id/proxy — readJsonBody failure (line 135 branch)", () => {
+  it("returns 400 when body parse fails", async () => {
+    const connector = makeConnector();
+    const connectors = new Map([["discord", connector]]);
+    const context = makeContext(connectors as never);
+    const res = makeRes();
+    const badReq = {
+      headers: { "content-type": "application/json" },
+      on: vi.fn().mockImplementation((event: string, cb: (chunk?: Buffer | string) => void) => {
+        if (event === "data") cb(Buffer.from("not-valid-json"));
+        if (event === "end") cb();
+      }),
+    } as never;
+    const handled = await handleConnectorsRequest(badReq, res, context, "POST", "/api/connectors/discord/proxy");
+    expect(handled).toBe(true);
+    expect(getStatusCode(res)).toBe(400);
+  });
+});
+
+// ── POST /api/connectors/:name/send — readJsonBody failure (line 206 branch) ──
+
+describe("POST /api/connectors/:name/send — readJsonBody failure (line 206 branch)", () => {
+  it("returns 400 when body parse fails", async () => {
+    const connector = makeConnector();
+    const connectors = new Map([["slack", connector]]);
+    const context = makeContext(connectors as never);
+    const res = makeRes();
+    const badReq = {
+      headers: { "content-type": "application/json" },
+      on: vi.fn().mockImplementation((event: string, cb: (chunk?: Buffer | string) => void) => {
+        if (event === "data") cb(Buffer.from("not-valid-json"));
+        if (event === "end") cb();
+      }),
+    } as never;
+    const handled = await handleConnectorsRequest(badReq, res, context, "POST", "/api/connectors/slack/send");
+    expect(handled).toBe(true);
+    expect(getStatusCode(res)).toBe(400);
+  });
+});
+
+// ── POST /api/connectors/:id/incoming — attachment with no URL (line 98 branch) ──
+
+describe("POST /api/connectors/:id/incoming — attachment without url (line 98)", () => {
+  it("passes attachment as-is when url is missing (line 98 return att branch)", async () => {
+    const deliverMessage = vi.fn();
+    const connector = { ...makeConnector(), deliverMessage };
+    const connectors = new Map([["discord", connector]]);
+    const context = makeContext(connectors as never);
+    const res = makeRes();
+    // Attachment with no url → if(att.url) is false → return att (line 98)
+    const req = makeReq({
+      sessionKey: "sk1",
+      channel: "ch1",
+      user: "u1",
+      userId: "u1",
+      text: "Hello",
+      attachments: [{ name: "no-url-file.txt", url: "", mimeType: "text/plain" }],
+    });
+    await handleConnectorsRequest(req, res, context, "POST", "/api/connectors/discord/incoming");
+    expect(deliverMessage).toHaveBeenCalled();
+    const body = getResponseBody(res) as Record<string, unknown>;
+    expect(body.status).toBe("delivered");
+  });
+});

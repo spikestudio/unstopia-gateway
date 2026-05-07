@@ -305,4 +305,74 @@ describe("gateway-server: エラーハンドリング", () => {
     const text = response.result.content[0].text as string;
     expect(text).toContain("not found");
   });
+
+  // Branch coverage: handleRequest throws non-Error object → String(err) path
+  it("should return error with String(err) when thrown value is not an Error instance", async () => {
+    // handleTool is called internally — mock fetch to throw a non-Error string
+    (global.fetch as ReturnType<typeof vi.fn>).mockRejectedValue("string-rejection");
+
+    await handleRequest({
+      jsonrpc: "2.0",
+      id: 99,
+      method: "tools/call",
+      params: { name: "list_employees", arguments: {} },
+    });
+
+    const response = JSON.parse((writeSpy.mock.calls[0][0] as string).trim());
+    // isError: true and content contains the stringified error
+    expect(response.result.isError).toBe(true);
+    expect(response.result.content[0].text).toContain("string-rejection");
+  });
+
+  // Branch coverage: unknown method → default case returns -32601 error
+  it("should return method not found error for unknown method", async () => {
+    await handleRequest({
+      jsonrpc: "2.0",
+      id: 100,
+      method: "unknown/method",
+      params: {},
+    });
+
+    const response = JSON.parse((writeSpy.mock.calls[0][0] as string).trim());
+    expect(response.error).toBeDefined();
+    expect(response.error.code).toBe(-32601);
+  });
+
+  // Branch: handleTool for apiPut (err.ok branch) via update_budget
+  it("should return ok response when update_budget succeeds", async () => {
+    (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
+      ok: true,
+      json: async () => ({ status: "ok" }),
+    });
+
+    await handleRequest({
+      jsonrpc: "2.0",
+      id: 101,
+      method: "tools/call",
+      params: { name: "update_budget", arguments: { employee: "alice", monthlyLimit: 100 } },
+    });
+
+    const response = JSON.parse((writeSpy.mock.calls[0][0] as string).trim());
+    expect(response.result.content[0].type).toBe("text");
+  });
+
+  // Branch: apiPut with !res.ok → throws error
+  it("should return isError when update_budget fetch returns not-ok", async () => {
+    (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
+      ok: false,
+      status: 500,
+      statusText: "Internal Server Error",
+      text: async () => "internal error",
+    });
+
+    await handleRequest({
+      jsonrpc: "2.0",
+      id: 102,
+      method: "tools/call",
+      params: { name: "update_budget", arguments: { employee: "alice", monthlyLimit: 100 } },
+    });
+
+    const response = JSON.parse((writeSpy.mock.calls[0][0] as string).trim());
+    expect(response.result.isError).toBe(true);
+  });
 });

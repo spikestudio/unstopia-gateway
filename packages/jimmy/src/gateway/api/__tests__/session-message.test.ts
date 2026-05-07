@@ -198,4 +198,69 @@ describe("handlePostMessage", () => {
     await handlePostMessage(makeReq({ message: "ping", role: "notification" }), makeRes(), context, deps, "s1");
     expect(context.emit).toHaveBeenCalledWith("session:notification", expect.objectContaining({ message: "ping" }));
   });
+
+  it("should return early when readJsonBody fails (line 67)", async () => {
+    // Cover line 67: !_parsed.ok → return early
+    const session = makeSession();
+    const deps = makeDeps(session);
+    const res = makeRes();
+    const bodyStr = "not-valid-json";
+    const req = {
+      headers: { "content-type": "application/json" },
+      on: vi.fn().mockImplementation((event: string, cb: (chunk?: Buffer | string) => void) => {
+        if (event === "data") cb(Buffer.from(bodyStr));
+        if (event === "end") cb();
+      }),
+    } as never;
+    await handlePostMessage(req, res, makeContext(), deps, "s1");
+    // readJsonBody failed → sends 400, but dispatchWebSessionRun not called
+    expect(deps.dispatchWebSessionRun).not.toHaveBeenCalled();
+  });
+
+  it("should include reset time in waiting notification when getClaudeExpectedResetAt returns a date (lines 93-102)", async () => {
+    // Cover lines 93-102: expectedResetAt truthy → toLocaleString branch
+    const session = makeSession({ status: "waiting" });
+    const futureDate = new Date(Date.now() + 3600000); // 1 hour from now
+    const deps = makeDeps(session, makeEngine(), {
+      getClaudeExpectedResetAt: vi.fn().mockReturnValue(futureDate),
+    });
+    const context = makeContext();
+    await handlePostMessage(makeReq({ message: "hi" }), makeRes(), context, deps, "s1");
+    // insertMessage should include "resets" with the localized date
+    const notifCalls = (deps.insertMessage as ReturnType<typeof vi.fn>).mock.calls.filter(
+      (c: unknown[]) => c[1] === "notification",
+    );
+    const queuedText = notifCalls[0]?.[2] as string;
+    expect(queuedText).toContain("resets");
+  });
+
+  it("uses sourceRef as sessionKey when sessionKey is absent (line 133-136)", async () => {
+    // Cover lines 133-136: sessionKey || sourceRef || id fallback
+    const session = makeSession({ sessionKey: undefined as never, sourceRef: "src-ref-x" });
+    const mockClearCancelled = vi.fn();
+    const deps = makeDeps(session);
+    const ctx = makeContext();
+    (ctx.sessionManager.getQueue as ReturnType<typeof vi.fn>).mockReturnValue({
+      clearCancelled: mockClearCancelled,
+      getPendingCount: vi.fn().mockReturnValue(0),
+      getTransportState: vi.fn().mockReturnValue(null),
+    });
+    await handlePostMessage(makeReq({ message: "hi" }), makeRes(), ctx, deps, "s1");
+    // clearCancelled called with sourceRef
+    expect(mockClearCancelled).toHaveBeenCalledWith("src-ref-x");
+  });
+
+  it("uses session id as sessionKey when both sessionKey and sourceRef are absent (line 133-136)", async () => {
+    const session = makeSession({ sessionKey: undefined as never, sourceRef: undefined as never });
+    const mockClearCancelled = vi.fn();
+    const deps = makeDeps(session);
+    const ctx = makeContext();
+    (ctx.sessionManager.getQueue as ReturnType<typeof vi.fn>).mockReturnValue({
+      clearCancelled: mockClearCancelled,
+      getPendingCount: vi.fn().mockReturnValue(0),
+      getTransportState: vi.fn().mockReturnValue(null),
+    });
+    await handlePostMessage(makeReq({ message: "hi" }), makeRes(), ctx, deps, "s1");
+    expect(mockClearCancelled).toHaveBeenCalledWith("s1");
+  });
 });

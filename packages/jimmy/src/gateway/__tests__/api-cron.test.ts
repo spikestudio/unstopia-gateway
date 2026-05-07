@@ -253,4 +253,66 @@ describe("handleCronRequest", () => {
       expect((written().body as { triggered: boolean }).triggered).toBe(true);
     });
   });
+
+  describe("POST /api/cron — branch coverage", () => {
+    it("readJsonBody が失敗した場合は 400 を返す (line 64 branch)", async () => {
+      // Send invalid JSON to trigger readJsonBody failure
+      const badReq = {
+        headers: { "content-type": "application/json" },
+        on: vi.fn().mockImplementation((event: string, cb: (chunk?: Buffer | string) => void) => {
+          if (event === "data") cb(Buffer.from("not-valid-json"));
+          if (event === "end") cb();
+        }),
+      } as never;
+      const { res, written } = makeRes();
+
+      const handled = await handleCronRequest(badReq, res, makeContext(), "POST", "/api/cron");
+
+      expect(handled).toBe(true);
+      expect(written().status).toBe(400);
+    });
+
+    it("enabled が boolean でない場合は true をデフォルト値にする (line 70 right branch)", async () => {
+      vi.mocked(loadJobs).mockReturnValue([]);
+      // enabled: "yes" → typeof "yes" !== "boolean" → true
+      const req = makeReq(JSON.stringify({ name: "test", enabled: "yes", prompt: "hello" }));
+      const { res, written } = makeRes();
+
+      await handleCronRequest(req, res, makeContext(), "POST", "/api/cron");
+
+      const created = written().body as { enabled: boolean };
+      expect(created.enabled).toBe(true);
+    });
+
+    it("prompt が省略された場合は空文字をデフォルト値にする (line 76 right branch)", async () => {
+      vi.mocked(loadJobs).mockReturnValue([]);
+      // prompt not provided → "" as fallback
+      const req = makeReq(JSON.stringify({ name: "no-prompt-job" }));
+      const { res, written } = makeRes();
+
+      await handleCronRequest(req, res, makeContext(), "POST", "/api/cron");
+
+      const created = written().body as { prompt: string };
+      expect(created.prompt).toBe("");
+    });
+  });
+
+  describe("PUT /api/cron/:id — readJsonBody 失敗時 (line 96 branch)", () => {
+    it("readJsonBody が失敗した場合は 400 を返す", async () => {
+      vi.mocked(loadJobs).mockReturnValue([{ ...sampleJob }] as never);
+      const badReq = {
+        headers: { "content-type": "application/json" },
+        on: vi.fn().mockImplementation((event: string, cb: (chunk?: Buffer | string) => void) => {
+          if (event === "data") cb(Buffer.from("not-valid-json"));
+          if (event === "end") cb();
+        }),
+      } as never;
+      const { res, written } = makeRes();
+
+      const handled = await handleCronRequest(badReq, res, makeContext(), "PUT", "/api/cron/job-1");
+
+      expect(handled).toBe(true);
+      expect(written().status).toBe(400);
+    });
+  });
 });

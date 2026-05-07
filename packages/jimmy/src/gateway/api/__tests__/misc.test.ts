@@ -1237,3 +1237,107 @@ describe("unmatched routes", () => {
     expect(handled).toBe(false);
   });
 });
+
+// ── Additional branch coverage ─────────────────────────────────────────────
+
+describe("GET /api/config - instances with no token fields", () => {
+  it("leaves token=undefined when instance has no token", async () => {
+    // Cover line 72: i?.token falsy branch in instances array
+    const context = makeContext({
+      connectors: {
+        instances: [{ id: "i1" }] as never, // no token, no botToken etc.
+      },
+    });
+    const res = makeRes();
+    await handleMiscRequest(makeReq(), res, context, "GET", "/api/config", new URL("http://localhost/api/config"));
+    const body = getResponseBody(res) as Record<string, unknown>;
+    const connectors = body.connectors as Record<string, unknown>;
+    const instances = connectors.instances as Array<Record<string, unknown>>;
+    // token was undefined → sanitized to undefined (falsy branch)
+    expect(instances[0].token).toBeUndefined();
+  });
+
+  it("leaves signingSecret=undefined when connector object has no signingSecret", async () => {
+    // Cover line 85-86: vObj.signingSecret / vObj.botToken / vObj.appToken falsy branches
+    const context = makeContext({
+      connectors: {
+        discord: { webhook: "https://example.com" } as never, // no token fields
+      },
+    });
+    const res = makeRes();
+    await handleMiscRequest(makeReq(), res, context, "GET", "/api/config", new URL("http://localhost/api/config"));
+    const body = getResponseBody(res) as Record<string, unknown>;
+    const connectors = body.connectors as Record<string, Record<string, unknown>>;
+    expect(connectors.discord?.token).toBeUndefined();
+    expect(connectors.discord?.signingSecret).toBeUndefined();
+  });
+});
+
+describe("POST /api/goals - readJsonBody failure", () => {
+  it("returns true early when request body is invalid JSON", async () => {
+    // Cover line 346: if (!_parsed.ok) return true
+    const context = makeContext();
+    const res = makeRes();
+    const bodyStr = "not-valid-json";
+    const req = {
+      headers: { "content-type": "application/json" },
+      on: vi.fn().mockImplementation((event: string, cb: (chunk?: Buffer | string) => void) => {
+        if (event === "data") cb(Buffer.from(bodyStr));
+        if (event === "end") cb();
+      }),
+    } as never;
+    const handled = await handleMiscRequest(
+      req,
+      res,
+      context,
+      "POST",
+      "/api/goals",
+      new URL("http://localhost/api/goals"),
+    );
+    expect(handled).toBe(true);
+    expect(getStatusCode(res)).toBe(400);
+  });
+});
+
+describe("POST /api/budgets/:employee/override - no budgets config", () => {
+  it("uses empty budgetConfig when budgets not configured (line 455 nullish)", async () => {
+    // Cover line 455: budgets2?.employees nullish coalescing → {}
+    const context = makeContext(); // no .budgets in config
+    const res = makeRes();
+    const handled = await handleMiscRequest(
+      makeReq(),
+      res,
+      context,
+      "POST",
+      "/api/budgets/alice/override",
+      new URL("http://localhost/api/budgets/alice/override"),
+    );
+    expect(handled).toBe(true);
+    expect(getStatusCode(res)).toBe(200);
+  });
+});
+
+describe("PUT /api/budgets — yaml.load returns null (line 437 || {} branch)", () => {
+  it("uses empty object when yaml.load returns null", async () => {
+    const fs = await import("node:fs");
+    const yaml = await import("js-yaml");
+    vi.mocked(fs.default.readFileSync).mockReturnValue("null");
+    // yaml.load("null") returns null → || {} branch fires
+    vi.mocked(yaml.default.load).mockReturnValue(null);
+    vi.mocked(yaml.default.dump).mockReturnValue("dumped:");
+    vi.mocked(fs.default.writeFileSync).mockImplementation(() => {});
+    const context = makeContext();
+    const res = makeRes();
+    const req = makeReq({ alice: 100 });
+    const handled = await handleMiscRequest(
+      req,
+      res,
+      context,
+      "PUT",
+      "/api/budgets",
+      new URL("http://localhost/api/budgets"),
+    );
+    expect(handled).toBe(true);
+    expect(getStatusCode(res)).toBe(200);
+  });
+});

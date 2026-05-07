@@ -131,4 +131,133 @@ describe("runStatus", () => {
 
     mockConsoleLog.mockRestore();
   });
+
+  it("should display sessions as non-object value (line 54 branch)", async () => {
+    // Cover line 54: sessions is not an object (e.g. a number or string)
+    mockExistsSync.mockReturnValue(true);
+    mockGetStatus.mockReturnValue({ running: true, pid: 12345 });
+
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: vi.fn().mockResolvedValue({
+          sessions: 42, // not an object → else branch at line 53
+          uptime: 100,
+        }),
+      }),
+    );
+
+    const mockConsoleLog = vi.spyOn(console, "log").mockImplementation(() => {});
+
+    await runStatus();
+
+    const allCalls = mockConsoleLog.mock.calls.map((c) => c.join(" "));
+    // Line 54: console.log(`  Active sessions: ${data.sessions}`)
+    expect(allCalls.some((line) => line.includes("42") || line.includes("Active sessions"))).toBe(true);
+
+    mockConsoleLog.mockRestore();
+  });
+
+  it("should use ?? fallback of 0 when sessions fields are undefined (lines 49-51 branches)", async () => {
+    // Cover s.total ?? 0, s.active ?? 0, s.running ?? 0 right-side branches
+    mockExistsSync.mockReturnValue(true);
+    mockGetStatus.mockReturnValue({ running: true, pid: 12345 });
+
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: vi.fn().mockResolvedValue({
+          // sessions is an object but has no total/active/running → ?? 0 branches
+          sessions: {},
+          uptime: 200,
+        }),
+      }),
+    );
+
+    const mockConsoleLog = vi.spyOn(console, "log").mockImplementation(() => {});
+
+    await runStatus();
+
+    const allCalls = mockConsoleLog.mock.calls.map((c) => c.join(" "));
+    // Should log "Active sessions: 0 (running: 0, total: 0)" — verifying ?? 0 branches
+    expect(allCalls.some((line) => line.includes("Active sessions") && line.includes("0"))).toBe(true);
+
+    mockConsoleLog.mockRestore();
+  });
+
+  it("should not log uptime when data.uptime is undefined (line 57 branch not taken)", async () => {
+    mockExistsSync.mockReturnValue(true);
+    mockGetStatus.mockReturnValue({ running: true, pid: 12345 });
+
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: vi.fn().mockResolvedValue({
+          sessions: { total: 1, active: 1, running: 0 },
+          // uptime intentionally missing
+        }),
+      }),
+    );
+
+    const mockConsoleLog = vi.spyOn(console, "log").mockImplementation(() => {});
+
+    await runStatus();
+
+    const allCalls = mockConsoleLog.mock.calls.map((c) => c.join(" "));
+    // uptime line should NOT be present
+    expect(allCalls.some((line) => line.includes("Server uptime"))).toBe(false);
+    // But sessions line should be present
+    expect(allCalls.some((line) => line.includes("Active sessions"))).toBe(true);
+
+    mockConsoleLog.mockRestore();
+  });
+
+  it("should handle HTTP failure when fetch succeeds but res.ok is false (line 60 → catch path)", async () => {
+    mockExistsSync.mockReturnValue(true);
+    mockGetStatus.mockReturnValue({ running: true, pid: 12345 });
+
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: false,
+        json: vi.fn().mockResolvedValue({}),
+      }),
+    );
+
+    const mockConsoleLog = vi.spyOn(console, "log").mockImplementation(() => {});
+
+    await runStatus();
+
+    // res.ok is false → no port or session info shown from the ok branch
+    const allCalls = mockConsoleLog.mock.calls.map((c) => c.join(" "));
+    expect(allCalls.some((line) => line.includes("running"))).toBe(true);
+
+    mockConsoleLog.mockRestore();
+  });
+
+  it("should handle loadConfig throwing inside catch (lines 66-68 inner catch branch)", async () => {
+    mockExistsSync.mockReturnValue(true);
+    mockGetStatus.mockReturnValue({ running: true, pid: 12345 });
+
+    // fetch throws → outer catch fires → inner loadConfig also throws
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("Connection refused")));
+    const { loadConfig } = await import("../../shared/config.js");
+    vi.mocked(loadConfig).mockImplementation(() => {
+      throw new Error("config missing");
+    });
+
+    const mockConsoleLog = vi.spyOn(console, "log").mockImplementation(() => {});
+
+    await runStatus();
+
+    // Should not throw; inner catch silently ignores
+    const allCalls = mockConsoleLog.mock.calls.map((c) => c.join(" "));
+    expect(allCalls.some((line) => line.includes("running"))).toBe(true);
+
+    mockConsoleLog.mockRestore();
+    vi.mocked(loadConfig).mockRestore();
+  });
 });

@@ -176,3 +176,58 @@ describe("handleResumeQueue", () => {
     expect(res.writeHead).toHaveBeenCalledWith(404, expect.anything());
   });
 });
+
+// ── sessionKey fallback path coverage ─────────────────────────────────────────
+
+describe("sessionKey fallback paths (sourceRef and id fallbacks)", () => {
+  it("handleGetQueue: uses sourceRef when sessionKey is absent", () => {
+    const session = makeSession({ sessionKey: undefined as never, sourceRef: "src-ref-1" });
+    const deps = makeDeps({
+      getSession: vi.fn().mockReturnValue({ ok: true, value: session }),
+      getQueueItems: vi.fn().mockReturnValue([]),
+    });
+    handleGetQueue(makeRes(), makeContext(), deps, "s1");
+    // getQueueItems called with sourceRef
+    expect(deps.getQueueItems).toHaveBeenCalledWith("src-ref-1");
+  });
+
+  it("handleGetQueue: uses id when both sessionKey and sourceRef are absent", () => {
+    const session = makeSession({ sessionKey: undefined as never, sourceRef: undefined as never });
+    const deps = makeDeps({
+      getSession: vi.fn().mockReturnValue({ ok: true, value: session }),
+      getQueueItems: vi.fn().mockReturnValue([]),
+    });
+    handleGetQueue(makeRes(), makeContext(), deps, "s1");
+    expect(deps.getQueueItems).toHaveBeenCalledWith("s1");
+  });
+
+  it("handleClearQueue: uses sourceRef when sessionKey is absent", () => {
+    const session = makeSession({ sessionKey: undefined as never, sourceRef: "src-ref-2" });
+    const deps = makeDeps({
+      getSession: vi.fn().mockReturnValue({ ok: true, value: session }),
+    });
+    const queue = makeQueue();
+    handleClearQueue(makeRes(), makeContext(queue), deps, "s1");
+    expect(queue.clearQueue).toHaveBeenCalledWith("src-ref-2");
+  });
+
+  it("handlePauseQueue: uses sourceRef when sessionKey is absent", () => {
+    const session = makeSession({ sessionKey: undefined as never, sourceRef: "src-ref-3" });
+    const deps = makeDeps({
+      getSession: vi.fn().mockReturnValue({ ok: true, value: session }),
+    });
+    const queue = makeQueue();
+    handlePauseQueue(makeRes(), makeContext(queue), deps, "s1");
+    expect(queue.pauseQueue).toHaveBeenCalledWith("src-ref-3");
+  });
+
+  it("handleResumeQueue: uses sourceRef when sessionKey is absent", () => {
+    const session = makeSession({ sessionKey: undefined as never, sourceRef: "src-ref-4" });
+    const deps = makeDeps({
+      getSession: vi.fn().mockReturnValue({ ok: true, value: session }),
+    });
+    const queue = makeQueue();
+    handleResumeQueue(makeRes(), makeContext(queue), deps, "s1");
+    expect(queue.resumeQueue).toHaveBeenCalledWith("src-ref-4");
+  });
+});

@@ -316,4 +316,47 @@ describe("skillsList", () => {
     const calls = vi.mocked(console.log).mock.calls.map((c) => c.join(" "));
     expect(calls.some((c) => c.includes("local"))).toBe(true);
   });
+
+  it("should display description from SKILL.md when description field exists (line 237 branch)", () => {
+    mockExistsSync.mockImplementation((p) => {
+      const ps = String(p);
+      if (ps.endsWith("skills.json")) return false;
+      if (ps.includes("SKILL.md")) return true; // SKILL.md exists
+      return true;
+    });
+    const skillDir = { name: "desc-skill", isDirectory: () => true };
+    mockReaddirSync.mockReturnValue([skillDir] as unknown as ReturnType<typeof fs.readdirSync>);
+    // SKILL.md with description field
+    mockReadFileSync.mockReturnValue(
+      "---\nname: desc-skill\ndescription: A skill with description\n---\n" as unknown as ReturnType<
+        typeof fs.readFileSync
+      >,
+    );
+
+    skillsList();
+
+    const calls = vi.mocked(console.log).mock.calls.map((c) => c.join(" "));
+    expect(calls.some((c) => c.includes("A skill with description"))).toBe(true);
+  });
+
+  it("should not display description when SKILL.md has no description field (line 236 false branch)", () => {
+    mockExistsSync.mockImplementation((p) => {
+      const ps = String(p);
+      if (ps.endsWith("skills.json")) return false;
+      if (ps.includes("SKILL.md")) return true; // SKILL.md exists
+      return true;
+    });
+    const skillDir = { name: "nodesc-skill", isDirectory: () => true };
+    mockReaddirSync.mockReturnValue([skillDir] as unknown as ReturnType<typeof fs.readdirSync>);
+    // SKILL.md without description field
+    mockReadFileSync.mockReturnValue(
+      "---\nname: nodesc-skill\nauthor: test\n---\n" as unknown as ReturnType<typeof fs.readFileSync>,
+    );
+
+    skillsList();
+
+    const calls = vi.mocked(console.log).mock.calls.map((c) => c.join(" "));
+    // nodesc-skill should appear but without a description
+    expect(calls.some((c) => c.includes("nodesc-skill"))).toBe(true);
+  });
 });
