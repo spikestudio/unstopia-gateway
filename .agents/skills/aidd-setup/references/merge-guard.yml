@@ -1,0 +1,114 @@
+name: Merge Guard
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, reopened, synchronize, labeled, unlabeled]
+
+jobs:
+  reset-gates:
+    name: Reset Gates
+    runs-on: ubuntu-latest
+    if: github.event.action == 'synchronize'
+    permissions:
+      pull-requests: write
+    steps:
+      - name: Remove gate labels on new push
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          for label in "gate:reviewed"; do
+            gh pr edit ${{ github.event.pull_request.number }} \
+              --repo ${{ github.repository }} \
+              --remove-label "$label" 2>/dev/null || true
+          done
+          echo "⚠️ Gate labels reset — re-review required"
+
+  check-epic-complete:
+    name: Epic Complete Check
+    runs-on: ubuntu-latest
+    if: |
+      github.event.action != 'synchronize' &&
+      startsWith(github.head_ref, 'feature/')
+    permissions:
+      pull-requests: read
+      issues: read
+    steps:
+      - name: Check all Epic Tasks are closed
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # PR body から Epic Issue 番号を取得（最初の Closes #NNN）
+          EPIC_NUMBER=$(gh pr view ${{ github.event.pull_request.number }} \
+            --repo ${{ github.repository }} \
+            --json body --jq '.body' \
+            | grep -iE "^[-*[:space:]]*Epic:[[:space:]]+#[0-9]+" \
+            | head -1 \
+            | grep -oE "#[0-9]+" \
+            | head -1 \
+            | tr -d '#')
+
+          if [ -z "$EPIC_NUMBER" ]; then
+            echo "::error::PR body に 'Epic: #NNN' がありません。PR body の先頭行付近に行頭から 'Epic: #123' の形式（単独行）で追記してください。Task の close は別行に 'Closes #NNN' で記載します。"
+            exit 1
+          fi
+
+          echo "Epic Issue #${EPIC_NUMBER} の全 Task クローズ確認..."
+
+          OPEN_TASKS=$(gh api \
+            "repos/${{ github.repository }}/issues/${EPIC_NUMBER}/sub_issues" \
+            --paginate \
+            --jq '[.[] | select(.state == "open")] | length')
+
+          if [ "$OPEN_TASKS" -gt 0 ]; then
+            echo "::error::Epic #${EPIC_NUMBER} にクローズされていない Task が ${OPEN_TASKS} 件あります。全 Task をクローズしてから PR をマージしてください。"
+            exit 1
+          fi
+
+          echo "✅ Epic #${EPIC_NUMBER} の全 Task がクローズされています。"
+
+  check-gates:
+    name: Merge Gate Check
+    runs-on: ubuntu-latest
+    if: github.event.action != 'synchronize'
+    permissions:
+      pull-requests: read
+    steps:
+      - name: Verify all gate labels
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          LABELS=$(gh pr view ${{ github.event.pull_request.number }} \
+            --repo ${{ github.repository }} \
+            --json labels --jq '.labels[].name')
+
+          MISSING=""
+          for gate in "gate:reviewed"; do
+            if ! echo "$LABELS" | grep -qx "$gate"; then
+              MISSING="${MISSING}  - ${gate}\n"
+            fi
+          done
+
+          if [ -n "$MISSING" ]; then
+            echo "::error::Missing required gate labels"
+            echo ""
+            echo "This PR cannot be merged until all gates are passed:"
+            printf "$MISSING"
+            echo ""
+            echo "Gates:"
+            echo "  gate:reviewed  → /aidd-review epic PASS"
+            exit 1
+          fi
+
+          echo "✅ All gate labels present. Merge is allowed."
+
+  gate-after-reset:
+    name: Merge Gate Check
+    runs-on: ubuntu-latest
+    if: github.event.action == 'synchronize'
+    needs: reset-gates
+    steps:
+      - name: Gates reset
+        run: |
+          echo "::error::Gate labels were reset due to new commits. Re-review required."
+          exit 1

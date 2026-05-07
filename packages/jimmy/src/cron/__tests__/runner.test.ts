@@ -255,6 +255,41 @@ describe("AC-E003-03: runCronJob", () => {
       // throw しないこと（catch 内で処理される）
       await expect(runCronJob(job, sessionManager as never, config, connectors)).resolves.toBeUndefined();
     });
+
+    it("logs String(err) when route rejects with non-Error (line 83 right-side branch)", async () => {
+      const job = makeJob();
+      const sessionManager = {
+        route: vi.fn().mockRejectedValue("plain-string-error"), // non-Error rejection
+      };
+      const connectors = new Map<string, Connector>();
+      const config = makeConfig();
+
+      await runCronJob(job, sessionManager as never, config, connectors);
+
+      const entry = vi.mocked(appendRunLog).mock.calls[0][1] as Record<string, unknown>;
+      // String("plain-string-error") should be used as error message
+      expect(entry.status).toBe("error");
+      expect(String(entry.error)).toContain("plain-string-error");
+    });
+
+    it("logs String(alertErr) when sendMessage rejects with non-Error (line 103 right-side branch)", async () => {
+      const job = makeJob();
+      const sessionManager = {
+        route: vi.fn().mockRejectedValue(new Error("crash")),
+      };
+      const mockSendMessage = vi.fn().mockRejectedValue("slack-string-error"); // non-Error rejection
+      const alertConnector: Partial<Connector> = {
+        name: "slack",
+        sendMessage: mockSendMessage,
+      };
+      const connectors = new Map<string, Connector>([["slack", alertConnector as Connector]]);
+      const config = makeConfig({
+        cron: { alertConnector: "slack", alertChannel: "#alerts" },
+      } as never);
+
+      // Should not throw
+      await expect(runCronJob(job, sessionManager as never, config, connectors)).resolves.toBeUndefined();
+    });
   });
 
   describe("AC-E003-03: cooSlug フォールバック分岐", () => {

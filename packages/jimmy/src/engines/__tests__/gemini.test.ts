@@ -627,5 +627,522 @@ describe("GeminiEngine", () => {
       expect(result.sessionId).toBe("gem-captured");
       expect(result.result).toBe("partial answer");
     });
+
+    // ── Additional branch coverage tests ──────────────────────────────────────
+
+    describe("Additional branch coverage tests", () => {
+      // ── processStreamLine: session.start with no sid → null ──────────────
+      it("processStreamLine: session.start with empty session_id returns null", () => {
+        const line = JSON.stringify({ type: "session.start", session_id: "" });
+        expect(engine.processStreamLine(line)).toBeNull();
+      });
+
+      it("processStreamLine: session.started with empty sessionId returns null", () => {
+        const line = JSON.stringify({ type: "session.started", sessionId: "" });
+        expect(engine.processStreamLine(line)).toBeNull();
+      });
+
+      // ── processStreamLine: text events with empty text → null ─────────────
+      it("processStreamLine: text event with empty text returns null", () => {
+        const line = JSON.stringify({ type: "text", text: "" });
+        expect(engine.processStreamLine(line)).toBeNull();
+      });
+
+      it("processStreamLine: content.text event with empty content returns null", () => {
+        const line = JSON.stringify({ type: "content.text", content: "" });
+        expect(engine.processStreamLine(line)).toBeNull();
+      });
+
+      it("processStreamLine: text_delta event with empty delta returns null", () => {
+        const line = JSON.stringify({ type: "text_delta", delta: "" });
+        expect(engine.processStreamLine(line)).toBeNull();
+      });
+
+      // ── processStreamLine: result event with empty result → null ──────────
+      it("processStreamLine: result event with empty result returns null", () => {
+        const line = JSON.stringify({ type: "result", result: "" });
+        expect(engine.processStreamLine(line)).toBeNull();
+      });
+
+      // ── processStreamLine: function_call event ────────────────────────────
+      it("processStreamLine: function_call event is parsed as tool_start", () => {
+        const line = JSON.stringify({ type: "function_call", toolName: "do_thing", toolId: "fc-1" });
+        const r = engine.processStreamLine(line);
+        expect(r?.type).toBe("tool_start");
+        if (r?.type === "tool_start") {
+          expect(r.delta.toolName).toBe("do_thing");
+        }
+      });
+
+      // ── processStreamLine: function_response event ────────────────────────
+      it("processStreamLine: function_response event is parsed as tool_end", () => {
+        const line = JSON.stringify({ type: "function_response", content: "fn result" });
+        const r = engine.processStreamLine(line);
+        expect(r?.type).toBe("tool_end");
+        if (r?.type === "tool_end") {
+          expect(r.delta.content).toBe("fn result");
+        }
+      });
+
+      // ── processStreamLine: error with msg.error field ─────────────────────
+      it("processStreamLine: error event with error field (no message) uses msg.error", () => {
+        const line = JSON.stringify({ type: "error", error: "raw error string" });
+        const r = engine.processStreamLine(line);
+        expect(r?.type).toBe("error");
+        if (r?.type === "error") {
+          expect(r.message).toBe("raw error string");
+        }
+      });
+
+      // ── parseJsonOutput: Array with resultEvent + cost/duration/numTurns ──
+      it("parseJsonOutput: Array with resultEvent includes cost/durationMs/numTurns", async () => {
+        const proc = createMockProcess();
+        mockSpawn.mockReturnValue(proc as unknown as ChildProcess);
+
+        const resultPromise = engine.run({ prompt: "q", cwd: "/tmp" });
+
+        const output = JSON.stringify([
+          { type: "result", result: "with-fields", session_id: "gem-f1", cost: 0.01, duration_ms: 500, num_turns: 3 },
+        ]);
+        proc.stdout.emit("data", Buffer.from(output));
+        proc.exitCode = 0;
+        proc.emit("close", 0);
+
+        const result = await resultPromise;
+        expect(result.result).toBe("with-fields");
+        expect(result.cost).toBe(0.01);
+        expect(result.durationMs).toBe(500);
+        expect(result.numTurns).toBe(3);
+      });
+
+      // ── parseJsonOutput: Array with resultEvent with text field (no result) ─
+      it("parseJsonOutput: Array with resultEvent using text field", async () => {
+        const proc = createMockProcess();
+        mockSpawn.mockReturnValue(proc as unknown as ChildProcess);
+
+        const resultPromise = engine.run({ prompt: "q", cwd: "/tmp" });
+
+        const output = JSON.stringify([{ type: "result", text: "text-field-answer", session_id: "gem-tf" }]);
+        proc.stdout.emit("data", Buffer.from(output));
+        proc.exitCode = 0;
+        proc.emit("close", 0);
+
+        const result = await resultPromise;
+        expect(result.result).toBe("text-field-answer");
+      });
+
+      // ── parseJsonOutput: Array fallback with content.text event ──────────
+      it("parseJsonOutput: Array fallback to content.text event", async () => {
+        const proc = createMockProcess();
+        mockSpawn.mockReturnValue(proc as unknown as ChildProcess);
+
+        const resultPromise = engine.run({ prompt: "q", cwd: "/tmp" });
+
+        const output = JSON.stringify([{ type: "content.text", content: "content-text-answer" }]);
+        proc.stdout.emit("data", Buffer.from(output));
+        proc.exitCode = 0;
+        proc.emit("close", 0);
+
+        const result = await resultPromise;
+        expect(result.result).toBe("content-text-answer");
+      });
+
+      // ── parseJsonOutput: object format with sessionId (camelCase) ─────────
+      it("parseJsonOutput: object with sessionId field (camelCase)", async () => {
+        const proc = createMockProcess();
+        mockSpawn.mockReturnValue(proc as unknown as ChildProcess);
+
+        const resultPromise = engine.run({ prompt: "q", cwd: "/tmp" });
+
+        const output = JSON.stringify({
+          sessionId: "camel-sess",
+          result: "camel-result",
+          cost: 0.02,
+          duration_ms: 300,
+          num_turns: 2,
+        });
+        proc.stdout.emit("data", Buffer.from(output));
+        proc.exitCode = 0;
+        proc.emit("close", 0);
+
+        const result = await resultPromise;
+        expect(result.sessionId).toBe("camel-sess");
+        expect(result.result).toBe("camel-result");
+        expect(result.cost).toBe(0.02);
+        expect(result.durationMs).toBe(300);
+        expect(result.numTurns).toBe(2);
+      });
+
+      // ── parseJsonOutput: object with text field (no result) ───────────────
+      it("parseJsonOutput: object with text field (no result)", async () => {
+        const proc = createMockProcess();
+        mockSpawn.mockReturnValue(proc as unknown as ChildProcess);
+
+        const resultPromise = engine.run({ prompt: "q", cwd: "/tmp" });
+
+        const output = JSON.stringify({ text: "text-only-answer" });
+        proc.stdout.emit("data", Buffer.from(output));
+        proc.exitCode = 0;
+        proc.emit("close", 0);
+
+        const result = await resultPromise;
+        expect(result.result).toBe("text-only-answer");
+      });
+
+      // ── parseJsonOutput: object with content field (no result/text) ───────
+      it("parseJsonOutput: object with content field (no result/text)", async () => {
+        const proc = createMockProcess();
+        mockSpawn.mockReturnValue(proc as unknown as ChildProcess);
+
+        const resultPromise = engine.run({ prompt: "q", cwd: "/tmp" });
+
+        const output = JSON.stringify({ content: "content-only-answer" });
+        proc.stdout.emit("data", Buffer.from(output));
+        proc.exitCode = 0;
+        proc.emit("close", 0);
+
+        const result = await resultPromise;
+        expect(result.result).toBe("content-only-answer");
+      });
+
+      // ── streaming: lineBuf flush on close — session_id ────────────────────
+      it("streaming: remaining lineBuf with session.start is processed on close", async () => {
+        const proc = createMockProcess();
+        mockSpawn.mockReturnValue(proc as unknown as ChildProcess);
+
+        const deltas: StreamDelta[] = [];
+        const resultPromise = engine.run({
+          prompt: "q",
+          cwd: "/tmp",
+          sessionId: "gem-lbuf",
+          onStream: (d) => deltas.push(d),
+        });
+
+        // Send session.start without trailing newline (stays in lineBuf)
+        proc.stdout.emit("data", Buffer.from(JSON.stringify({ type: "session.start", session_id: "gem-lbuf-id" })));
+        proc.exitCode = 0;
+        proc.emit("close", 0);
+
+        const result = await resultPromise;
+        expect(result.sessionId).toBe("gem-lbuf-id");
+      });
+
+      // ── streaming: lineBuf flush on close — turn_complete ─────────────────
+      it("streaming: remaining lineBuf with turn.complete is processed on close", async () => {
+        const proc = createMockProcess();
+        mockSpawn.mockReturnValue(proc as unknown as ChildProcess);
+
+        const deltas: StreamDelta[] = [];
+        const resultPromise = engine.run({
+          prompt: "q",
+          cwd: "/tmp",
+          sessionId: "gem-lbuf-tc",
+          onStream: (d) => deltas.push(d),
+        });
+
+        const events = [
+          JSON.stringify({ type: "session.start", session_id: "gem-lbuf-tc-id" }),
+          "\n",
+          JSON.stringify({ type: "text", text: "answer" }),
+          "\n",
+        ].join("");
+        proc.stdout.emit("data", Buffer.from(events));
+        // turn.complete without trailing newline
+        proc.stdout.emit("data", Buffer.from(JSON.stringify({ type: "turn.complete" })));
+        proc.exitCode = 0;
+        proc.emit("close", 0);
+
+        const result = await resultPromise;
+        expect(result.numTurns).toBe(1);
+        expect(result.result).toBe("answer");
+      });
+
+      // ── streaming: lineBuf flush on close — text event ───────────────────
+      it("streaming: remaining lineBuf with text event is processed on close", async () => {
+        const proc = createMockProcess();
+        mockSpawn.mockReturnValue(proc as unknown as ChildProcess);
+
+        const deltas: StreamDelta[] = [];
+        const resultPromise = engine.run({
+          prompt: "q",
+          cwd: "/tmp",
+          sessionId: "gem-lbuf-txt",
+          onStream: (d) => deltas.push(d),
+        });
+
+        proc.stdout.emit(
+          "data",
+          Buffer.from([JSON.stringify({ type: "session.start", session_id: "gem-txt-id" }), "\n"].join("")),
+        );
+        // text without trailing newline → lineBuf at close
+        proc.stdout.emit("data", Buffer.from(JSON.stringify({ type: "text", text: "buffered-text" })));
+        proc.exitCode = 0;
+        proc.emit("close", 0);
+
+        const result = await resultPromise;
+        expect(result.result).toBe("buffered-text");
+      });
+
+      // ── streaming: error delta on non-zero exit ───────────────────────────
+      it("streaming: non-zero exit with no session emits error delta", async () => {
+        const proc = createMockProcess();
+        mockSpawn.mockReturnValue(proc as unknown as ChildProcess);
+
+        const deltas: StreamDelta[] = [];
+        const resultPromise = engine.run({
+          prompt: "q",
+          cwd: "/tmp",
+          sessionId: "gem-nz-err",
+          onStream: (d) => deltas.push(d),
+        });
+
+        proc.stderr.emit("data", Buffer.from("gemini: error occurred"));
+        proc.exitCode = 1;
+        proc.emit("close", 1);
+
+        const result = await resultPromise;
+        expect(result.error).toContain("Gemini exited with code 1");
+        expect(deltas.some((d) => d.type === "error")).toBe(true);
+      });
+
+      // ── streaming: code=0 with geminiSessionId (success path) ────────────
+      it("streaming: code=0 with session ID resolves successfully", async () => {
+        const proc = createMockProcess();
+        mockSpawn.mockReturnValue(proc as unknown as ChildProcess);
+
+        const deltas: StreamDelta[] = [];
+        const resultPromise = engine.run({
+          prompt: "q",
+          cwd: "/tmp",
+          sessionId: "gem-code0",
+          onStream: (d) => deltas.push(d),
+        });
+
+        proc.stdout.emit(
+          "data",
+          Buffer.from(
+            [
+              JSON.stringify({ type: "session.start", session_id: "gem-code0-id" }),
+              "\n",
+              JSON.stringify({ type: "text", text: "final answer" }),
+              "\n",
+            ].join(""),
+          ),
+        );
+        proc.exitCode = 0;
+        proc.emit("close", 0);
+
+        const result = await resultPromise;
+        expect(result.sessionId).toBe("gem-code0-id");
+        expect(result.result).toBe("final answer");
+        expect(result.error).toBeUndefined();
+      });
+
+      // ── killAll kills all sessions ────────────────────────────────────────
+      it("killAll kills all running sessions", async () => {
+        const proc1 = createMockProcess();
+        const proc2 = createMockProcess();
+        mockSpawn
+          .mockReturnValueOnce(proc1 as unknown as ChildProcess)
+          .mockReturnValueOnce(proc2 as unknown as ChildProcess);
+
+        const p1 = engine.run({ prompt: "q1", cwd: "/tmp", sessionId: "gem-ka-1" });
+        const p2 = engine.run({ prompt: "q2", cwd: "/tmp", sessionId: "gem-ka-2" });
+
+        expect(engine.isAlive("gem-ka-1")).toBe(true);
+        expect(engine.isAlive("gem-ka-2")).toBe(true);
+
+        engine.killAll();
+
+        proc1.exitCode = null;
+        proc1.emit("close", null);
+        proc2.exitCode = null;
+        proc2.emit("close", null);
+
+        const [r1, r2] = await Promise.all([p1, p2]);
+        expect(r1.error).toContain("Interrupted");
+        expect(r2.error).toContain("Interrupted");
+      });
+
+      // ── stderr 10KB rolling window ────────────────────────────────────────
+      it("stderr rolling window: keeps only last 10KB", async () => {
+        const proc = createMockProcess();
+        mockSpawn.mockReturnValue(proc as unknown as ChildProcess);
+
+        const resultPromise = engine.run({ prompt: "q", cwd: "/tmp" });
+
+        // Send > 10KB of stderr to trigger rolling window
+        proc.stderr.emit("data", Buffer.from("G".repeat(11 * 1024)));
+
+        proc.stdout.emit("data", Buffer.from(JSON.stringify({ type: "result", result: "ok-se" })));
+        proc.exitCode = 0;
+        proc.emit("close", 0);
+
+        const result = await resultPromise;
+        expect(result.result).toBe("ok-se");
+      });
+
+      // ── streaming: null parsed line (invalid JSON) → continue ─────────────
+      it("streaming: invalid JSON line in stream is skipped (parsed=null → continue)", async () => {
+        const proc = createMockProcess();
+        mockSpawn.mockReturnValue(proc as unknown as ChildProcess);
+
+        const deltas: StreamDelta[] = [];
+        const resultPromise = engine.run({
+          prompt: "q",
+          cwd: "/tmp",
+          sessionId: "gem-null-parsed",
+          onStream: (d) => deltas.push(d),
+        });
+
+        const events = [
+          "not-valid-json-line",
+          "\n",
+          JSON.stringify({ type: "session.start", session_id: "gem-np-id" }),
+          "\n",
+          JSON.stringify({ type: "text", text: "answer-np" }),
+          "\n",
+        ].join("");
+
+        proc.stdout.emit("data", Buffer.from(events));
+        proc.exitCode = 0;
+        proc.emit("close", 0);
+
+        const result = await resultPromise;
+        expect(result.result).toBe("answer-np");
+        expect(result.sessionId).toBe("gem-np-id");
+      });
+
+      // ── signalProcess: early return when proc already exited ─────────────
+      it("signalProcess: does nothing when proc.exitCode is non-null", async () => {
+        const proc = createMockProcess();
+        mockSpawn.mockReturnValue(proc as unknown as ChildProcess);
+
+        const resultPromise = engine.run({
+          prompt: "q",
+          cwd: "/tmp",
+          sessionId: "gem-sig-early",
+          onStream: vi.fn(),
+        });
+
+        // Set exitCode before kill → signalProcess returns immediately
+        proc.exitCode = 0;
+        engine.kill("gem-sig-early", "Interrupted: early exit gem");
+
+        proc.emit("close", 0);
+        const result = await resultPromise;
+        expect(result.error).toBe("Interrupted: early exit gem");
+      });
+
+      // ── kill: SIGKILL not sent when proc exits before timeout ─────────────
+      it("kill: SIGKILL not sent when process exits before 2s timeout", async () => {
+        vi.useFakeTimers();
+        const proc = createMockProcess();
+        mockSpawn.mockReturnValue(proc as unknown as ChildProcess);
+
+        const resultPromise = engine.run({
+          prompt: "q",
+          cwd: "/tmp",
+          sessionId: "gem-sigkill-skip",
+          onStream: vi.fn(),
+        });
+
+        engine.kill("gem-sigkill-skip", "Interrupted: skip sigkill gem");
+
+        proc.exitCode = 0;
+        proc.emit("close", null);
+
+        await vi.advanceTimersByTimeAsync(2100);
+
+        const result = await resultPromise;
+        expect(result.error).toBe("Interrupted: skip sigkill gem");
+        vi.useRealTimers();
+      });
+
+      // ── kill: SIGKILL タイムアウトコールバック ────────────────────────────
+      it("kill: SIGKILL is sent when process does not exit within timeout", async () => {
+        vi.useFakeTimers();
+        const proc = createMockProcess();
+        mockSpawn.mockReturnValue(proc as unknown as ChildProcess);
+
+        const resultPromise = engine.run({
+          prompt: "q",
+          cwd: "/tmp",
+          sessionId: "gem-sigkill",
+          onStream: vi.fn(),
+        });
+
+        // Process is alive, kill is called, then advance timers to trigger SIGKILL
+        engine.kill("gem-sigkill", "Interrupted: test kill");
+
+        // Advance fake timers past the 2000ms SIGKILL timeout
+        // proc.exitCode is still null (not yet exited)
+        await vi.advanceTimersByTimeAsync(2100);
+
+        // Now simulate the process finally exiting
+        proc.exitCode = null;
+        proc.emit("close", null);
+
+        const result = await resultPromise;
+        expect(result.error).toBe("Interrupted: test kill");
+        vi.useRealTimers();
+      });
+
+      // ── streaming: error event in stream ─────────────────────────────────
+      it("streaming: error event in stream calls onStream with error delta", async () => {
+        const proc = createMockProcess();
+        mockSpawn.mockReturnValue(proc as unknown as ChildProcess);
+
+        const deltas: StreamDelta[] = [];
+        const resultPromise = engine.run({
+          prompt: "q",
+          cwd: "/tmp",
+          sessionId: "gem-stream-err-ev",
+          onStream: (d) => deltas.push(d),
+        });
+
+        const events = [
+          JSON.stringify({ type: "session.start", session_id: "gem-see-id" }),
+          "\n",
+          JSON.stringify({ type: "error", message: "API quota exceeded" }),
+          "\n",
+          JSON.stringify({ type: "text", text: "partial" }),
+          "\n",
+        ].join("");
+
+        proc.stdout.emit("data", Buffer.from(events));
+        proc.exitCode = 0;
+        proc.emit("close", 0);
+
+        await resultPromise;
+        expect(deltas.some((d) => d.type === "error" && String(d.content).includes("API quota exceeded"))).toBe(true);
+      });
+
+      // ── streaming lineBuf at close: invalid JSON → parsed=null → else path ─
+      it("streaming lineBuf at close: invalid JSON → if(parsed) else path", async () => {
+        const proc = createMockProcess();
+        mockSpawn.mockReturnValue(proc as unknown as ChildProcess);
+
+        const deltas: StreamDelta[] = [];
+        const resultPromise = engine.run({
+          prompt: "q",
+          cwd: "/tmp",
+          sessionId: "gem-lbuf-null",
+          onStream: (d) => deltas.push(d),
+        });
+
+        proc.stdout.emit(
+          "data",
+          Buffer.from([JSON.stringify({ type: "session.start", session_id: "gem-lbuf-n-id" }), "\n"].join("")),
+        );
+        // Invalid JSON without newline → stays in lineBuf, processStreamLine returns null
+        proc.stdout.emit("data", Buffer.from("not-json-lbuf"));
+        proc.exitCode = 0;
+        proc.emit("close", 0);
+
+        const result = await resultPromise;
+        expect(result.sessionId).toBe("gem-lbuf-n-id");
+      });
+    });
   });
 });

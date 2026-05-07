@@ -1,5 +1,41 @@
-import { describe, expect, it } from "vitest";
-import { deepMerge, matchRoute, stripAnsi } from "../api/utils.js";
+import type { EventEmitter } from "node:events";
+import { describe, expect, it, vi } from "vitest";
+
+vi.mock("../../sessions/registry.js", () => ({
+  getFile: vi.fn(),
+}));
+vi.mock("../../shared/logger.js", () => ({
+  logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
+}));
+vi.mock("../../shared/paths.js", () => ({
+  FILES_DIR: "/fake/files",
+}));
+vi.mock("node:fs", () => ({
+  default: {
+    existsSync: vi.fn().mockReturnValue(false),
+  },
+}));
+vi.mock("node:http", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("node:http")>();
+  return {
+    ...actual,
+    default: {
+      ...actual,
+      request: vi.fn(),
+    },
+  };
+});
+
+import {
+  checkInstanceHealth,
+  deepMerge,
+  matchRoute,
+  readBody,
+  readBodyRaw,
+  resolveAttachmentPaths,
+  serverError,
+  stripAnsi,
+} from "../api/utils.js";
 
 describe("matchRoute", () => {
   it("完全一致パスにマッチし空オブジェクトを返す", () => {
@@ -81,6 +117,30 @@ describe("deepMerge", () => {
     // id 不一致のためシークレット保護が発動せず "***" がそのまま入る
     expect(instances[0].token).toBe("***");
   });
+
+  it("source の key が配列だが target の同じ key が非配列の場合はソースの配列で上書きする (line 111 branch)", () => {
+    // source.items が配列、target.items が文字列（非配列）→ else ブランチ（line 111）
+    const target = { items: "not-an-array" };
+    const source = { items: [1, 2, 3] };
+    const result = deepMerge(target, source);
+    expect(result.items).toEqual([1, 2, 3]);
+  });
+});
+
+describe("stripAnsi — end===-1 branch (line 176)", () => {
+  it("handles partial ANSI sequence with no letter terminator (end===-1 branch)", () => {
+    // A string where \u001b[ is followed by only digits/special chars without a letter → end === -1
+    // We manually split to mimic what happens: part "123" has no letter → search returns -1
+    // In practice, a well-formed ANSI sequence always has a letter, but we can test via
+    // an incomplete sequence: "\u001b[123" (no letter terminator)
+    const str = "\u001b[123";
+    const result = stripAnsi(str);
+    // When end === -1: acc + part (the raw digits) are kept
+    // The function falls into the `end === -1 ? acc + part` branch
+    expect(typeof result).toBe("string");
+    // The output should just contain "123" since there's no letter to slice after
+    expect(result).toBe("123");
+  });
 });
 
 describe("stripAnsi", () => {
@@ -98,5 +158,197 @@ describe("stripAnsi", () => {
 
   it("空文字列を返す", () => {
     expect(stripAnsi("")).toBe("");
+  });
+});
+
+// ── resolveAttachmentPaths ─────────────────────────────────────────────────
+
+describe("resolveAttachmentPaths", () => {
+  it("returns empty array for non-array input", async () => {
+    expect(resolveAttachmentPaths(null)).toEqual([]);
+    expect(resolveAttachmentPaths("string")).toEqual([]);
+    expect(resolveAttachmentPaths(42)).toEqual([]);
+  });
+
+  it("skips empty or non-string items", async () => {
+    const result = resolveAttachmentPaths(["", "  ", 123, null]);
+    expect(result).toEqual([]);
+  });
+
+  it("warns when file not found in registry", async () => {
+    const { getFile } = await import("../../sessions/registry.js");
+    const { logger } = await import("../../shared/logger.js");
+    vi.mocked(getFile).mockReturnValue(undefined);
+    resolveAttachmentPaths(["file-id-1"]);
+    expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining("file-id-1"));
+  });
+
+  it("returns file path when exists on disk", async () => {
+    const { getFile } = await import("../../sessions/registry.js");
+    const fs = await import("node:fs");
+    vi.mocked(getFile).mockReturnValue({ id: "f1", filename: "photo.jpg", path: "/alt/path" } as never);
+    vi.mocked(fs.default.existsSync).mockReturnValue(true);
+    const result = resolveAttachmentPaths(["file-id-1"]);
+    expect(result).toHaveLength(1);
+    expect(result[0]).toContain("photo.jpg");
+  });
+
+  it("falls back to meta.path when primary path does not exist", async () => {
+    const { getFile } = await import("../../sessions/registry.js");
+    const fs = await import("node:fs");
+    vi.mocked(getFile).mockReturnValue({ id: "f1", filename: "photo.jpg", path: "/alt/path/photo.jpg" } as never);
+    vi.mocked(fs.default.existsSync)
+      .mockReturnValueOnce(false) // primary path does not exist
+      .mockReturnValueOnce(true); // meta.path exists
+    const result = resolveAttachmentPaths(["file-id-1"]);
+    expect(result).toEqual(["/alt/path/photo.jpg"]);
+  });
+
+  it("warns when file missing on disk and no meta.path", async () => {
+    const { getFile } = await import("../../sessions/registry.js");
+    const { logger } = await import("../../shared/logger.js");
+    const fs = await import("node:fs");
+    vi.mocked(getFile).mockReturnValue({ id: "f1", filename: "photo.jpg", path: undefined } as never);
+    vi.mocked(fs.default.existsSync).mockReturnValue(false);
+    resolveAttachmentPaths(["file-id-1"]);
+    expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining("missing on disk"));
+  });
+});
+
+// ── serverError ────────────────────────────────────────────────────────────
+
+describe("serverError", () => {
+  it("writes 500 with error message", () => {
+    const writeHead = vi.fn();
+    const end = vi.fn();
+    const res = { writeHead, end } as unknown as import("node:http").ServerResponse;
+    serverError(res, "Internal server error");
+    expect(writeHead).toHaveBeenCalledWith(500, expect.anything());
+    const body = JSON.parse(end.mock.calls[0][0]);
+    expect(body.error).toBe("Internal server error");
+  });
+});
+
+// ── readBody / readBodyRaw ─────────────────────────────────────────────────
+
+describe("readBody", () => {
+  it("reads body as string", async () => {
+    const chunks = [Buffer.from("hello "), Buffer.from("world")];
+    let dataCallback: ((chunk: Buffer) => void) | null = null;
+    let endCallback: (() => void) | null = null;
+    const req = {
+      on: (event: string, cb: (...args: unknown[]) => void) => {
+        if (event === "data") dataCallback = cb as (chunk: Buffer) => void;
+        if (event === "end") endCallback = cb as () => void;
+      },
+    } as never;
+    const promise = readBody(req);
+    for (const chunk of chunks) (dataCallback as unknown as (c: Buffer) => void)(chunk);
+    (endCallback as unknown as () => void)();
+    const result = await promise;
+    expect(result).toBe("hello world");
+  });
+});
+
+describe("readBodyRaw", () => {
+  it("reads body as Buffer", async () => {
+    const chunks = [Buffer.from("raw "), Buffer.from("data")];
+    let dataCallback: ((chunk: Buffer) => void) | null = null;
+    let endCallback: (() => void) | null = null;
+    let errorCallback: ((err: Error) => void) | null = null;
+    const req = {
+      on: (event: string, cb: (...args: unknown[]) => void) => {
+        if (event === "data") dataCallback = cb as (chunk: Buffer) => void;
+        if (event === "end") endCallback = cb as () => void;
+        if (event === "error") errorCallback = cb as (err: Error) => void;
+      },
+    } as never;
+    const promise = readBodyRaw(req);
+    for (const chunk of chunks) (dataCallback as unknown as (c: Buffer) => void)(chunk);
+    (endCallback as unknown as () => void)();
+    const result = await promise;
+    expect(result).toEqual(Buffer.from("raw data"));
+    expect(errorCallback).toBeDefined();
+  });
+
+  it("rejects on error", async () => {
+    let errorCallback: ((err: Error) => void) | null = null;
+    const req = {
+      on: (event: string, cb: (...args: unknown[]) => void) => {
+        if (event === "error") errorCallback = cb as (err: Error) => void;
+      },
+    } as never;
+    const promise = readBodyRaw(req);
+    (errorCallback as unknown as (e: Error) => void)(new Error("stream error"));
+    await expect(promise).rejects.toThrow("stream error");
+  });
+});
+
+// ── checkInstanceHealth ────────────────────────────────────────────────────
+
+describe("checkInstanceHealth", () => {
+  const makeHttpReq = () => {
+    const listeners: Record<string, ((...args: unknown[]) => void)[]> = {};
+    const httpReq: EventEmitter & { end: ReturnType<typeof vi.fn>; destroy: ReturnType<typeof vi.fn> } = {
+      on: (event: string, cb: (...args: unknown[]) => void) => {
+        listeners[event] = listeners[event] ?? [];
+        listeners[event].push(cb);
+        return httpReq;
+      },
+      emit: (event: string, ...args: unknown[]) => {
+        for (const cb of listeners[event] ?? []) cb(...args);
+        return true;
+      },
+      end: vi.fn(),
+      destroy: vi.fn(),
+    } as never;
+    return { httpReq, listeners };
+  };
+
+  it("returns true when status 200", async () => {
+    const http = await import("node:http");
+    const { httpReq } = makeHttpReq();
+    vi.mocked(http.default.request).mockImplementation(((_opts: unknown, callback: unknown) => {
+      if (typeof callback === "function") callback({ statusCode: 200, resume: vi.fn() } as never);
+      return httpReq as never;
+    }) as never);
+    const result = await checkInstanceHealth(7777);
+    expect(result).toBe(true);
+  });
+
+  it("returns false when status is not 200", async () => {
+    const http = await import("node:http");
+    const { httpReq } = makeHttpReq();
+    vi.mocked(http.default.request).mockImplementation(((_opts: unknown, callback: unknown) => {
+      if (typeof callback === "function") callback({ statusCode: 404, resume: vi.fn() } as never);
+      return httpReq as never;
+    }) as never);
+    const result = await checkInstanceHealth(7777);
+    expect(result).toBe(false);
+  });
+
+  it("returns false on error", async () => {
+    const http = await import("node:http");
+    const { httpReq } = makeHttpReq();
+    vi.mocked(http.default.request).mockImplementation((() => {
+      return httpReq as never;
+    }) as never);
+    const promise = checkInstanceHealth(7777);
+    httpReq.emit("error", new Error("connection refused"));
+    const result = await promise;
+    expect(result).toBe(false);
+  });
+
+  it("returns false on timeout", async () => {
+    const http = await import("node:http");
+    const { httpReq } = makeHttpReq();
+    vi.mocked(http.default.request).mockImplementation((() => {
+      return httpReq as never;
+    }) as never);
+    const promise = checkInstanceHealth(7777);
+    httpReq.emit("timeout");
+    expect(httpReq.destroy).toHaveBeenCalled();
+    const result = await promise;
+    expect(result).toBe(false);
   });
 });

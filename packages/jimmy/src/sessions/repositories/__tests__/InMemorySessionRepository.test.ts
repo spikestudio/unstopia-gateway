@@ -137,4 +137,40 @@ describe("Result-typed methods (AC-E021-05, AC-E021-06)", () => {
     expect(result.ok).toBe(true);
     if (result.ok) expect(result.value?.status).toBe("running");
   });
+
+  it("createSession sets effortLevel when provided (line 52 left-hand ?? branch)", () => {
+    const session = repo.createSession({
+      engine: "claude",
+      source: "web",
+      sourceRef: "web:effort",
+      effortLevel: "high",
+    });
+    expect(session.effortLevel).toBe("high");
+  });
+
+  it("createSession preserves all optional fields when provided (various ?? branches)", () => {
+    const session = repo.createSession({
+      engine: "claude",
+      source: "slack",
+      sourceRef: "s:full",
+      sessionKey: "sk:full",
+      replyContext: { channel: "C123" },
+      messageId: "msg-001",
+      transportMeta: { foo: "bar" },
+      employee: "alice",
+      model: "claude-opus-4",
+      title: "Test session",
+      parentSessionId: "parent-001",
+      effortLevel: "medium",
+    });
+
+    expect(session.replyContext).toEqual({ channel: "C123" });
+    expect(session.messageId).toBe("msg-001");
+    expect(session.transportMeta).toEqual({ foo: "bar" });
+    expect(session.employee).toBe("alice");
+    expect(session.model).toBe("claude-opus-4");
+    expect(session.title).toBe("Test session");
+    expect(session.parentSessionId).toBe("parent-001");
+    expect(session.effortLevel).toBe("medium");
+  });
 });

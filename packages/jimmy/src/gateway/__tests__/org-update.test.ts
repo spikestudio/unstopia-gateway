@@ -128,4 +128,26 @@ rank: employee
     expect(data.rank).toBe("employee");
     expect(data.persona).toBe("Original persona");
   });
+
+  it("returns false and logs warning when writeFileSync throws (lines 119-121 catch branch)", () => {
+    // Create a read-only file to force writeFileSync to fail
+    const dir = path.join(tmpDir, "platform");
+    fs.mkdirSync(dir, { recursive: true });
+    const filePath = path.join(dir, "readonly.yaml");
+    fs.writeFileSync(filePath, "name: readonly\n", "utf-8");
+    fs.chmodSync(filePath, 0o444);
+
+    const result = updateEmployeeYaml("readonly", { alwaysNotify: false });
+    expect(result).toBe(false);
+
+    // Restore permissions for cleanup
+    fs.chmodSync(filePath, 0o644);
+  });
+
+  it("returns false when ORG_DIR does not exist (line 75 true branch)", () => {
+    // Point tmpDir at a non-existent path so existsSync returns false
+    tmpDir = path.join(os.tmpdir(), "no-such-dir-" + Date.now());
+    const result = updateEmployeeYaml("anyone", { alwaysNotify: false });
+    expect(result).toBe(false);
+  });
 });

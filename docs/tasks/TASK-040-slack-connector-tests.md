@@ -7,7 +7,7 @@
 | Epic 仕様書 | ES-020 |
 | Story | 20.3, 20.4 |
 | Complexity | M |
-| PR | #TBD |
+| PR | #144 |
 
 ## 責務
 
@@ -36,24 +36,24 @@
 
 **機能面（AC-ID 参照）:**
 
-- [ ] **AC-E020-10**: Slack の `message` イベントで `bot_id` が設定されたイベントを送信すると handler が呼ばれない（bot フィルター）
-- [ ] **AC-E020-11**: `user` が未設定のイベント（URL unfurl 等）を送信すると handler が呼ばれない（ghost event フィルター）
-- [ ] **AC-E020-12**: allowFrom に含まれないユーザーからのメッセージを送信すると handler が呼ばれない
-- [ ] **AC-E020-13**: 正常なメッセージを送信すると handler が正しい IncomingMessage 構造で呼ばれる
-- [ ] **AC-E020-14**: `reaction_added` イベントを送信すると対象メッセージのテキストが取得されリアクション文脈のプロンプトで handler が呼ばれる
-- [ ] **AC-E020-15**: `sendMessage` を呼ぶと `chat.postMessage` が正しく呼ばれ最後の ts を返す
-- [ ] **AC-E020-16**: 空文字で `sendMessage` を呼ぶと `chat.postMessage` が呼ばれずに `undefined` を返す
-- [ ] **AC-E020-17**: `replyMessage` を呼ぶと `thread_ts` 付きで `chat.postMessage` が呼ばれる
-- [ ] **AC-E020-18**: `getHealth` を呼ぶと started / error 状態が反映されたステータスを返す
-- [ ] **AC-E020-19**: `reconstructTarget` を replyContext で呼ぶと channel / thread / messageTs が正しくマッピングされた Target が返る
-- [ ] Epic 仕様書の AC チェックボックス更新
+- [x] **AC-E020-10**: Slack の `message` イベントで `bot_id` が設定されたイベントを送信すると handler が呼ばれない（bot フィルター）
+- [x] **AC-E020-11**: `user` が未設定のイベント（URL unfurl 等）を送信すると handler が呼ばれない（ghost event フィルター）
+- [x] **AC-E020-12**: allowFrom に含まれないユーザーからのメッセージを送信すると handler が呼ばれない
+- [x] **AC-E020-13**: 正常なメッセージを送信すると handler が正しい IncomingMessage 構造で呼ばれる
+- [x] **AC-E020-14**: `reaction_added` イベントを送信すると対象メッセージのテキストが取得されリアクション文脈のプロンプトで handler が呼ばれる
+- [x] **AC-E020-15**: `sendMessage` を呼ぶと `chat.postMessage` が正しく呼ばれ最後の ts を返す
+- [x] **AC-E020-16**: 空文字で `sendMessage` を呼ぶと `chat.postMessage` が呼ばれずに `undefined` を返す
+- [x] **AC-E020-17**: `replyMessage` を呼ぶと `thread_ts` 付きで `chat.postMessage` が呼ばれる
+- [x] **AC-E020-18**: `getHealth` を呼ぶと started / error 状態が反映されたステータスを返す
+- [x] **AC-E020-19**: `reconstructTarget` を replyContext で呼ぶと channel / thread / messageTs が正しくマッピングされた Target が返る
+- [x] Epic 仕様書の AC チェックボックス更新
 
 ### 品質面
 
-- [ ] ユニットテスト/統合テストが追加・通過している
-- [ ] コードレビューが承認されている
-- [ ] CI パイプラインがグリーン
-- [ ] リンター/静的解析がクリーン
+- [x] ユニットテスト/統合テストが追加・通過している
+- [x] コードレビューが承認されている
+- [x] CI パイプラインがグリーン
+- [x] リンター/静的解析がクリーン
 
 ## テスト方針
 
@@ -84,12 +84,12 @@
 
 ## 引き渡し前チェック
 
-- [ ] 完了条件が全て検証可能な形で記述されている
-- [ ] 対応する Epic AC（E2E シナリオ）が特定され、完了条件と対応づけられている
-- [ ] 参照すべき Epic 仕様書・ADR・既存コードが「AI への指示コンテキスト」に記載されている
-- [ ] 参照設計にセクション番号/名（§）が記載されている
-- [ ] コンテキスト量が複雑度レベルの目安に収まっている
-- [ ] 規約ドキュメント群にこの Task で使う規約・パターンが記載されている
-- [ ] 先行 Task が完了しコードがマージ済みである
-- [ ] ドキュメントに書かれていない暗黙の要件がない
-- [ ] Epic から委ねられた詳細が転記されている（該当なしを含む）
+- [x] 完了条件が全て検証可能な形で記述されている
+- [x] 対応する Epic AC（E2E シナリオ）が特定され、完了条件と対応づけられている
+- [x] 参照すべき Epic 仕様書・ADR・既存コードが「AI への指示コンテキスト」に記載されている
+- [x] 参照設計にセクション番号/名（§）が記載されている
+- [x] コンテキスト量が複雑度レベルの目安に収まっている
+- [x] 規約ドキュメント群にこの Task で使う規約・パターンが記載されている
+- [x] 先行 Task が完了しコードがマージ済みである
+- [x] ドキュメントに書かれていない暗黙の要件がない
+- [x] Epic から委ねられた詳細が転記されている（該当なしを含む）

@@ -75,6 +75,72 @@ describe("buildServiceRegistry", () => {
     const services = buildServiceRegistry(reg);
     expect(services.get("design")?.provider.name).toBe("alice");
   });
+
+  it("existing provider is retained when challenger has higher alphabetical name on same rank (line 37 branch)", () => {
+    // alice is first → registered. Then bob challenges → bob > alice → alice retained (line 37 else branch)
+    const reg = registry(
+      emp("alice", { rank: "senior", provides: [{ name: "design", description: "Alice design" }] }),
+      emp("bob", { rank: "senior", provides: [{ name: "design", description: "Bob design" }] }),
+    );
+    const services = buildServiceRegistry(reg);
+    // alice should be retained since alice < bob alphabetically
+    expect(services.get("design")?.provider.name).toBe("alice");
+  });
+
+  it("existing provider is retained when challenger has lower rank (line 37 branch)", () => {
+    // senior is already registered. employee challenges → lower rank → senior retained
+    const reg = registry(
+      emp("senior-dev", { rank: "senior", provides: [{ name: "audit", description: "Senior audit" }] }),
+      emp("junior-dev", { rank: "employee", provides: [{ name: "audit", description: "Junior audit" }] }),
+    );
+    const services = buildServiceRegistry(reg);
+    expect(services.get("audit")?.provider.name).toBe("senior-dev");
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════
+// buildRoutePath — uncovered branch coverage
+// ═══════════════════════════════════════════════════════════════
+
+describe("buildRoutePath — additional branch coverage", () => {
+  it("returns path including ancestor when ancestor is found (line 94 if-truthy branch)", () => {
+    const reg = registry(
+      emp("coo", { rank: "executive" }),
+      emp("mgr-a", { rank: "manager", reportsTo: "coo" }),
+      emp("dev-a", { rank: "employee", reportsTo: "mgr-a" }),
+      emp("mgr-b", { rank: "manager", reportsTo: "coo" }),
+      emp("dev-b", { rank: "employee", reportsTo: "mgr-b" }),
+    );
+    const h = resolveOrgHierarchy(reg);
+    const route = buildRoutePath("dev-a", "dev-b", h);
+    // Route should include the common ancestor (coo)
+    expect(route).toContain("coo");
+  });
+
+  it("handles route when ancestor is null/falsy (line 94 else branch)", () => {
+    // If from and to have no common ancestor (isolated nodes)
+    const reg = registry(emp("alice"), emp("bob"));
+    const h = resolveOrgHierarchy(reg);
+    // No common ancestor — ancestor will be null → if(ancestor) is false
+    const route = buildRoutePath("alice", "bob", h);
+    // Should still return a route without crashing
+    expect(Array.isArray(route)).toBe(true);
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════
+// resolveManagerChain — uncovered branch coverage
+// ═══════════════════════════════════════════════════════════════
+
+describe("resolveManagerChain — additional branch coverage", () => {
+  it("skips node names that are not in hierarchy.nodes (line 118 continue branch)", () => {
+    const reg = registry(emp("alice", { rank: "manager" }));
+    const h = resolveOrgHierarchy(reg);
+    // Pass a route that includes a non-existent name
+    const chain = resolveManagerChain(["alice", "nonexistent-node"], h);
+    // "nonexistent-node" → node is undefined → continue → not in chain
+    expect(chain.every((n) => n.employee.name !== "nonexistent-node")).toBe(true);
+  });
 });
 
 // ═══════════════════════════════════════════════════════════════

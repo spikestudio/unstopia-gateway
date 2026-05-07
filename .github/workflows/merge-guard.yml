@@ -74,6 +74,22 @@ jobs:
     permissions:
       pull-requests: read
     steps:
+      - name: Check WIP title
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TITLE=$(gh pr view ${{ github.event.pull_request.number }} \
+            --repo ${{ github.repository }} \
+            --json title --jq '.title')
+
+          if echo "$TITLE" | grep -qi '\[WIP\]'; then
+            echo "::error::PR タイトルに [WIP] が含まれています: $TITLE"
+            echo "  /aidd-review epic を実行して [WIP] を除去してからマージしてください。"
+            exit 1
+          fi
+
+          echo "✅ PR タイトルに [WIP] はありません。"
+
       - name: Verify all gate labels
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -93,7 +109,7 @@ jobs:
             echo "::error::Missing required gate labels"
             echo ""
             echo "This PR cannot be merged until all gates are passed:"
-            printf '%b' "$MISSING"
+            printf '%s' "$MISSING"
             echo ""
             echo "Gates:"
             echo "  gate:reviewed  → /aidd-review epic PASS"
