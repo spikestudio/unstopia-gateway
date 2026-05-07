@@ -359,19 +359,17 @@ describe("startForeground()", () => {
     (startGateway as ReturnType<typeof vi.fn>).mockResolvedValue(mockCleanup);
 
     let sigintHandler: (() => void) | undefined;
-    const onSpy = vi.spyOn(process, "on").mockImplementation(
-      (event: string | symbol, handler: (...args: unknown[]) => void) => {
+    const onSpy = vi
+      .spyOn(process, "on")
+      .mockImplementation((event: string | symbol, handler: (...args: unknown[]) => void) => {
         if (event === "SIGINT") sigintHandler = handler as () => void;
         return process;
-      },
-    );
+      });
     let exitCode: number | undefined;
-    const exitSpy = vi.spyOn(process, "exit").mockImplementation(
-      (code?: string | number | null) => {
-        exitCode = typeof code === "number" ? code : 0;
-        return undefined as never;
-      },
-    );
+    const exitSpy = vi.spyOn(process, "exit").mockImplementation((code?: string | number | null) => {
+      exitCode = typeof code === "number" ? code : 0;
+      return undefined as never;
+    });
 
     await startForeground({} as never);
 
@@ -402,19 +400,17 @@ describe("startForeground()", () => {
     (startGateway as ReturnType<typeof vi.fn>).mockResolvedValue(mockCleanup);
 
     let sigintHandler: (() => void) | undefined;
-    const onSpy = vi.spyOn(process, "on").mockImplementation(
-      (event: string | symbol, handler: (...args: unknown[]) => void) => {
+    const onSpy = vi
+      .spyOn(process, "on")
+      .mockImplementation((event: string | symbol, handler: (...args: unknown[]) => void) => {
         if (event === "SIGINT") sigintHandler = handler as () => void;
         return process;
-      },
-    );
+      });
     let exitCode: number | undefined;
-    const exitSpy = vi.spyOn(process, "exit").mockImplementation(
-      (code?: string | number | null) => {
-        exitCode = typeof code === "number" ? code : 0;
-        return undefined as never;
-      },
-    );
+    const exitSpy = vi.spyOn(process, "exit").mockImplementation((code?: string | number | null) => {
+      exitCode = typeof code === "number" ? code : 0;
+      return undefined as never;
+    });
 
     vi.useFakeTimers();
 
