@@ -79,7 +79,7 @@
 - `../../cli/instances` → `loadInstances`
 - `../../sessions/registry` → `listSessions`
 - `../../shared/logger` → `logger`
-- `../../shared/paths` → `CONFIG_PATH`, `JINN_HOME`, `LOGS_DIR`, `ORG_DIR`
+- `../../shared/paths` → `CONFIG_PATH`, `GATEWAY_HOME`, `LOGS_DIR`, `ORG_DIR`
 - `../files` → `handleFilesRequest`
 - `node:fs` → `existsSync`, `readFileSync`, `writeFileSync`, `statSync`, `openSync`, `readSync`, `closeSync`, `readdirSync`
 - `js-yaml` → `load`, `dump`

@@ -33,7 +33,7 @@
 
 **機能面（AC-ID 参照）:**
 
-- [ ] AC-E029-58: `runStatus()` を呼び出し `JINN_HOME` が存在しないとき、"Gateway is not set up" を含むメッセージが `console.log` で出力されること
+- [ ] AC-E029-58: `runStatus()` を呼び出し `GATEWAY_HOME` が存在しないとき、"Gateway is not set up" を含むメッセージが `console.log` で出力されること
 - [ ] AC-E029-59: `runStatus()` を呼び出し `getStatus()` が `{ running: false }` を返すとき、"Gateway: stopped" が `console.log` で出力されること
 - [ ] AC-E029-60: `runStatus()` を呼び出し `getStatus()` が `{ running: false, pid: 123 }` を返すとき、stale PID の警告が `console.log` で出力されること
 - [ ] AC-E029-61: `runStatus()` を呼び出し `getStatus()` が `{ running: true, pid: 456 }` を返すとき、"Gateway: running" と PID が `console.log` で出力されること

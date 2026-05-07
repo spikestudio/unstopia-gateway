@@ -72,7 +72,7 @@
 
 - 参照 Epic 仕様書: ES-033 §Story 1.1 AC-E033-01〜08
 - 参照コード: `packages/jimmy/src/gateway/lifecycle.ts`（全体 165 行）
-- 参照コード: `packages/jimmy/src/gateway/__tests__/budgets.test.ts`（モック構成・JINN_HOME 設定の参考）
+- 参照コード: `packages/jimmy/src/gateway/__tests__/budgets.test.ts`（モック構成・GATEWAY_HOME 設定の参考）
 
 **モック対象一覧:**
 
@@ -80,7 +80,7 @@
 vi.mock("node:fs")
 vi.mock("node:child_process") // execSync のモック
 vi.spyOn(process, "kill")    // SIGTERM 送信・ESRCH エラーのシミュレーション
-vi.mock("../shared/paths.js", () => ({ PID_FILE: "/tmp/test.pid", JINN_HOME: "/tmp" }))
+vi.mock("../shared/paths.js", () => ({ PID_FILE: "/tmp/test.pid", GATEWAY_HOME: "/tmp" }))
 vi.mock("../shared/config.js", () => ({ loadConfig: vi.fn().mockReturnValue({ gateway: { port: 7777 } }) }))
 vi.mock("../shared/logger.js", () => ({ logger: { info: vi.fn(), warn: vi.fn(), debug: vi.fn() } }))
 ```

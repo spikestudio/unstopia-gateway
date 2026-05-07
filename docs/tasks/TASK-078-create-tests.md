@@ -34,7 +34,7 @@
 **機能面（AC-ID 参照）:**
 
 - [ ] AC-E029-33: `runCreate("INVALID")` を呼び出すと `console.error` で名前バリデーションエラーが出力され `process.exit(1)` が呼ばれること
-- [ ] AC-E029-34: `runCreate("jinn")` を呼び出すと `console.error` で "jinn" 予約名エラーが出力され `process.exit(1)` が呼ばれること
+- [ ] AC-E029-34: `runCreate("gateway")` を呼び出すと `console.error` で "gateway" 予約名エラーが出力され `process.exit(1)` が呼ばれること
 - [ ] AC-E029-35: `runCreate("existing")` を呼び出し同名インスタンスが存在するとき、`console.error` で重複エラーが出力され `process.exit(1)` が呼ばれること
 - [ ] AC-E029-36: `runCreate("atlas")` を呼び出し `fs.existsSync(home)` が `true` を返すとき、`console.error` でホームディレクトリ重複エラーが出力され `process.exit(1)` が呼ばれること
 - [ ] AC-E029-37: `runCreate("atlas")` を呼び出しバリデーションが全て通るとき、`execFileSync` で setup が呼ばれ、インスタンスがレジストリに保存され、成功メッセージが `console.log` で出力されること

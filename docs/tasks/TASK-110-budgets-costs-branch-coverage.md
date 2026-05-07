@@ -29,7 +29,7 @@
 
 ## Epic から委ねられた詳細
 
-- `getBudgetStatus()` で `percent >= 100` の `paused` 分岐（AC-E033-28）: 実際の DB セッションを挿入せず、`db.prepare(...).get()` の戻り値をモックして `spend > limit` の状態を再現する。現在の `budgets.test.ts` は `JINN_HOME` を tmpdir に向けた実 SQLite を使用しているため、セッションを INSERT するか、`initDb` をモックするかを選択する
+- `getBudgetStatus()` で `percent >= 100` の `paused` 分岐（AC-E033-28）: 実際の DB セッションを挿入せず、`db.prepare(...).get()` の戻り値をモックして `spend > limit` の状態を再現する。現在の `budgets.test.ts` は `GATEWAY_HOME` を tmpdir に向けた実 SQLite を使用しているため、セッションを INSERT するか、`initDb` をモックするかを選択する
 - `getBudgetStatus()` で `percent >= 80 && percent < 100` の `warning` 分岐（AC-E033-29）: 同様に spend = limit * 0.85 相当の状態でテストする
 - `getCostsByEmployee("week")` の cutoff（AC-E033-30）: `week` ブランチは `d.setDate(d.getDate() - 7)` を使うため `period: "week"` を引数として渡すだけで分岐はカバーされる
 
@@ -81,7 +81,7 @@ db.prepare(`INSERT INTO sessions (id, employee, created_at, total_cost) VALUES (
 - 参照 Epic 仕様書: ES-033 §Story 1.4 AC-E033-26〜30
 - 参照コード: `packages/jimmy/src/gateway/budgets.ts` §getBudgetStatus（29〜31 行目: paused/warning/ok 分岐）
 - 参照コード: `packages/jimmy/src/gateway/costs.ts` §getCostsByEmployee（50〜71 行目: week/month 分岐）
-- 参照コード: `packages/jimmy/src/gateway/__tests__/budgets.test.ts`（既存テスト・JINN_HOME 設定方法）
+- 参照コード: `packages/jimmy/src/gateway/__tests__/budgets.test.ts`（既存テスト・GATEWAY_HOME 設定方法）
 - 参照コード: `packages/jimmy/src/gateway/__tests__/costs.test.ts`（既存テスト）
 
 ## 依存

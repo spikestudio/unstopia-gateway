@@ -33,7 +33,7 @@
 
 **機能面（AC-ID 参照）:**
 
-- [ ] AC-E029-52: `runStart({})` を呼び出し `JINN_HOME` が存在しないとき、エラーメッセージが `console.error` で出力され `process.exit(1)` が呼ばれること
+- [ ] AC-E029-52: `runStart({})` を呼び出し `GATEWAY_HOME` が存在しないとき、エラーメッセージが `console.error` で出力され `process.exit(1)` が呼ばれること
 - [ ] AC-E029-53: `runStart({})` を呼び出し `compareSemver` が負値を返すとき（instance version が古い）、マイグレーション警告が `console.log` で出力されること
 - [ ] AC-E029-54: `runStart({ daemon: true })` を呼び出すと `startDaemon` が呼ばれ "Gateway started in background." が `console.log` で出力されること
 - [ ] AC-E029-55: `runStart({})` を呼び出すと `startForeground` が呼ばれること

@@ -6,8 +6,8 @@
 
 ```
 unstopia-gateway/
-├── packages/jimmy/   # jinn-cli — メイン daemon プロセス（Node.js）
-└── packages/web/     # @jinn/web — Web UI（Next.js）
+├── packages/jimmy/   # unstopia-gateway-cli — メイン daemon プロセス（Node.js）
+└── packages/web/     # @unstopia/web — Web UI（Next.js）
 ```
 
 `packages/web` は HTTP API 経由で `packages/jimmy` と通信します（直接 import はありません）。
@@ -48,7 +48,7 @@ cli/       → (全モジュール)
 |---------|-----------|
 | `types.ts` | `Engine`, `Connector`, `Session`, `JinnConfig` 等の中心的な型定義 |
 | `config.ts` | `loadConfig()` — 設定ファイルの読み込み |
-| `paths.ts` | `JINN_HOME`, `SESSIONS_DB`, `SKILLS_DIR` 等のパス定数 |
+| `paths.ts` | `GATEWAY_HOME`, `SESSIONS_DB`, `SKILLS_DIR` 等のパス定数 |
 | `logger.ts` | `logger`, `configureLogger()`, `LogContext`（ES-023: JSON 構造化ログ対応済み） |
 | `result.ts` | `Result<T,E>`, `Ok<T>`, `Err<E>`, `ok()`, `err()`, `isOk()`, `isErr()`（ES-021 追加） |
 | `errors.ts` | `AppError`, `RepositoryError`, `appError()`, `repositoryError()`（ES-021 追加） |
@@ -240,24 +240,24 @@ cli/       → (全モジュール)
 
 ### `cli/`
 
-**責務:** ユーザー向け CLI コマンド群。`pnpm jinn <command>` のエントリーポイント。
+**責務:** ユーザー向け CLI コマンド群。`pnpm gateway <command>` のエントリーポイント。
 
 | ファイル | コマンド |
 |---------|---------|
-| `setup.ts` | `jinn setup` — 初回セットアップ（288行。ES-025 で分割） |
+| `setup.ts` | `gateway setup` — 初回セットアップ（288行。ES-025 で分割） |
 | `setup-ui.ts` | コンソール出力ユーティリティ（ok/warn/fail/info/prompt）（ES-025 追加） |
 | `setup-fs.ts` | ファイルシステムユーティリティ（whichBin/ensureDir 等）（ES-025 追加） |
 | `setup-context.ts` | プロジェクトコンテキスト検出・デフォルト設定（ES-025 追加） |
-| `start.ts` | `jinn start` — daemon 起動 |
-| `stop.ts` | `jinn stop` — daemon 停止 |
-| `create.ts` | `jinn create` — 組織・従業員作成 |
-| `list.ts` | `jinn list` — 一覧表示 |
-| `instances.ts` | `jinn instances` — インスタンス一覧 |
-| `remove.ts` | `jinn remove` — 削除 |
-| `skills.ts` | `jinn skills` — スキル管理 |
-| `migrate.ts` | `jinn migrate` — データ移行 |
-| `nuke.ts` | `jinn nuke` — 全データ削除 |
-| `status.ts` | `jinn status` — 状態確認 |
+| `start.ts` | `gateway start` — daemon 起動 |
+| `stop.ts` | `gateway stop` — daemon 停止 |
+| `create.ts` | `gateway create` — 組織・従業員作成 |
+| `list.ts` | `gateway list` — 一覧表示 |
+| `instances.ts` | `gateway instances` — インスタンス一覧 |
+| `remove.ts` | `gateway remove` — 削除 |
+| `skills.ts` | `gateway skills` — スキル管理 |
+| `migrate.ts` | `gateway migrate` — データ移行 |
+| `nuke.ts` | `gateway nuke` — 全データ削除 |
+| `status.ts` | `gateway status` — 状態確認 |
 | `chrome-allow.ts` | Chrome 許可設定 |
 
 依存: 全モジュール（gateway, sessions, engines, connectors, cron, mcp, stt, shared）

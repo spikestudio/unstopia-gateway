@@ -22,7 +22,7 @@
 
 ```bash
 # @vitest/coverage-v8 インストール
-pnpm add -D @vitest/coverage-v8 --filter jinn-cli
+pnpm add -D @vitest/coverage-v8 --filter unstopia-gateway-cli
 
 # vitest.config.ts に coverage 設定を追記（下記参照）
 

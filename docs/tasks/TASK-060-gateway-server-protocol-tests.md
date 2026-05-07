@@ -35,7 +35,7 @@
 
 **機能面（AC-ID 参照）:**
 
-- [x] **AC-E027-01**: `initialize` リクエストを送信すると、`protocolVersion: "2024-11-05"`・`capabilities.tools: {}`・`serverInfo.name: "jinn-gateway"` を含む JSON-RPC レスポンスが返る
+- [x] **AC-E027-01**: `initialize` リクエストを送信すると、`protocolVersion: "2024-11-05"`・`capabilities.tools: {}`・`serverInfo.name: "unstopia-gateway"` を含む JSON-RPC レスポンスが返る
 - [x] **AC-E027-02**: `tools/list` リクエストを送信すると、12 個のツール定義（name・description・inputSchema を含む）が `result.tools` 配列に返る
 - [x] **AC-E027-03**: `tools/call` リクエストで有効なツール名と引数を送信すると、`result.content[0].type === "text"` のレスポンスが返る
 - [x] **AC-E027-04**: `notifications/initialized` を送信すると、`sendResponse` が呼ばれない（stdout への書き込みが発生しない）
