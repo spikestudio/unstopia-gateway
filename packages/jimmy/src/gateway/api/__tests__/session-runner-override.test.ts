@@ -15,7 +15,11 @@ vi.mock("../../../shared/logger.js", () => ({
 vi.mock("../../org.js", () => ({ scanOrg: vi.fn().mockReturnValue({}), findEmployee: vi.fn() }));
 vi.mock("../../org-hierarchy.js", () => ({ resolveOrgHierarchy: vi.fn().mockReturnValue({}) }));
 vi.mock("../session-fallback.js", () => ({ defaultFallbackDeps: {}, switchToFallback: vi.fn() }));
-vi.mock("../session-rate-limit.js", () => ({ defaultRateLimitDeps: {}, handleRateLimit: vi.fn(), retryUntilDeadline: vi.fn() }));
+vi.mock("../session-rate-limit.js", () => ({
+  defaultRateLimitDeps: {},
+  handleRateLimit: vi.fn(),
+  retryUntilDeadline: vi.fn(),
+}));
 vi.mock("../../../sessions/context.js", () => ({ buildContext: vi.fn().mockReturnValue("sys") }));
 vi.mock("../../../shared/effort.js", () => ({ resolveEffort: vi.fn().mockReturnValue("medium") }));
 vi.mock("../../../shared/paths.js", () => ({ JINN_HOME: "/mock/jinn" }));
@@ -26,10 +30,17 @@ import { maybeRevertEngineOverride } from "../session-runner.js";
 
 const makeSession = (overrides: Partial<Session> = {}): Session =>
   ({
-    id: "s1", engine: "codex", engineSessionId: "codex-1", source: "web",
-    sourceRef: "web:1", connector: "web", status: "running",
-    createdAt: new Date().toISOString(), lastActivity: new Date().toISOString(),
-    transportMeta: null, ...overrides,
+    id: "s1",
+    engine: "codex",
+    engineSessionId: "codex-1",
+    source: "web",
+    sourceRef: "web:1",
+    connector: "web",
+    status: "running",
+    createdAt: new Date().toISOString(),
+    lastActivity: new Date().toISOString(),
+    transportMeta: null,
+    ...overrides,
   }) as Session;
 
 describe("maybeRevertEngineOverride", () => {
@@ -45,7 +56,9 @@ describe("maybeRevertEngineOverride", () => {
 
   it("should return session unchanged when originalEngine is not a string", () => {
     const s = makeSession({
-      transportMeta: { engineOverride: { originalEngine: 42, until: new Date(Date.now() - 1000).toISOString() } } as never,
+      transportMeta: {
+        engineOverride: { originalEngine: 42, until: new Date(Date.now() - 1000).toISOString() },
+      } as never,
     });
     expect(maybeRevertEngineOverride(s)).toBe(s);
   });

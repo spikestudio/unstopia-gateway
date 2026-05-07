@@ -146,7 +146,7 @@ rank: employee
 
   it("returns false when ORG_DIR does not exist (line 75 true branch)", () => {
     // Point tmpDir at a non-existent path so existsSync returns false
-    tmpDir = path.join(os.tmpdir(), "no-such-dir-" + Date.now());
+    tmpDir = path.join(os.tmpdir(), `no-such-dir-${Date.now()}`);
     const result = updateEmployeeYaml("anyone", { alwaysNotify: false });
     expect(result).toBe(false);
   });
