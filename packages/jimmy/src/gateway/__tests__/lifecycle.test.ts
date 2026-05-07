@@ -360,7 +360,6 @@ describe("startForeground()", () => {
 
     let sigintHandler: (() => void) | undefined;
     const onSpy = vi.spyOn(process, "on").mockImplementation(
-      // biome-ignore lint: test mock needs flexible types
       (event: string | symbol, handler: (...args: unknown[]) => void) => {
         if (event === "SIGINT") sigintHandler = handler as () => void;
         return process;
@@ -368,7 +367,6 @@ describe("startForeground()", () => {
     );
     let exitCode: number | undefined;
     const exitSpy = vi.spyOn(process, "exit").mockImplementation(
-      // biome-ignore lint: test mock needs flexible types
       (code?: string | number | null) => {
         exitCode = typeof code === "number" ? code : 0;
         return undefined as never;
@@ -405,7 +403,6 @@ describe("startForeground()", () => {
 
     let sigintHandler: (() => void) | undefined;
     const onSpy = vi.spyOn(process, "on").mockImplementation(
-      // biome-ignore lint: test mock needs flexible types
       (event: string | symbol, handler: (...args: unknown[]) => void) => {
         if (event === "SIGINT") sigintHandler = handler as () => void;
         return process;
@@ -413,7 +410,6 @@ describe("startForeground()", () => {
     );
     let exitCode: number | undefined;
     const exitSpy = vi.spyOn(process, "exit").mockImplementation(
-      // biome-ignore lint: test mock needs flexible types
       (code?: string | number | null) => {
         exitCode = typeof code === "number" ? code : 0;
         return undefined as never;
