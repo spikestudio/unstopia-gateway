@@ -10,9 +10,9 @@ import {
 } from "../../sessions/registry.js";
 import { resolveEffort } from "../../shared/effort.js";
 import { logger } from "../../shared/logger.js";
-import { JINN_HOME } from "../../shared/paths.js";
+import { GATEWAY_HOME } from "../../shared/paths.js";
 import { computeNextRetryDelayMs } from "../../shared/rateLimit.js";
-import type { Employee, Engine, JinnConfig, JsonObject, Session } from "../../shared/types.js";
+import type { Employee, Engine, GatewayConfig, JsonObject, Session } from "../../shared/types.js";
 import type { ApiContext } from "../types.js";
 import { unwrapSession } from "./utils.js";
 
@@ -54,7 +54,7 @@ export async function switchToFallback(
   fallbackEngine: Engine | null | undefined,
   fallbackName: string,
   runParams: FallbackRunParams,
-  config: JinnConfig,
+  config: GatewayConfig,
   context: ApiContext,
 ): Promise<boolean> {
   if (fallbackEngine == null) {
@@ -127,7 +127,7 @@ export async function switchToFallback(
     prompt: fallbackPrompt,
     resumeSessionId: codexResume,
     systemPrompt: runParams.systemPrompt,
-    cwd: JINN_HOME,
+    cwd: GATEWAY_HOME,
     bin: runParams.fallbackEngineConfig.bin,
     model: session.model ?? runParams.fallbackEngineConfig.model,
     effortLevel: fallbackEffort,
@@ -181,7 +181,7 @@ export async function switchToFallback(
 
   context.emit("session:completed", {
     sessionId: session.id,
-    employee: session.employee || config.portal?.portalName || "Jinn",
+    employee: session.employee || config.portal?.portalName || "Gateway",
     title: session.title,
     result: fallbackResult.result,
     error: fallbackResult.error || null,

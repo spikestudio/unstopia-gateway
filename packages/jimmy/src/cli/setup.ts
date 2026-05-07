@@ -10,7 +10,7 @@ import {
   CRON_JOBS,
   CRON_RUNS,
   DOCS_DIR,
-  JINN_HOME,
+  GATEWAY_HOME,
   LOGS_DIR,
   ORG_DIR,
   SKILLS_DIR,
@@ -23,12 +23,12 @@ import { applyTemplateReplacements, copyTemplateDir, ensureDir, ensureFile, runV
 import { DIM, fail, GREEN, info, ok, prompt, RESET, warn, YELLOW } from "./setup-ui.js";
 
 export async function runSetup(opts?: { force?: boolean }): Promise<void> {
-  console.log("\nJinn Setup\n");
+  console.log("\nGateway Setup\n");
 
-  if (opts?.force && fs.existsSync(JINN_HOME)) {
-    console.log(`  ${YELLOW}[force]${RESET} Removing ${JINN_HOME}...`);
-    fs.rmSync(JINN_HOME, { recursive: true, force: true });
-    console.log(`  ${GREEN}[ok]${RESET} Removed ${JINN_HOME}\n`);
+  if (opts?.force && fs.existsSync(GATEWAY_HOME)) {
+    console.log(`  ${YELLOW}[force]${RESET} Removing ${GATEWAY_HOME}...`);
+    fs.rmSync(GATEWAY_HOME, { recursive: true, force: true });
+    console.log(`  ${GREEN}[ok]${RESET} Removed ${GATEWAY_HOME}\n`);
   }
 
   // 1. Check Node.js version
@@ -74,9 +74,9 @@ export async function runSetup(opts?: { force?: boolean }): Promise<void> {
   const isFreshSetup = !fs.existsSync(CONFIG_PATH);
   const isInteractive = process.stdin.isTTY && isFreshSetup;
 
-  // Derive default COO name from instance name if set, otherwise "Jinn"
-  const instanceName = process.env.JINN_INSTANCE;
-  const defaultName = instanceName ? instanceName.charAt(0).toUpperCase() + instanceName.slice(1) : "Jinn";
+  // Derive default COO name from instance name if set, otherwise "Gateway"
+  const instanceName = process.env.GATEWAY_INSTANCE;
+  const defaultName = instanceName ? instanceName.charAt(0).toUpperCase() + instanceName.slice(1) : "Gateway";
 
   let chosenName = defaultName;
   let chosenEngine: "claude" | "codex" = "claude";
@@ -99,11 +99,11 @@ export async function runSetup(opts?: { force?: boolean }): Promise<void> {
     }
   }
 
-  // 6. Create ~/.jinn directory structure
+  // 6. Create ~/.gateway directory structure
   console.log("");
   const created: string[] = [];
 
-  if (ensureDir(JINN_HOME)) created.push(JINN_HOME);
+  if (ensureDir(GATEWAY_HOME)) created.push(GATEWAY_HOME);
 
   // Copy or create config files
   const templateConfig = path.join(TEMPLATE_DIR, "config.yaml");
@@ -116,7 +116,7 @@ export async function runSetup(opts?: { force?: boolean }): Promise<void> {
     source = source.replace(/version:\s*"[^"]*"/, `version: "${getPackageVersion()}"`);
     // Apply interactive choices
     source = source.replace(/default:\s*claude/, `default: ${chosenEngine}`);
-    if (chosenName !== "Jinn") {
+    if (chosenName !== "Gateway") {
       source = source.replace("portal: {}", `portal:\n  portalName: "${chosenName}"`);
     }
     ensureFile(CONFIG_PATH, source);
@@ -132,9 +132,9 @@ export async function runSetup(opts?: { force?: boolean }): Promise<void> {
         const portalName = (portal as Record<string, unknown>).portalName;
         if (typeof portalName === "string") return portalName;
       }
-      return "Jinn";
+      return "Gateway";
     } catch {
-      return "Jinn";
+      return "Gateway";
     }
   })();
   const portalSlug = portalName.toLowerCase().replace(/\s+/g, "-");
@@ -144,7 +144,7 @@ export async function runSetup(opts?: { force?: boolean }): Promise<void> {
     "{{portalSlug}}": portalSlug,
   };
 
-  const claudeMdPath = path.join(JINN_HOME, "CLAUDE.md");
+  const claudeMdPath = path.join(GATEWAY_HOME, "CLAUDE.md");
   if (!fs.existsSync(claudeMdPath)) {
     let source = fs.existsSync(templateClaude) ? fs.readFileSync(templateClaude, "utf-8") : defaultClaudeMd(portalName);
     source = applyTemplateReplacements(source, templateReplacements);
@@ -152,7 +152,7 @@ export async function runSetup(opts?: { force?: boolean }): Promise<void> {
     created.push(claudeMdPath);
   }
 
-  const agentsMdPath = path.join(JINN_HOME, "AGENTS.md");
+  const agentsMdPath = path.join(GATEWAY_HOME, "AGENTS.md");
   if (!fs.existsSync(agentsMdPath)) {
     let source = fs.existsSync(templateAgents) ? fs.readFileSync(templateAgents, "utf-8") : defaultAgentsMd(portalName);
     source = applyTemplateReplacements(source, templateReplacements);
@@ -175,11 +175,11 @@ export async function runSetup(opts?: { force?: boolean }): Promise<void> {
   if (ensureDir(CRON_RUNS)) created.push(CRON_RUNS);
 
   // 9. Create connectors/
-  const connectorsDir = path.join(JINN_HOME, "connectors");
+  const connectorsDir = path.join(GATEWAY_HOME, "connectors");
   if (ensureDir(connectorsDir)) created.push(connectorsDir);
 
   // 10. Create knowledge/
-  const knowledgeDir = path.join(JINN_HOME, "knowledge");
+  const knowledgeDir = path.join(GATEWAY_HOME, "knowledge");
   if (ensureDir(knowledgeDir)) created.push(knowledgeDir);
 
   // 11. Create tmp/
@@ -195,7 +195,7 @@ export async function runSetup(opts?: { force?: boolean }): Promise<void> {
 
   // Copy skills.json manifest
   const templateSkillsJson = path.join(TEMPLATE_DIR, "skills.json");
-  const destSkillsJson = path.join(JINN_HOME, "skills.json");
+  const destSkillsJson = path.join(GATEWAY_HOME, "skills.json");
   if (fs.existsSync(templateSkillsJson) && !fs.existsSync(destSkillsJson)) {
     fs.copyFileSync(templateSkillsJson, destSkillsJson);
     created.push(destSkillsJson);
@@ -231,7 +231,7 @@ export async function runSetup(opts?: { force?: boolean }): Promise<void> {
   }
 
   // Create .claude/settings.local.json for engine permissions
-  const settingsPath = path.join(JINN_HOME, ".claude", "settings.local.json");
+  const settingsPath = path.join(GATEWAY_HOME, ".claude", "settings.local.json");
   if (
     ensureFile(
       settingsPath,
@@ -242,7 +242,7 @@ export async function runSetup(opts?: { force?: boolean }): Promise<void> {
               "Bash(npm:*)",
               "Bash(pnpm:*)",
               "Bash(node:*)",
-              "Bash(jinn:*)",
+              "Bash(gateway:*)",
               "Bash(curl:*)",
               "Bash(cat:*)",
               "Bash(ls:*)",
@@ -284,5 +284,5 @@ export async function runSetup(opts?: { force?: boolean }): Promise<void> {
     }
   }
 
-  console.log(`\n${GREEN}Setup complete.${RESET} Run ${DIM}jinn start${RESET} to launch the gateway.\n`);
+  console.log(`\n${GREEN}Setup complete.${RESET} Run ${DIM}gateway start${RESET} to launch the gateway.\n`);
 }

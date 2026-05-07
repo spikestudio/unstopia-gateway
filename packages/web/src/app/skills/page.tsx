@@ -20,7 +20,7 @@ interface Skill {
 export default function SkillsPage() {
   useBreadcrumbs([{ label: "Skills" }]);
   const { settings } = useSettings();
-  const portalName = settings.portalName ?? "Jinn";
+  const portalName = settings.portalName ?? "Gateway";
   const [skills, setSkills] = useState<Skill[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

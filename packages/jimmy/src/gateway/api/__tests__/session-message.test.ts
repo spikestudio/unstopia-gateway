@@ -1,6 +1,6 @@
 import type { ServerResponse } from "node:http";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { InterruptibleEngine, JinnConfig, Session } from "../../../shared/types.js";
+import type { InterruptibleEngine, GatewayConfig, Session } from "../../../shared/types.js";
 import type { ApiContext } from "../../types.js";
 import type { PostMessageDeps } from "../session-message.js";
 import { handlePostMessage } from "../session-message.js";
@@ -44,7 +44,7 @@ const makeDeps = (
   getEngine: vi.fn().mockReturnValue(engineOverride),
   getConfig: vi
     .fn()
-    .mockReturnValue({ engines: { default: "claude", claude: {} }, sessions: {} } as unknown as JinnConfig),
+    .mockReturnValue({ engines: { default: "claude", claude: {} }, sessions: {} } as unknown as GatewayConfig),
   ...overrides,
 });
 

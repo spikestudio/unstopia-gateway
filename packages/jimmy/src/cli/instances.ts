@@ -32,14 +32,14 @@ export function nextAvailablePort(instances: Instance[]): number {
   return port;
 }
 
-/** Ensure the default "jinn" instance is registered. */
+/** Ensure the default "gateway" instance is registered. */
 export function ensureDefaultInstance(): void {
   const instances = loadInstances();
-  if (instances.some((i) => i.name === "jinn")) return;
+  if (instances.some((i) => i.name === "gateway")) return;
   instances.unshift({
-    name: "jinn",
+    name: "gateway",
     port: 7777,
-    home: path.join(os.homedir(), ".jinn"),
+    home: path.join(os.homedir(), ".gateway"),
     createdAt: new Date().toISOString(),
   });
   saveInstances(instances);

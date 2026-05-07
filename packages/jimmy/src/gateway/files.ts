@@ -297,9 +297,9 @@ function resolveFileSpec(spec: TransferSpec): { buffer: Buffer; filename: string
     }
     const buffer = fs.readFileSync(expanded);
     const filename = path.basename(expanded);
-    // Compute relative path from ~/.jinn/ for default remotePath
-    const jinnHome = path.join(os.homedir(), ".jinn");
-    const relativePath = expanded.startsWith(jinnHome) ? path.relative(jinnHome, expanded) : null;
+    // Compute relative path from ~/.gateway/ for default remotePath
+    const gatewayHome = path.join(os.homedir(), ".gateway");
+    const relativePath = expanded.startsWith(gatewayHome) ? path.relative(gatewayHome, expanded) : null;
     return { buffer, filename, relativePath };
   }
 
@@ -392,7 +392,7 @@ async function handleTransfer(req: HttpRequest, res: ServerResponse, context: Ap
   for (const spec of fileSpecs) {
     try {
       const { buffer, filename, relativePath } = resolveFileSpec(spec);
-      const targetPath = spec.remotePath || (relativePath ? `~/.jinn/${relativePath}` : null);
+      const targetPath = spec.remotePath || (relativePath ? `~/.gateway/${relativePath}` : null);
 
       const uploadBody = {
         filename,

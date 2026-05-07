@@ -3,7 +3,7 @@ export interface EmployeeOverride {
   profileImage?: string;
 }
 
-export interface JinnSettings {
+export interface GatewaySettings {
   accentColor: string | null;
   portalName: string | null;
   portalSubtitle: string | null;
@@ -16,7 +16,7 @@ export interface JinnSettings {
   employeeOverrides: Record<string, EmployeeOverride>;
 }
 
-export const DEFAULTS: JinnSettings = {
+export const DEFAULTS: GatewaySettings = {
   accentColor: null,
   portalName: null,
   portalSubtitle: null,
@@ -29,9 +29,9 @@ export const DEFAULTS: JinnSettings = {
   employeeOverrides: {},
 };
 
-const STORAGE_KEY = "jinn-settings";
+const STORAGE_KEY = "gateway-settings";
 
-export function loadSettings(): JinnSettings {
+export function loadSettings(): GatewaySettings {
   if (typeof window === "undefined") return { ...DEFAULTS };
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -43,7 +43,7 @@ export function loadSettings(): JinnSettings {
   }
 }
 
-export function saveSettings(settings: JinnSettings): void {
+export function saveSettings(settings: GatewaySettings): void {
   if (typeof window === "undefined") return;
   localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
 }

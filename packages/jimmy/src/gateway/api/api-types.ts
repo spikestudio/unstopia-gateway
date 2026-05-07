@@ -9,7 +9,7 @@
  * Runtime validation is NOT performed here — types are compile-time only.
  */
 
-import type { ConnectorHealth, CronJob, JinnConfig, JsonObject, Target } from "../../shared/types.js";
+import type { ConnectorHealth, CronJob, GatewayConfig, JsonObject, Target } from "../../shared/types.js";
 
 // ── Sessions ─────────────────────────────────────────────────────────────────
 
@@ -166,7 +166,7 @@ export interface OnboardingBody {
 }
 
 /** PUT /api/config — top-level config partial update */
-export type PutConfigBody = Partial<JinnConfig>;
+export type PutConfigBody = Partial<GatewayConfig>;
 
 /** PUT /api/budgets — employees budget map { employeeName: limitUsd } */
 export type PutBudgetsBody = Record<string, number>;

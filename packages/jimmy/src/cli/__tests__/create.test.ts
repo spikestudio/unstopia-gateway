@@ -62,7 +62,7 @@ describe("runCreate", () => {
     });
     const mockConsoleError = vi.spyOn(console, "error").mockImplementation(() => {});
 
-    await expect(runCreate("jinn!")).rejects.toThrow("process.exit called");
+    await expect(runCreate("gateway!")).rejects.toThrow("process.exit called");
 
     expect(mockConsoleError).toHaveBeenCalledWith(expect.stringContaining("Instance name must be"));
     expect(mockExit).toHaveBeenCalledWith(1);
@@ -86,15 +86,15 @@ describe("runCreate", () => {
     mockConsoleError.mockRestore();
   });
 
-  it("should exit with error when name is 'jinn' (AC-34)", async () => {
+  it("should exit with error when name is 'gateway' (AC-34)", async () => {
     const mockExit = vi.spyOn(process, "exit").mockImplementation(() => {
       throw new Error("process.exit called");
     });
     const mockConsoleError = vi.spyOn(console, "error").mockImplementation(() => {});
 
-    await expect(runCreate("jinn")).rejects.toThrow("process.exit called");
+    await expect(runCreate("gateway")).rejects.toThrow("process.exit called");
 
-    expect(mockConsoleError).toHaveBeenCalledWith(expect.stringContaining('"jinn" is the default instance'));
+    expect(mockConsoleError).toHaveBeenCalledWith(expect.stringContaining('"gateway" is the default instance'));
     expect(mockExit).toHaveBeenCalledWith(1);
 
     mockExit.mockRestore();
@@ -151,7 +151,7 @@ describe("runCreate", () => {
       process.execPath,
       [process.argv[1], "setup"],
       expect.objectContaining({
-        env: expect.objectContaining({ JINN_HOME: expect.stringContaining(".atlas"), JINN_INSTANCE: "atlas" }),
+        env: expect.objectContaining({ GATEWAY_HOME: expect.stringContaining(".atlas"), GATEWAY_INSTANCE: "atlas" }),
         stdio: "inherit",
       }),
     );

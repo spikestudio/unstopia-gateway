@@ -15,7 +15,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   const apply = useCallback((t: ThemeId) => {
     setThemeState(t);
-    localStorage.setItem("jinn-theme", t);
+    localStorage.setItem("gateway-theme", t);
     const el = document.documentElement;
     el.removeAttribute("data-theme");
     if (t === "system") {
@@ -27,7 +27,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    const saved = localStorage.getItem("jinn-theme") as ThemeId | null;
+    const saved = localStorage.getItem("gateway-theme") as ThemeId | null;
     if (saved) apply(saved);
   }, [apply]);
 
@@ -35,7 +35,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const mq = window.matchMedia("(prefers-color-scheme: dark)");
     function handleChange() {
-      const current = localStorage.getItem("jinn-theme") as ThemeId | null;
+      const current = localStorage.getItem("gateway-theme") as ThemeId | null;
       if (current === "system") {
         const el = document.documentElement;
         el.setAttribute("data-theme", mq.matches ? "dark" : "light");

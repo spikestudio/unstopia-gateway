@@ -42,15 +42,15 @@ describe("runRemove", () => {
     mockLoadInstances.mockReturnValue([sampleInstance]);
   });
 
-  it("should exit with error when trying to remove 'jinn' (AC-42)", async () => {
+  it("should exit with error when trying to remove 'gateway' (AC-42)", async () => {
     const mockExit = vi.spyOn(process, "exit").mockImplementation(() => {
       throw new Error("process.exit called");
     });
     const mockConsoleError = vi.spyOn(console, "error").mockImplementation(() => {});
 
-    await expect(runRemove("jinn", {})).rejects.toThrow("process.exit called");
+    await expect(runRemove("gateway", {})).rejects.toThrow("process.exit called");
 
-    expect(mockConsoleError).toHaveBeenCalledWith(expect.stringContaining('Cannot remove the default "jinn" instance'));
+    expect(mockConsoleError).toHaveBeenCalledWith(expect.stringContaining('Cannot remove the default "gateway" instance'));
     expect(mockExit).toHaveBeenCalledWith(1);
 
     mockExit.mockRestore();

@@ -27,7 +27,7 @@ vi.mock("node:fs", async () => {
 // --- mock js-yaml ---
 vi.mock("js-yaml", () => ({
   default: {
-    load: vi.fn(() => ({ portal: { portalName: "Jinn" } })),
+    load: vi.fn(() => ({ portal: { portalName: "Gateway" } })),
   },
 }));
 
@@ -38,18 +38,18 @@ vi.mock("../../sessions/registry.js", () => ({
 
 // --- mock shared/paths ---
 vi.mock("../../shared/paths.js", () => ({
-  JINN_HOME: "/mock/.jinn",
-  CONFIG_PATH: "/mock/.jinn/config.yaml",
-  CRON_JOBS: "/mock/.jinn/cron/jobs.json",
-  CRON_RUNS: "/mock/.jinn/cron/runs",
-  DOCS_DIR: "/mock/.jinn/docs",
-  SKILLS_DIR: "/mock/.jinn/skills",
-  ORG_DIR: "/mock/.jinn/org",
-  LOGS_DIR: "/mock/.jinn/logs",
-  TMP_DIR: "/mock/.jinn/tmp",
+  GATEWAY_HOME: "/mock/.gateway",
+  CONFIG_PATH: "/mock/.gateway/config.yaml",
+  CRON_JOBS: "/mock/.gateway/cron/jobs.json",
+  CRON_RUNS: "/mock/.gateway/cron/runs",
+  DOCS_DIR: "/mock/.gateway/docs",
+  SKILLS_DIR: "/mock/.gateway/skills",
+  ORG_DIR: "/mock/.gateway/org",
+  LOGS_DIR: "/mock/.gateway/logs",
+  TMP_DIR: "/mock/.gateway/tmp",
   TEMPLATE_DIR: "/mock/template",
-  CLAUDE_SKILLS_DIR: "/mock/.jinn/.claude/skills",
-  AGENTS_SKILLS_DIR: "/mock/.jinn/.agents/skills",
+  CLAUDE_SKILLS_DIR: "/mock/.gateway/.claude/skills",
+  AGENTS_SKILLS_DIR: "/mock/.gateway/.agents/skills",
 }));
 
 // --- mock shared/version ---
@@ -59,7 +59,7 @@ vi.mock("../../shared/version.js", () => ({
 
 // --- mock setup-context ---
 vi.mock("../setup-context.js", () => ({
-  DEFAULT_CONFIG: 'jinn:\n  version: "0.0.0"\nengines:\n  default: claude\nportal: {}\n',
+  DEFAULT_CONFIG: 'meta:\n  version: "0.0.0"\nengines:\n  default: claude\nportal: {}\n',
   defaultClaudeMd: vi.fn((name: string) => `# ${name} CLAUDE.md`),
   defaultAgentsMd: vi.fn((name: string) => `# ${name} AGENTS.md`),
   detectProjectContext: vi.fn(),
@@ -137,7 +137,7 @@ describe("runSetup", () => {
       configurable: true,
     });
     process.env = { ...process.env };
-    delete process.env.JINN_INSTANCE;
+    delete process.env.GATEWAY_INSTANCE;
 
     // Default fs mocks: nothing exists
     mockFs.existsSync.mockReturnValue(false);
@@ -153,7 +153,7 @@ describe("runSetup", () => {
     mockCopyTemplateDir.mockReturnValue([]);
 
     // yaml.load returns basic config
-    vi.mocked(yaml.load).mockReturnValue({ portal: { portalName: "Jinn" } });
+    vi.mocked(yaml.load).mockReturnValue({ portal: { portalName: "Gateway" } });
 
     // spawn returns unrefable object
     mockSpawn.mockReturnValue({ unref: vi.fn() } as unknown as ReturnType<typeof spawn>);
@@ -338,15 +338,15 @@ describe("runSetup", () => {
   // -----------------------------------------------------------------------
 
   describe("force option", () => {
-    it("calls rmSync when force=true and JINN_HOME exists", async () => {
-      mockFs.existsSync.mockImplementation((p) => String(p) === "/mock/.jinn");
+    it("calls rmSync when force=true and GATEWAY_HOME exists", async () => {
+      mockFs.existsSync.mockImplementation((p) => String(p) === "/mock/.gateway");
 
       await runSetup({ force: true });
 
-      expect(mockFs.rmSync).toHaveBeenCalledWith("/mock/.jinn", { recursive: true, force: true });
+      expect(mockFs.rmSync).toHaveBeenCalledWith("/mock/.gateway", { recursive: true, force: true });
     });
 
-    it("does not call rmSync when force=true but JINN_HOME does not exist", async () => {
+    it("does not call rmSync when force=true but GATEWAY_HOME does not exist", async () => {
       mockFs.existsSync.mockReturnValue(false);
 
       await runSetup({ force: true });
@@ -354,8 +354,8 @@ describe("runSetup", () => {
       expect(mockFs.rmSync).not.toHaveBeenCalled();
     });
 
-    it("does not call rmSync when force=false even if JINN_HOME exists", async () => {
-      mockFs.existsSync.mockImplementation((p) => String(p) === "/mock/.jinn");
+    it("does not call rmSync when force=false even if GATEWAY_HOME exists", async () => {
+      mockFs.existsSync.mockImplementation((p) => String(p) === "/mock/.gateway");
 
       await runSetup({ force: false });
 
@@ -363,7 +363,7 @@ describe("runSetup", () => {
     });
 
     it("does not call rmSync when opts is undefined", async () => {
-      mockFs.existsSync.mockImplementation((p) => String(p) === "/mock/.jinn");
+      mockFs.existsSync.mockImplementation((p) => String(p) === "/mock/.gateway");
 
       await runSetup();
 
@@ -381,20 +381,20 @@ describe("runSetup", () => {
 
       await runSetup();
 
-      expect(mockEnsureFile).toHaveBeenCalledWith("/mock/.jinn/config.yaml", expect.any(String));
+      expect(mockEnsureFile).toHaveBeenCalledWith("/mock/.gateway/config.yaml", expect.any(String));
     });
 
     it("does not call ensureFile for CONFIG_PATH when config already exists", async () => {
       // CONFIG_PATH exists; other paths do not
-      mockFs.existsSync.mockImplementation((p) => String(p) === "/mock/.jinn/config.yaml");
+      mockFs.existsSync.mockImplementation((p) => String(p) === "/mock/.gateway/config.yaml");
       mockFs.readFileSync.mockReturnValue(
-        'jinn:\n  version: "0.0.0"\nportal: {}\n' as unknown as ReturnType<typeof fs.readFileSync>,
+        'meta:\n  version: "0.0.0"\nportal: {}\n' as unknown as ReturnType<typeof fs.readFileSync>,
       );
 
       await runSetup();
 
       const ensureFileCalls = mockEnsureFile.mock.calls.map((c) => c[0]);
-      expect(ensureFileCalls).not.toContain("/mock/.jinn/config.yaml");
+      expect(ensureFileCalls).not.toContain("/mock/.gateway/config.yaml");
     });
 
     it("uses template config when template file exists", async () => {
@@ -405,7 +405,7 @@ describe("runSetup", () => {
 
       await runSetup();
 
-      expect(mockEnsureFile).toHaveBeenCalledWith("/mock/.jinn/config.yaml", expect.any(String));
+      expect(mockEnsureFile).toHaveBeenCalledWith("/mock/.gateway/config.yaml", expect.any(String));
     });
 
     it("uses DEFAULT_CONFIG when template config does not exist", async () => {
@@ -413,7 +413,7 @@ describe("runSetup", () => {
 
       await runSetup();
 
-      expect(mockEnsureFile).toHaveBeenCalledWith("/mock/.jinn/config.yaml", expect.stringContaining("claude"));
+      expect(mockEnsureFile).toHaveBeenCalledWith("/mock/.gateway/config.yaml", expect.stringContaining("claude"));
     });
   });
 
@@ -428,19 +428,19 @@ describe("runSetup", () => {
       await runSetup();
 
       const paths = mockEnsureFile.mock.calls.map((c) => c[0]);
-      expect(paths).toContain("/mock/.jinn/CLAUDE.md");
+      expect(paths).toContain("/mock/.gateway/CLAUDE.md");
     });
 
     it("does not call ensureFile for CLAUDE.md when it already exists", async () => {
-      mockFs.existsSync.mockImplementation((p) => String(p) === "/mock/.jinn/CLAUDE.md");
+      mockFs.existsSync.mockImplementation((p) => String(p) === "/mock/.gateway/CLAUDE.md");
       mockFs.readFileSync.mockReturnValue(
-        'jinn:\n  version: "0.0.0"\n' as unknown as ReturnType<typeof fs.readFileSync>,
+        'meta:\n  version: "0.0.0"\n' as unknown as ReturnType<typeof fs.readFileSync>,
       );
 
       await runSetup();
 
       const paths = mockEnsureFile.mock.calls.map((c) => c[0]);
-      expect(paths).not.toContain("/mock/.jinn/CLAUDE.md");
+      expect(paths).not.toContain("/mock/.gateway/CLAUDE.md");
     });
 
     it("uses template CLAUDE.md when template file exists", async () => {
@@ -450,7 +450,7 @@ describe("runSetup", () => {
       await runSetup();
 
       const paths = mockEnsureFile.mock.calls.map((c) => c[0]);
-      expect(paths).toContain("/mock/.jinn/CLAUDE.md");
+      expect(paths).toContain("/mock/.gateway/CLAUDE.md");
     });
   });
 
@@ -461,19 +461,19 @@ describe("runSetup", () => {
       await runSetup();
 
       const paths = mockEnsureFile.mock.calls.map((c) => c[0]);
-      expect(paths).toContain("/mock/.jinn/AGENTS.md");
+      expect(paths).toContain("/mock/.gateway/AGENTS.md");
     });
 
     it("does not call ensureFile for AGENTS.md when it already exists", async () => {
-      mockFs.existsSync.mockImplementation((p) => String(p) === "/mock/.jinn/AGENTS.md");
+      mockFs.existsSync.mockImplementation((p) => String(p) === "/mock/.gateway/AGENTS.md");
       mockFs.readFileSync.mockReturnValue(
-        'jinn:\n  version: "0.0.0"\n' as unknown as ReturnType<typeof fs.readFileSync>,
+        'meta:\n  version: "0.0.0"\n' as unknown as ReturnType<typeof fs.readFileSync>,
       );
 
       await runSetup();
 
       const paths = mockEnsureFile.mock.calls.map((c) => c[0]);
-      expect(paths).not.toContain("/mock/.jinn/AGENTS.md");
+      expect(paths).not.toContain("/mock/.gateway/AGENTS.md");
     });
 
     it("uses template AGENTS.md when template file exists", async () => {
@@ -483,7 +483,7 @@ describe("runSetup", () => {
       await runSetup();
 
       const paths = mockEnsureFile.mock.calls.map((c) => c[0]);
-      expect(paths).toContain("/mock/.jinn/AGENTS.md");
+      expect(paths).toContain("/mock/.gateway/AGENTS.md");
     });
   });
 
@@ -493,7 +493,7 @@ describe("runSetup", () => {
 
   describe("portalName extraction from config", () => {
     it("uses portalName from yaml config when available", async () => {
-      mockFs.existsSync.mockImplementation((p) => String(p) === "/mock/.jinn/config.yaml");
+      mockFs.existsSync.mockImplementation((p) => String(p) === "/mock/.gateway/config.yaml");
       mockFs.readFileSync.mockReturnValue(
         "portal:\n  portalName: MyPortal\n" as unknown as ReturnType<typeof fs.readFileSync>,
       );
@@ -504,8 +504,8 @@ describe("runSetup", () => {
       expect(mockDetectProjectContext).toHaveBeenCalledWith("myportal");
     });
 
-    it("falls back to 'Jinn' when yaml.load throws", async () => {
-      mockFs.existsSync.mockImplementation((p) => String(p) === "/mock/.jinn/config.yaml");
+    it("falls back to 'Gateway' when yaml.load throws", async () => {
+      mockFs.existsSync.mockImplementation((p) => String(p) === "/mock/.gateway/config.yaml");
       mockFs.readFileSync.mockReturnValue("bad yaml" as unknown as ReturnType<typeof fs.readFileSync>);
       vi.mocked(yaml.load).mockImplementation(() => {
         throw new Error("YAML parse error");
@@ -513,29 +513,29 @@ describe("runSetup", () => {
 
       await runSetup();
 
-      // Should fall back to "Jinn" → slug "jinn"
-      expect(mockDetectProjectContext).toHaveBeenCalledWith("jinn");
+      // Should fall back to "Gateway" → slug "gateway"
+      expect(mockDetectProjectContext).toHaveBeenCalledWith("gateway");
     });
 
-    it("falls back to 'Jinn' when portal is missing in config", async () => {
-      mockFs.existsSync.mockImplementation((p) => String(p) === "/mock/.jinn/config.yaml");
+    it("falls back to 'Gateway' when portal is missing in config", async () => {
+      mockFs.existsSync.mockImplementation((p) => String(p) === "/mock/.gateway/config.yaml");
       mockFs.readFileSync.mockReturnValue(
-        'jinn:\n  version: "0.0.0"\n' as unknown as ReturnType<typeof fs.readFileSync>,
+        'meta:\n  version: "0.0.0"\n' as unknown as ReturnType<typeof fs.readFileSync>,
       );
-      vi.mocked(yaml.load).mockReturnValue({ jinn: { version: "0.0.0" } });
+      vi.mocked(yaml.load).mockReturnValue({ meta: { version: "0.0.0" } });
 
       await runSetup();
 
-      expect(mockDetectProjectContext).toHaveBeenCalledWith("jinn");
+      expect(mockDetectProjectContext).toHaveBeenCalledWith("gateway");
     });
 
-    it("falls back to 'Jinn' when portalName is not a string", async () => {
-      mockFs.existsSync.mockImplementation((p) => String(p) === "/mock/.jinn/config.yaml");
+    it("falls back to 'Gateway' when portalName is not a string", async () => {
+      mockFs.existsSync.mockImplementation((p) => String(p) === "/mock/.gateway/config.yaml");
       vi.mocked(yaml.load).mockReturnValue({ portal: { portalName: 42 } });
 
       await runSetup();
 
-      expect(mockDetectProjectContext).toHaveBeenCalledWith("jinn");
+      expect(mockDetectProjectContext).toHaveBeenCalledWith("gateway");
     });
   });
 
@@ -569,46 +569,46 @@ describe("runSetup", () => {
   // -----------------------------------------------------------------------
 
   describe("directory creation", () => {
-    it("calls ensureDir for JINN_HOME", async () => {
+    it("calls ensureDir for GATEWAY_HOME", async () => {
       await runSetup();
 
-      expect(mockEnsureDir).toHaveBeenCalledWith("/mock/.jinn");
+      expect(mockEnsureDir).toHaveBeenCalledWith("/mock/.gateway");
     });
 
     it("calls ensureDir for CRON_RUNS", async () => {
       await runSetup();
 
-      expect(mockEnsureDir).toHaveBeenCalledWith("/mock/.jinn/cron/runs");
+      expect(mockEnsureDir).toHaveBeenCalledWith("/mock/.gateway/cron/runs");
     });
 
     it("calls ensureDir for TMP_DIR", async () => {
       await runSetup();
 
-      expect(mockEnsureDir).toHaveBeenCalledWith("/mock/.jinn/tmp");
+      expect(mockEnsureDir).toHaveBeenCalledWith("/mock/.gateway/tmp");
     });
 
     it("calls ensureDir for LOGS_DIR", async () => {
       await runSetup();
 
-      expect(mockEnsureDir).toHaveBeenCalledWith("/mock/.jinn/logs");
+      expect(mockEnsureDir).toHaveBeenCalledWith("/mock/.gateway/logs");
     });
 
     it("calls ensureDir for connectors dir", async () => {
       await runSetup();
 
-      expect(mockEnsureDir).toHaveBeenCalledWith("/mock/.jinn/connectors");
+      expect(mockEnsureDir).toHaveBeenCalledWith("/mock/.gateway/connectors");
     });
 
     it("calls ensureDir for knowledge dir", async () => {
       await runSetup();
 
-      expect(mockEnsureDir).toHaveBeenCalledWith("/mock/.jinn/knowledge");
+      expect(mockEnsureDir).toHaveBeenCalledWith("/mock/.gateway/knowledge");
     });
 
     it("calls ensureFile for CRON_JOBS with '[]'", async () => {
       await runSetup();
 
-      expect(mockEnsureFile).toHaveBeenCalledWith("/mock/.jinn/cron/jobs.json", "[]");
+      expect(mockEnsureFile).toHaveBeenCalledWith("/mock/.gateway/cron/jobs.json", "[]");
     });
   });
 
@@ -625,13 +625,13 @@ describe("runSetup", () => {
 
       await runSetup();
 
-      expect(mockFs.copyFileSync).toHaveBeenCalledWith("/mock/template/skills.json", "/mock/.jinn/skills.json");
+      expect(mockFs.copyFileSync).toHaveBeenCalledWith("/mock/template/skills.json", "/mock/.gateway/skills.json");
     });
 
     it("does not copy skills.json when dest already exists", async () => {
       mockFs.existsSync.mockImplementation((p) => {
         const ps = String(p);
-        return ps === "/mock/template/skills.json" || ps === "/mock/.jinn/skills.json";
+        return ps === "/mock/template/skills.json" || ps === "/mock/.gateway/skills.json";
       });
 
       await runSetup();
@@ -657,7 +657,7 @@ describe("runSetup", () => {
       mockFs.existsSync.mockImplementation((p) => {
         const ps = String(p);
         // SKILLS_DIR exists, link paths do not
-        return ps === "/mock/.jinn/skills";
+        return ps === "/mock/.gateway/skills";
       });
       const skillEntry = { name: "my-skill", isDirectory: () => true };
       mockFs.readdirSync.mockReturnValue([skillEntry] as unknown as ReturnType<typeof fs.readdirSync>);
@@ -678,9 +678,9 @@ describe("runSetup", () => {
     it("skips symlink when link path already exists", async () => {
       mockFs.existsSync.mockImplementation((p) => {
         const ps = String(p);
-        if (ps === "/mock/.jinn/skills") return true;
-        if (ps.includes("/mock/.jinn/.claude/skills/my-skill")) return true;
-        if (ps.includes("/mock/.jinn/.agents/skills/my-skill")) return true;
+        if (ps === "/mock/.gateway/skills") return true;
+        if (ps.includes("/mock/.gateway/.claude/skills/my-skill")) return true;
+        if (ps.includes("/mock/.gateway/.agents/skills/my-skill")) return true;
         return false;
       });
       const skillEntry = { name: "my-skill", isDirectory: () => true };
@@ -692,7 +692,7 @@ describe("runSetup", () => {
     });
 
     it("ignores symlink errors silently", async () => {
-      mockFs.existsSync.mockImplementation((p) => String(p) === "/mock/.jinn/skills");
+      mockFs.existsSync.mockImplementation((p) => String(p) === "/mock/.gateway/skills");
       const skillEntry = { name: "broken-skill", isDirectory: () => true };
       mockFs.readdirSync.mockReturnValue([skillEntry] as unknown as ReturnType<typeof fs.readdirSync>);
       mockFs.symlinkSync.mockImplementation(() => {
@@ -726,7 +726,7 @@ describe("runSetup", () => {
   describe("detectProjectContext", () => {
     it("calls detectProjectContext with the portal slug", async () => {
       vi.mocked(yaml.load).mockReturnValue({ portal: { portalName: "MyPortal" } });
-      mockFs.existsSync.mockImplementation((p) => String(p) === "/mock/.jinn/config.yaml");
+      mockFs.existsSync.mockImplementation((p) => String(p) === "/mock/.gateway/config.yaml");
 
       await runSetup();
 
@@ -754,8 +754,8 @@ describe("runSetup", () => {
     });
 
     it("logs count of created items when something was created", async () => {
-      // JINN_HOME is created
-      mockEnsureDir.mockImplementation((p) => p === "/mock/.jinn");
+      // GATEWAY_HOME is created
+      mockEnsureDir.mockImplementation((p) => p === "/mock/.gateway");
       mockFs.existsSync.mockReturnValue(false);
 
       await runSetup();
@@ -764,12 +764,12 @@ describe("runSetup", () => {
     });
 
     it("logs info for each created item", async () => {
-      mockEnsureDir.mockImplementation((p) => p === "/mock/.jinn");
+      mockEnsureDir.mockImplementation((p) => p === "/mock/.gateway");
       mockFs.existsSync.mockReturnValue(false);
 
       await runSetup();
 
-      expect(mockInfo).toHaveBeenCalledWith("/mock/.jinn");
+      expect(mockInfo).toHaveBeenCalledWith("/mock/.gateway");
     });
   });
 
@@ -814,7 +814,7 @@ describe("runSetup", () => {
         writable: true,
         configurable: true,
       });
-      mockFs.existsSync.mockImplementation((p) => String(p) === "/mock/.jinn/config.yaml");
+      mockFs.existsSync.mockImplementation((p) => String(p) === "/mock/.gateway/config.yaml");
 
       await runSetup();
 
@@ -823,7 +823,7 @@ describe("runSetup", () => {
 
     it("prompts engine selection when both claude and codex are found", async () => {
       mockWhichBin.mockImplementation((bin) => `/usr/local/bin/${bin}`);
-      mockPrompt.mockResolvedValueOnce("Jinn").mockResolvedValueOnce("codex");
+      mockPrompt.mockResolvedValueOnce("Gateway").mockResolvedValueOnce("codex");
 
       await runSetup();
 
@@ -832,30 +832,30 @@ describe("runSetup", () => {
 
     it("selects codex engine when user answers 'codex'", async () => {
       mockWhichBin.mockImplementation((bin) => `/usr/local/bin/${bin}`);
-      mockPrompt.mockResolvedValueOnce("Jinn").mockResolvedValueOnce("codex");
+      mockPrompt.mockResolvedValueOnce("Gateway").mockResolvedValueOnce("codex");
 
       await runSetup();
 
       // ensureFile is called for config with codex as default
-      const configCall = mockEnsureFile.mock.calls.find((c) => c[0] === "/mock/.jinn/config.yaml");
+      const configCall = mockEnsureFile.mock.calls.find((c) => c[0] === "/mock/.gateway/config.yaml");
       expect(configCall).toBeDefined();
       expect(configCall?.[1]).toContain("codex");
     });
 
     it("selects claude engine when user does not answer 'codex'", async () => {
       mockWhichBin.mockImplementation((bin) => `/usr/local/bin/${bin}`);
-      mockPrompt.mockResolvedValueOnce("Jinn").mockResolvedValueOnce("anything-else");
+      mockPrompt.mockResolvedValueOnce("Gateway").mockResolvedValueOnce("anything-else");
 
       await runSetup();
 
-      const configCall = mockEnsureFile.mock.calls.find((c) => c[0] === "/mock/.jinn/config.yaml");
+      const configCall = mockEnsureFile.mock.calls.find((c) => c[0] === "/mock/.gateway/config.yaml");
       expect(configCall).toBeDefined();
       expect(configCall?.[1]).not.toContain("default: codex");
     });
 
     it("auto-selects single engine and calls ok() when only one engine is installed", async () => {
       mockWhichBin.mockImplementation((bin) => (bin === "claude" ? "/usr/local/bin/claude" : null));
-      mockPrompt.mockResolvedValueOnce("Jinn");
+      mockPrompt.mockResolvedValueOnce("Gateway");
 
       await runSetup();
 
@@ -866,15 +866,15 @@ describe("runSetup", () => {
 
     it("skips engine prompt when no engines are installed", async () => {
       mockWhichBin.mockReturnValue(null);
-      mockPrompt.mockResolvedValueOnce("Jinn");
+      mockPrompt.mockResolvedValueOnce("Gateway");
 
       await runSetup();
 
       expect(mockPrompt).toHaveBeenCalledTimes(1);
     });
 
-    it("uses JINN_INSTANCE env var as default name", async () => {
-      process.env.JINN_INSTANCE = "aria";
+    it("uses GATEWAY_INSTANCE env var as default name", async () => {
+      process.env.GATEWAY_INSTANCE = "aria";
       mockPrompt.mockResolvedValueOnce("Aria");
 
       await runSetup();
@@ -882,18 +882,18 @@ describe("runSetup", () => {
       expect(mockPrompt).toHaveBeenCalledWith("What should your AI assistant be called?", "Aria");
     });
 
-    it("uses 'Jinn' as default name when JINN_INSTANCE is not set", async () => {
-      delete process.env.JINN_INSTANCE;
-      mockPrompt.mockResolvedValueOnce("Jinn");
+    it("uses 'Gateway' as default name when GATEWAY_INSTANCE is not set", async () => {
+      delete process.env.GATEWAY_INSTANCE;
+      mockPrompt.mockResolvedValueOnce("Gateway");
 
       await runSetup();
 
-      expect(mockPrompt).toHaveBeenCalledWith("What should your AI assistant be called?", "Jinn");
+      expect(mockPrompt).toHaveBeenCalledWith("What should your AI assistant be called?", "Gateway");
     });
 
-    it("applies custom name to config when chosenName differs from Jinn (via JINN_INSTANCE)", async () => {
-      // Use JINN_INSTANCE to set a non-Jinn default name without relying on prompt return value
-      process.env.JINN_INSTANCE = "aria";
+    it("applies custom name to config when chosenName differs from Gateway (via GATEWAY_INSTANCE)", async () => {
+      // Use GATEWAY_INSTANCE to set a non-Gateway default name without relying on prompt return value
+      process.env.GATEWAY_INSTANCE = "aria";
       // Only claude found → single engine, only one prompt (name)
       mockWhichBin.mockImplementation((bin) => (bin === "claude" ? "/usr/local/bin/claude" : null));
       // User confirms the name "Aria"
@@ -936,21 +936,21 @@ describe("runSetup", () => {
     it("copies docs, skills, and org template dirs", async () => {
       await runSetup();
 
-      expect(mockCopyTemplateDir).toHaveBeenCalledWith("/mock/template/docs", "/mock/.jinn/docs", expect.any(Object));
+      expect(mockCopyTemplateDir).toHaveBeenCalledWith("/mock/template/docs", "/mock/.gateway/docs", expect.any(Object));
       expect(mockCopyTemplateDir).toHaveBeenCalledWith(
         "/mock/template/skills",
-        "/mock/.jinn/skills",
+        "/mock/.gateway/skills",
         expect.any(Object),
       );
-      expect(mockCopyTemplateDir).toHaveBeenCalledWith("/mock/template/org", "/mock/.jinn/org", expect.any(Object));
+      expect(mockCopyTemplateDir).toHaveBeenCalledWith("/mock/template/org", "/mock/.gateway/org", expect.any(Object));
     });
 
     it("adds copied files to created list", async () => {
-      mockCopyTemplateDir.mockReturnValueOnce(["/mock/.jinn/docs/readme.md"]).mockReturnValue([]);
+      mockCopyTemplateDir.mockReturnValueOnce(["/mock/.gateway/docs/readme.md"]).mockReturnValue([]);
 
       await runSetup();
 
-      expect(mockInfo).toHaveBeenCalledWith("/mock/.jinn/docs/readme.md");
+      expect(mockInfo).toHaveBeenCalledWith("/mock/.gateway/docs/readme.md");
     });
   });
 });

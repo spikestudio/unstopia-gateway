@@ -48,8 +48,8 @@ Update `jinn.version` in `config.yaml` from `"0.7.8"` to `"0.8.0"`.
 ### Other improvements
 - Auto-focus chat input on new chat
 - Chat auto-scroll fix — no longer interrupts history reading
-- `jinn --version` reads from package.json (no more stale version)
-- `jinn migrate` fix for `--cwd` flag on Node.js
+- `gateway --version` reads from package.json (no more stale version)
+- `gateway migrate` fix for `--cwd` flag on Node.js
 - Mobile zoom prevention on input focus
 - Sidebar delete navigation and tab switching fixes
 

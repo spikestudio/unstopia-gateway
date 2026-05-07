@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import { startDaemon, startForeground } from "../gateway/lifecycle.js";
 import { loadConfig } from "../shared/config.js";
-import { JINN_HOME } from "../shared/paths.js";
+import { GATEWAY_HOME } from "../shared/paths.js";
 import { compareSemver, getInstanceVersion, getPackageVersion } from "../shared/version.js";
 
 const YELLOW = "\x1b[33m";
@@ -9,8 +9,8 @@ const DIM = "\x1b[2m";
 const RESET = "\x1b[0m";
 
 export async function runStart(opts: { daemon?: boolean; port?: number }): Promise<void> {
-  if (!fs.existsSync(JINN_HOME)) {
-    console.error(`Error: ${JINN_HOME} does not exist. Run "jinn setup" first.`);
+  if (!fs.existsSync(GATEWAY_HOME)) {
+    console.error(`Error: ${GATEWAY_HOME} does not exist. Run "gateway setup" first.`);
     process.exit(1);
   }
 
@@ -21,7 +21,7 @@ export async function runStart(opts: { daemon?: boolean; port?: number }): Promi
   const pkgVersion = getPackageVersion();
   if (compareSemver(instanceVersion, pkgVersion) < 0) {
     console.log(
-      `${YELLOW}[migrate]${RESET} Instance is at v${instanceVersion}, CLI is v${pkgVersion}. Run ${DIM}jinn migrate${RESET} to update.`,
+      `${YELLOW}[migrate]${RESET} Instance is at v${instanceVersion}, CLI is v${pkgVersion}. Run ${DIM}gateway migrate${RESET} to update.`,
     );
   }
 

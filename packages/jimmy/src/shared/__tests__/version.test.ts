@@ -90,18 +90,18 @@ describe("AC-E003-03: getInstanceVersion", () => {
     expect(getInstanceVersion()).toBe("0.0.0");
   });
 
-  it("returns the version from config.yaml when jinn.version is set", () => {
-    fs.writeFileSync(configPath, "jinn:\n  version: 1.5.0\n", "utf-8");
+  it("returns the version from config.yaml when meta.version is set", () => {
+    fs.writeFileSync(configPath, "meta:\n  version: 1.5.0\n", "utf-8");
     expect(getInstanceVersion()).toBe("1.5.0");
   });
 
-  it("returns '0.0.0' when config.yaml has jinn section but no version key", () => {
-    fs.writeFileSync(configPath, "jinn:\n  name: test\n", "utf-8");
+  it("returns '0.0.0' when config.yaml has meta section but no version key", () => {
+    fs.writeFileSync(configPath, "meta:\n  name: test\n", "utf-8");
     expect(getInstanceVersion()).toBe("0.0.0");
   });
 
-  it("returns '0.0.0' when jinn is not an object (string value)", () => {
-    fs.writeFileSync(configPath, "jinn: just_a_string\n", "utf-8");
+  it("returns '0.0.0' when gateway is not an object (string value)", () => {
+    fs.writeFileSync(configPath, "meta: just_a_string\n", "utf-8");
     expect(getInstanceVersion()).toBe("0.0.0");
   });
 
@@ -111,9 +111,9 @@ describe("AC-E003-03: getInstanceVersion", () => {
     expect(getInstanceVersion()).toBe("0.0.0");
   });
 
-  it("returns '0.0.0' when jinn.version is null (line 32 ?? branch)", () => {
-    // jinn.version が null の場合 → ?? "0.0.0" が使われる
-    fs.writeFileSync(configPath, "jinn:\n  version: null\n", "utf-8");
+  it("returns '0.0.0' when meta.version is null (line 32 ?? branch)", () => {
+    // meta.version が null の場合 → ?? "0.0.0" が使われる
+    fs.writeFileSync(configPath, "meta:\n  version: null\n", "utf-8");
     expect(getInstanceVersion()).toBe("0.0.0");
   });
 });

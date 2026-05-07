@@ -23,7 +23,7 @@ describe("gateway-server: MCP プロトコルハンドリング", () => {
     expect(response.id).toBe(1);
     expect(response.result.protocolVersion).toBe("2024-11-05");
     expect(response.result.capabilities).toEqual({ tools: {} });
-    expect(response.result.serverInfo.name).toBe("jinn-gateway");
+    expect(response.result.serverInfo.name).toBe("unstopia-gateway");
   });
 
   // AC-E027-02: tools/list

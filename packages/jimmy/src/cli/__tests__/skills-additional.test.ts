@@ -28,8 +28,8 @@ vi.mock("node:os", () => ({
 }));
 
 vi.mock("../../shared/paths.js", () => ({
-  JINN_HOME: "/home/user/.jinn",
-  SKILLS_DIR: "/home/user/.jinn/skills",
+  GATEWAY_HOME: "/home/user/.gateway",
+  SKILLS_DIR: "/home/user/.gateway/skills",
 }));
 
 import { spawnSync } from "node:child_process";

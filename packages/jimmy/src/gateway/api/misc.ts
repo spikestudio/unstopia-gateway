@@ -5,7 +5,7 @@ import yaml from "js-yaml";
 import { loadInstances } from "../../cli/instances.js";
 import { initDb, listSessions } from "../../sessions/registry.js";
 import { logger } from "../../shared/logger.js";
-import { CONFIG_PATH, JINN_HOME, LOGS_DIR, ORG_DIR } from "../../shared/paths.js";
+import { CONFIG_PATH, GATEWAY_HOME, LOGS_DIR, ORG_DIR } from "../../shared/paths.js";
 import { handleFilesRequest } from "../files.js";
 import type { ApiContext } from "../types.js";
 import type { OnboardingBody, PutBudgetsBody, PutConfigBody } from "./api-types.js";
@@ -109,9 +109,9 @@ export async function handleMiscRequest(
       return true;
     }
     // Validate known top-level keys
-    // Keep this aligned with `JinnConfig` in src/shared/types.ts
+    // Keep this aligned with `GatewayConfig` in src/shared/types.ts
     const KNOWN_KEYS = [
-      "jinn",
+      "meta",
       "gateway",
       "engines",
       "connectors",
@@ -269,14 +269,14 @@ export async function handleMiscRequest(
     fs.writeFileSync(CONFIG_PATH, yamlStr);
     logger.info(`Onboarding: portal name="${portalName}", operator="${operatorName}", language="${language}"`);
 
-    const effectiveName = portalName || "Jinn";
+    const effectiveName = portalName || "Gateway";
     const languageSection =
       language && language !== "English"
         ? `\n\n## Language\nAlways respond in ${language}. All communication with the user must be in ${language}.`
         : "";
 
     // Update CLAUDE.md with personalized COO name and language
-    const claudeMdPath = path.join(JINN_HOME, "CLAUDE.md");
+    const claudeMdPath = path.join(GATEWAY_HOME, "CLAUDE.md");
     if (fs.existsSync(claudeMdPath)) {
       let claudeMd = fs.readFileSync(claudeMdPath, "utf-8");
       // Replace the identity line in CLAUDE.md
@@ -296,10 +296,10 @@ export async function handleMiscRequest(
     }
 
     // Update AGENTS.md with personalized name and language
-    const agentsMdPath = path.join(JINN_HOME, "AGENTS.md");
+    const agentsMdPath = path.join(GATEWAY_HOME, "AGENTS.md");
     if (fs.existsSync(agentsMdPath)) {
       let agentsMd = fs.readFileSync(agentsMdPath, "utf-8");
-      // Replace the bold identity line (e.g. "You are **Jinn**")
+      // Replace the bold identity line (e.g. "You are **Gateway**")
       agentsMd = agentsMd.replace(/You are \*\*\w+\*\*/, `You are **${effectiveName}**`);
       // Remove existing language section if present, then add new one if needed
       agentsMd = agentsMd.replace(

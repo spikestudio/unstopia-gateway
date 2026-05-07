@@ -1,14 +1,14 @@
 import { describe, expect, it } from "vitest";
-import type { JinnConfig } from "../../shared/types.js";
+import type { GatewayConfig } from "../../shared/types.js";
 import { buildConnectorNames, buildEngines } from "../container.js";
 
-function makeConfig(connectors: JinnConfig["connectors"] = {}): JinnConfig {
+function makeConfig(connectors: GatewayConfig["connectors"] = {}): GatewayConfig {
   return {
     gateway: { port: 7777, host: "0.0.0.0" },
     engines: { default: "claude", claude: { bin: "claude", model: "sonnet" }, codex: { bin: "codex", model: "" } },
     connectors,
     logging: { file: false, stdout: false, level: "info" },
-  } as unknown as JinnConfig;
+  } as unknown as GatewayConfig;
 }
 
 describe("buildEngines", () => {
@@ -34,32 +34,32 @@ describe("buildConnectorNames", () => {
   });
 
   it("slack の appToken と botToken が揃っている場合に slack を含む", () => {
-    const config = makeConfig({ slack: { appToken: "xapp-1", botToken: "xoxb-1" } } as JinnConfig["connectors"]);
+    const config = makeConfig({ slack: { appToken: "xapp-1", botToken: "xoxb-1" } } as GatewayConfig["connectors"]);
     expect(buildConnectorNames(config)).toContain("slack");
   });
 
   it("slack の片方だけの場合は slack を含まない", () => {
-    const config = makeConfig({ slack: { appToken: "xapp-1" } } as JinnConfig["connectors"]);
+    const config = makeConfig({ slack: { appToken: "xapp-1" } } as GatewayConfig["connectors"]);
     expect(buildConnectorNames(config)).not.toContain("slack");
   });
 
   it("discord の botToken がある場合に discord を含む", () => {
-    const config = makeConfig({ discord: { botToken: "tok" } } as JinnConfig["connectors"]);
+    const config = makeConfig({ discord: { botToken: "tok" } } as GatewayConfig["connectors"]);
     expect(buildConnectorNames(config)).toContain("discord");
   });
 
   it("discord の proxyVia がある場合に discord を含む", () => {
-    const config = makeConfig({ discord: { proxyVia: "http://proxy" } } as JinnConfig["connectors"]);
+    const config = makeConfig({ discord: { proxyVia: "http://proxy" } } as GatewayConfig["connectors"]);
     expect(buildConnectorNames(config)).toContain("discord");
   });
 
   it("telegram の botToken がある場合に telegram を含む", () => {
-    const config = makeConfig({ telegram: { botToken: "tel-tok" } } as JinnConfig["connectors"]);
+    const config = makeConfig({ telegram: { botToken: "tel-tok" } } as GatewayConfig["connectors"]);
     expect(buildConnectorNames(config)).toContain("telegram");
   });
 
   it("whatsapp 設定がある場合に whatsapp を含む", () => {
-    const config = makeConfig({ whatsapp: {} } as JinnConfig["connectors"]);
+    const config = makeConfig({ whatsapp: {} } as GatewayConfig["connectors"]);
     expect(buildConnectorNames(config)).toContain("whatsapp");
   });
 
@@ -67,7 +67,7 @@ describe("buildConnectorNames", () => {
     const config = makeConfig({
       slack: { appToken: "xapp-1", botToken: "xoxb-1" },
       telegram: { botToken: "tel-tok" },
-    } as JinnConfig["connectors"]);
+    } as GatewayConfig["connectors"]);
     const names = buildConnectorNames(config);
     expect(names).toContain("slack");
     expect(names).toContain("telegram");

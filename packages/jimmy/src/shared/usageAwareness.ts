@@ -1,13 +1,13 @@
 import fs from "node:fs";
 import path from "node:path";
-import { JINN_HOME } from "./paths.js";
+import { GATEWAY_HOME } from "./paths.js";
 
 interface ClaudeUsageState {
   lastRateLimitAt?: string; // ISO
   lastResetsAt?: string; // ISO
 }
 
-const STATE_PATH = path.join(JINN_HOME, "tmp", "claude-usage.json");
+const STATE_PATH = path.join(GATEWAY_HOME, "tmp", "claude-usage.json");
 
 function ensureStateDir(): void {
   fs.mkdirSync(path.dirname(STATE_PATH), { recursive: true });

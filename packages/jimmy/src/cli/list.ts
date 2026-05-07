@@ -12,11 +12,11 @@ export async function runList(): Promise<void> {
   const instances = loadInstances();
 
   if (instances.length === 0) {
-    console.log('No instances found. Run "jinn setup" to create the default instance.');
+    console.log('No instances found. Run "gateway setup" to create the default instance.');
     return;
   }
 
-  console.log("\nJinn Instances\n");
+  console.log("\nGateway Instances\n");
   console.log(`  ${"Name".padEnd(16)} ${"Port".padEnd(8)} ${"Status".padEnd(12)} Home`);
   console.log(`  ${"─".repeat(16)} ${"─".repeat(8)} ${"─".repeat(12)} ${"─".repeat(30)}`);
 

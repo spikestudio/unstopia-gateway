@@ -12,7 +12,7 @@ export interface AppNotification {
   icon?: string;
 }
 
-const STORAGE_KEY = "jinn-notifications";
+const STORAGE_KEY = "gateway-notifications";
 const MAX_NOTIFICATIONS = 50;
 
 export function loadNotifications(): AppNotification[] {

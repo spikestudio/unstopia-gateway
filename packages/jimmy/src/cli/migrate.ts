@@ -7,7 +7,7 @@ import {
   AGENTS_SKILLS_DIR,
   CLAUDE_SKILLS_DIR,
   CONFIG_PATH,
-  JINN_HOME,
+  GATEWAY_HOME,
   MIGRATIONS_DIR,
   SKILLS_DIR,
   TEMPLATE_DIR,
@@ -56,14 +56,14 @@ function ensureSkillSymlinks(skillName: string): void {
 }
 
 /**
- * Stamp the jinn.version field in config.yaml.
+ * Stamp the meta.version field in config.yaml.
  */
 function stampVersion(version: string): void {
   const raw = fs.readFileSync(CONFIG_PATH, "utf-8");
   const config = yaml.load(raw) as Record<string, unknown>;
 
-  if (!config.jinn || typeof config.jinn !== "object") config.jinn = {};
-  (config.jinn as Record<string, unknown>).version = version;
+  if (!config.gateway || typeof config.gateway !== "object") config.gateway = {};
+  (config.gateway as Record<string, unknown>).version = version;
 
   fs.writeFileSync(CONFIG_PATH, yaml.dump(config, { lineWidth: -1 }), "utf-8");
 }
@@ -85,8 +85,8 @@ function buildMigrateArgs(engine: string, prompt: string): string[] {
 
 export async function runMigrate(opts: { check?: boolean; auto?: boolean }): Promise<void> {
   // Ensure instance exists
-  if (!fs.existsSync(JINN_HOME)) {
-    console.error(`${RED}Error:${RESET} ${JINN_HOME} does not exist. Run "jinn setup" first.`);
+  if (!fs.existsSync(GATEWAY_HOME)) {
+    console.error(`${RED}Error:${RESET} ${GATEWAY_HOME} does not exist. Run "gateway setup" first.`);
     process.exit(1);
   }
 
@@ -127,11 +127,11 @@ export async function runMigrate(opts: { check?: boolean; auto?: boolean }): Pro
 
   // --check: just show what's pending, don't apply
   if (opts.check) {
-    console.log(`Run ${DIM}jinn migrate${RESET} to apply.\n`);
+    console.log(`Run ${DIM}gateway migrate${RESET} to apply.\n`);
     return;
   }
 
-  // Stage migration files into ~/.jinn/migrations/
+  // Stage migration files into ~/.gateway/migrations/
   console.log("Staging migration files...");
   fs.mkdirSync(MIGRATIONS_DIR, { recursive: true });
 
@@ -174,7 +174,7 @@ export async function runMigrate(opts: { check?: boolean; auto?: boolean }): Pro
       `Pending versions: ${pending.join(", ")}`,
       ``,
       `For each version in order, read its MIGRATION.md and apply the changes.`,
-      `After all migrations, update jinn.version in config.yaml to "${packageVersion}".`,
+      `After all migrations, update meta.version in config.yaml to "${packageVersion}".`,
       `Clean up the migrations/ directory when done.`,
     ].join("\n");
 
@@ -183,12 +183,12 @@ export async function runMigrate(opts: { check?: boolean; auto?: boolean }): Pro
 
     execFileSync(engineConfig.bin, args, {
       stdio: "inherit",
-      cwd: JINN_HOME,
+      cwd: GATEWAY_HOME,
     });
 
     console.log(`\n${GREEN}Migration complete.${RESET}\n`);
   } catch {
-    console.error(`\n${RED}Migration failed.${RESET} You can retry with: jinn migrate`);
+    console.error(`\n${RED}Migration failed.${RESET} You can retry with: gateway migrate`);
     console.error(`The staged files are still in ${MIGRATIONS_DIR}\n`);
     process.exit(1);
   }
@@ -213,7 +213,7 @@ async function applyAutoMigrations(pending: string[], instanceVersion: string, p
     // Copy new files (skip files that already exist)
     const newFiles = collectFiles(filesDir, filesDir);
     for (const relPath of newFiles) {
-      const destPath = path.join(JINN_HOME, relPath);
+      const destPath = path.join(GATEWAY_HOME, relPath);
       if (!fs.existsSync(destPath)) {
         fs.mkdirSync(path.dirname(destPath), { recursive: true });
         fs.copyFileSync(path.join(filesDir, relPath), destPath);
@@ -240,7 +240,7 @@ async function applyAutoMigrations(pending: string[], instanceVersion: string, p
   fs.rmSync(MIGRATIONS_DIR, { recursive: true, force: true });
 
   console.log(
-    `\n${DIM}Tip: Run ${RESET}jinn migrate${DIM} (without --auto) to also merge updated files with AI.${RESET}\n`,
+    `\n${DIM}Tip: Run ${RESET}gateway migrate${DIM} (without --auto) to also merge updated files with AI.${RESET}\n`,
   );
 }
 

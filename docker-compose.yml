@@ -1,5 +1,5 @@
 services:
-  jinn:
+  gateway:
     build: .
     ports:
       - "7777:7777"
@@ -7,7 +7,7 @@ services:
       # Persistent data (config, sessions, org, logs...)
       - ./docker/data:/data
       # Mount host claude credentials so auth is shared
-      - ~/.claude:/home/jinn/.claude:ro
+      - ~/.claude:/home/gateway/.claude:ro
     environment:
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
     restart: unless-stopped

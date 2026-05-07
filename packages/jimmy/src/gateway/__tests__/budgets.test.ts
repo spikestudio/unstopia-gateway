@@ -4,9 +4,9 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 // Point initDb to a temp directory so tests don't touch the real database
-const tmpHome = path.join(os.tmpdir(), `jinn-budgets-test-${process.pid}-${Date.now()}`);
+const tmpHome = path.join(os.tmpdir(), `gateway-budgets-test-${process.pid}-${Date.now()}`);
 mkdirSync(path.join(tmpHome, "sessions"), { recursive: true });
-process.env.JINN_HOME = tmpHome;
+process.env.GATEWAY_HOME = tmpHome;
 
 import { initDb } from "../../sessions/registry.js";
 import { checkBudget, getBudgetEvents, getBudgetStatus, overrideBudget, recordBudgetEvent } from "../budgets.js";

@@ -2,14 +2,14 @@ import { logger } from "../../shared/logger.js";
 import type { Connector, ConnectorCapabilities, ConnectorHealth, IncomingMessage, Target } from "../../shared/types.js";
 
 export interface RemoteDiscordConfig {
-  /** URL of the primary Jinn instance that holds the Discord WebSocket connection */
+  /** URL of the primary Gateway instance that holds the Discord WebSocket connection */
   proxyVia: string;
   channelId?: string;
 }
 
 /**
  * A Discord connector that doesn't hold its own WebSocket connection.
- * Instead, it receives messages from the primary Jinn instance via HTTP
+ * Instead, it receives messages from the primary Gateway instance via HTTP
  * and proxies all send/react operations back through the primary.
  */
 export class RemoteDiscordConnector implements Connector {

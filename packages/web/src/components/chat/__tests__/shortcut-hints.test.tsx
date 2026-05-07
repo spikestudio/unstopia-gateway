@@ -20,7 +20,7 @@ vi.mock("@/lib/api", () => ({
 }));
 
 vi.mock("@/app/settings-provider", () => ({
-  useSettings: () => ({ settings: { portalName: "Jinn" } }),
+  useSettings: () => ({ settings: { portalName: "Gateway" } }),
 }));
 
 // Stub Radix context menu to avoid portal issues in tests

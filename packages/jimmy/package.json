@@ -1,11 +1,11 @@
 {
-  "name": "jinn-cli",
+  "name": "unstopia-gateway-cli",
   "version": "0.9.3",
   "description": "Lightweight AI gateway daemon orchestrating Claude Code, Codex, and Gemini CLI",
   "license": "MIT",
   "type": "module",
   "bin": {
-    "jinn": "./dist/bin/jimmy.js"
+    "gateway": "./dist/bin/jimmy.js"
   },
   "main": "./dist/src/index.js",
   "types": "./dist/src/index.d.ts",

@@ -1,30 +1,30 @@
 #!/bin/sh
 set -e
 
-# First-run initialization: populate JINN_HOME with defaults
-if [ ! -f "$JINN_HOME/config.yaml" ]; then
-  echo "[jinn] First run — initializing $JINN_HOME"
+# First-run initialization: populate GATEWAY_HOME with defaults
+if [ ! -f "$GATEWAY_HOME/config.yaml" ]; then
+  echo "[gateway] First run — initializing $GATEWAY_HOME"
 
   mkdir -p \
-    "$JINN_HOME/sessions" \
-    "$JINN_HOME/org" \
-    "$JINN_HOME/logs" \
-    "$JINN_HOME/tmp" \
-    "$JINN_HOME/skills" \
-    "$JINN_HOME/docs" \
-    "$JINN_HOME/files" \
-    "$JINN_HOME/cron/runs" \
-    "$JINN_HOME/.claude/skills" \
-    "$JINN_HOME/.agents/skills"
+    "$GATEWAY_HOME/sessions" \
+    "$GATEWAY_HOME/org" \
+    "$GATEWAY_HOME/logs" \
+    "$GATEWAY_HOME/tmp" \
+    "$GATEWAY_HOME/skills" \
+    "$GATEWAY_HOME/docs" \
+    "$GATEWAY_HOME/files" \
+    "$GATEWAY_HOME/cron/runs" \
+    "$GATEWAY_HOME/.claude/skills" \
+    "$GATEWAY_HOME/.agents/skills"
 
-  cp /app/packages/jimmy/template/config.default.yaml "$JINN_HOME/config.yaml"
-  cp /app/packages/jimmy/template/CLAUDE.md "$JINN_HOME/CLAUDE.md" 2>/dev/null || true
-  cp /app/packages/jimmy/template/AGENTS.md "$JINN_HOME/AGENTS.md" 2>/dev/null || true
+  cp /app/packages/jimmy/template/config.default.yaml "$GATEWAY_HOME/config.yaml"
+  cp /app/packages/jimmy/template/CLAUDE.md "$GATEWAY_HOME/CLAUDE.md" 2>/dev/null || true
+  cp /app/packages/jimmy/template/AGENTS.md "$GATEWAY_HOME/AGENTS.md" 2>/dev/null || true
 
   # Bind to all interfaces so the port is reachable from the host
-  sed -i 's/host: "127.0.0.1"/host: "0.0.0.0"/' "$JINN_HOME/config.yaml"
+  sed -i 's/host: "127.0.0.1"/host: "0.0.0.0"/' "$GATEWAY_HOME/config.yaml"
 
-  echo "[jinn] Done. Edit $JINN_HOME/config.yaml to customize."
+  echo "[gateway] Done. Edit $GATEWAY_HOME/config.yaml to customize."
 fi
 
 # Run pending migrations automatically

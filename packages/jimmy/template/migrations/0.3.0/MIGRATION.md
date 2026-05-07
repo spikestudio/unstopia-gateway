@@ -41,7 +41,7 @@ New columns added to the sessions table (handled automatically on gateway start)
 
 ## Merge instructions
 
-1. **New file**: Copy `files/docs/mcp.md` to `~/.jinn/docs/mcp.md`. This is a new file — no conflict possible.
+1. **New file**: Copy `files/docs/mcp.md` to `~/.gateway/docs/mcp.md`. This is a new file — no conflict possible.
 
 2. **Config**: Add the following sections to `config.yaml` if not already present. Do NOT overwrite existing values — only add missing keys:
    - Add the `mcp:` section (with browser, search, fetch, gateway sub-keys) after `connectors:`

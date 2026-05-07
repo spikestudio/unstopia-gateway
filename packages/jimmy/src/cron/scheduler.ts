@@ -1,18 +1,18 @@
 import cron, { type ScheduledTask } from "node-cron";
 import { logger } from "../shared/logger.js";
-import type { Connector, CronJob, JinnConfig, SessionRouter } from "../shared/types.js";
+import type { Connector, CronJob, GatewayConfig, SessionRouter } from "../shared/types.js";
 import { loadJobs, saveJobs } from "./jobs.js";
 import { runCronJob } from "./runner.js";
 
 let tasks: ScheduledTask[] = [];
 let currentSessionRouter: SessionRouter;
-let currentConfig: JinnConfig;
+let currentConfig: GatewayConfig;
 let currentConnectors: Map<string, Connector>;
 
 export function startScheduler(
   jobs: CronJob[],
   sessionManager: SessionRouter,
-  config: JinnConfig,
+  config: GatewayConfig,
   connectors: Map<string, Connector>,
 ): void {
   currentSessionRouter = sessionManager;

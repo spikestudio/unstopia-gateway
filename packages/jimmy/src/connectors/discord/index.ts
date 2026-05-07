@@ -24,7 +24,7 @@ export interface DiscordConnectorConfig {
   guildId?: string;
   /** Only respond to messages in this channel (right-click channel → Copy Channel ID) */
   channelId?: string;
-  /** Route messages from specific channels to remote Jinn instances */
+  /** Route messages from specific channels to remote Gateway instances */
   channelRouting?: Record<string, string>;
   /** If set, this instance proxies all Discord operations through the primary instance at this URL */
   proxyVia?: string;
@@ -300,7 +300,7 @@ export class DiscordConnector implements Connector {
     this.handler(incomingMessage);
   }
 
-  /** Forward a message to a remote Jinn instance via HTTP */
+  /** Forward a message to a remote Gateway instance via HTTP */
   private async proxyToRemote(remoteUrl: string, message: Message): Promise<void> {
     try {
       const attachments = Array.from(message.attachments.values()).map((att) => ({

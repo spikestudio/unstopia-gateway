@@ -1,6 +1,6 @@
 # Migration: 0.1.0 (Baseline)
 
-This is the initial release of Jinn. No migration steps are needed — fresh installs via `jinn setup` receive everything automatically.
+This is the initial release of Gateway. No migration steps are needed — fresh installs via `gateway setup` receive everything automatically.
 
 ## What's included in the initial template
 

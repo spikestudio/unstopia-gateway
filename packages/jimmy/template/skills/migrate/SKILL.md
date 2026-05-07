@@ -7,11 +7,11 @@ description: Apply pending version migrations to update this {{portalName}} inst
 
 ## Trigger
 
-This skill activates when the user runs `/migrate`, when launched by `jinn migrate`, or when asked to update/upgrade the instance.
+This skill activates when the user runs `/migrate`, when launched by `gateway migrate`, or when asked to update/upgrade the instance.
 
 ## Overview
 
-When a new version of Jinn is released, it may include updated skills, new documentation, improved prompts, or config schema changes. These updates are shipped as **migration folders** in `~/.jinn/migrations/<version>/`. Each folder contains:
+When a new version of Gateway is released, it may include updated skills, new documentation, improved prompts, or config schema changes. These updates are shipped as **migration folders** in `~/.gateway/migrations/<version>/`. Each folder contains:
 
 - `MIGRATION.md` — AI-readable instructions describing exactly what changed
 - `files/` — New or updated files in their correct relative directory structure
@@ -22,11 +22,11 @@ Your job is to apply these migrations **intelligently** — preserving user cust
 
 ### 1. Read Current Version
 
-Read `~/.jinn/config.yaml` and note the `jinn.version` field. If the field is missing, assume `0.0.0`.
+Read `~/.gateway/config.yaml` and note the `meta.version` field. If the field is missing, assume `0.0.0`.
 
 ### 2. List Pending Migrations
 
-List all directories in `~/.jinn/migrations/`. Each directory name is a semver version string (e.g., `0.2.0`, `0.3.0`).
+List all directories in `~/.gateway/migrations/`. Each directory name is a semver version string (e.g., `0.2.0`, `0.3.0`).
 
 Sort them in ascending semver order. Filter to only versions **greater than** the current instance version.
 
@@ -38,7 +38,7 @@ For each pending version, in ascending order:
 
 #### a. Read the Migration Instructions
 
-Read `~/.jinn/migrations/<version>/MIGRATION.md`. This file describes:
+Read `~/.gateway/migrations/<version>/MIGRATION.md`. This file describes:
 - What changed in this version
 - Which files are new (safe to copy directly)
 - Which files were updated (need intelligent merging)
@@ -50,7 +50,7 @@ Read `~/.jinn/migrations/<version>/MIGRATION.md`. This file describes:
 The MIGRATION.md will categorize changes:
 
 **New files** (safe — just copy):
-- Copy from `~/.jinn/migrations/<version>/files/<path>` to `~/.jinn/<path>`
+- Copy from `~/.gateway/migrations/<version>/files/<path>` to `~/.gateway/<path>`
 - These are files that didn't exist before — no conflict possible
 
 **Updated files** (needs merge):
@@ -79,19 +79,19 @@ This ensures the user can always recover if something goes wrong.
 After all migrations are successfully applied, update `config.yaml`:
 
 ```yaml
-jinn:
+meta:
   version: "<final-migrated-version>"
 ```
 
 ### 5. Sync Skill Symlinks
 
 After adding any new skills, ensure their symlinks exist:
-- `~/.jinn/.claude/skills/<skill-name>` → `../../skills/<skill-name>`
-- `~/.jinn/.agents/skills/<skill-name>` → `../../skills/<skill-name>`
+- `~/.gateway/.claude/skills/<skill-name>` → `../../skills/<skill-name>`
+- `~/.gateway/.agents/skills/<skill-name>` → `../../skills/<skill-name>`
 
 ### 6. Clean Up
 
-Remove the applied migration directories from `~/.jinn/migrations/`.
+Remove the applied migration directories from `~/.gateway/migrations/`.
 Keep the backup files — the user can delete them manually later.
 
 ### 7. Report
@@ -107,7 +107,7 @@ Added:
 
 Updated:
 - CLAUDE.md (added new delegation protocol section)
-- config.yaml (added jinn.version field)
+- config.yaml (added meta.version field)
 
 Backups created:
 - CLAUDE.md.pre-0.2.0.bak
@@ -145,7 +145,7 @@ These are the most sensitive files — users heavily customize them. Follow this
 
 - If a migration fails mid-way, **stop**. Do not continue to later versions.
 - Note which version failed and what step failed.
-- The version in config.yaml was NOT updated yet, so re-running `jinn migrate` will retry.
+- The version in config.yaml was NOT updated yet, so re-running `gateway migrate` will retry.
 - If a file conflict cannot be resolved automatically, **ask the user** for guidance.
 - If MIGRATION.md is missing from a version folder, skip that version and warn the user.
 

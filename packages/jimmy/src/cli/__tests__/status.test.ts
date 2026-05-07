@@ -23,8 +23,8 @@ vi.mock("../../shared/config.js", () => ({
 }));
 
 vi.mock("../../shared/paths.js", () => ({
-  JINN_HOME: "/home/user/.jinn",
-  PID_FILE: "/home/user/.jinn/gateway.pid",
+  GATEWAY_HOME: "/home/user/.gateway",
+  PID_FILE: "/home/user/.gateway/gateway.pid",
 }));
 
 import fs from "node:fs";
@@ -45,7 +45,7 @@ describe("runStatus", () => {
     vi.stubGlobal("fetch", undefined);
   });
 
-  it("should output 'not set up' when JINN_HOME does not exist (AC-58)", async () => {
+  it("should output 'not set up' when GATEWAY_HOME does not exist (AC-58)", async () => {
     mockExistsSync.mockReturnValue(false);
     const mockConsoleLog = vi.spyOn(console, "log").mockImplementation(() => {});
 

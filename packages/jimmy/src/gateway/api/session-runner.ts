@@ -5,9 +5,9 @@ import { buildContext } from "../../sessions/context.js";
 import { getMessages, getSession, insertMessage, updateSession } from "../../sessions/registry.js";
 import { resolveEffort } from "../../shared/effort.js";
 import { logger } from "../../shared/logger.js";
-import { JINN_HOME } from "../../shared/paths.js";
+import { GATEWAY_HOME } from "../../shared/paths.js";
 import { detectRateLimit } from "../../shared/rateLimit.js";
-import type { Engine, JinnConfig, JsonObject, Session } from "../../shared/types.js";
+import type { Engine, GatewayConfig, JsonObject, Session } from "../../shared/types.js";
 import { recordClaudeRateLimit } from "../../shared/usageAwareness.js";
 import type { ApiContext } from "../types.js";
 import { defaultFallbackDeps, switchToFallback } from "./session-fallback.js";
@@ -203,7 +203,7 @@ export function dispatchWebSessionRun(
   session: Session,
   prompt: string,
   engine: Engine,
-  config: JinnConfig,
+  config: GatewayConfig,
   context: ApiContext,
   opts?: { delayMs?: number; queueItemId?: string; attachments?: string[] },
 ): void {
@@ -248,7 +248,7 @@ export async function runWebSession(
   session: Session,
   prompt: string,
   engine: Engine,
-  config: JinnConfig,
+  config: GatewayConfig,
   context: ApiContext,
   attachments?: string[],
 ): Promise<void> {
@@ -329,7 +329,7 @@ export async function runWebSession(
         prompt: promptToRun,
         resumeSessionId: currentSession.engineSessionId ?? undefined,
         systemPrompt,
-        cwd: JINN_HOME,
+        cwd: GATEWAY_HOME,
         bin: engineConfig.bin,
         model: currentSession.model ?? engineConfig.model,
         effortLevel,
@@ -442,7 +442,7 @@ export async function runWebSession(
 
     context.emit("session:completed", {
       sessionId: currentSession.id,
-      employee: currentSession.employee || config.portal?.portalName || "Jinn",
+      employee: currentSession.employee || config.portal?.portalName || "Gateway",
       title: currentSession.title,
       result: result.result,
       error: result.error || null,

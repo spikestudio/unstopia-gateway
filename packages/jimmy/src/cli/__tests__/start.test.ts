@@ -23,7 +23,7 @@ vi.mock("../../shared/config.js", () => ({
 }));
 
 vi.mock("../../shared/paths.js", () => ({
-  JINN_HOME: "/home/user/.jinn",
+  GATEWAY_HOME: "/home/user/.gateway",
 }));
 
 vi.mock("../../shared/version.js", () => ({
@@ -53,7 +53,7 @@ describe("runStart", () => {
     mockGetPackageVersion.mockReturnValue("1.0.0");
   });
 
-  it("should call process.exit when JINN_HOME does not exist (AC-52)", async () => {
+  it("should call process.exit when GATEWAY_HOME does not exist (AC-52)", async () => {
     mockExistsSync.mockReturnValue(false);
 
     const mockExit = vi.spyOn(process, "exit").mockImplementation(() => {

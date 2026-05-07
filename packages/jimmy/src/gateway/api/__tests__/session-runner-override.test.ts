@@ -22,7 +22,7 @@ vi.mock("../session-rate-limit.js", () => ({
 }));
 vi.mock("../../../sessions/context.js", () => ({ buildContext: vi.fn().mockReturnValue("sys") }));
 vi.mock("../../../shared/effort.js", () => ({ resolveEffort: vi.fn().mockReturnValue("medium") }));
-vi.mock("../../../shared/paths.js", () => ({ JINN_HOME: "/mock/jinn" }));
+vi.mock("../../../shared/paths.js", () => ({ GATEWAY_HOME: "/mock/gateway" }));
 vi.mock("../../../shared/usageAwareness.js", () => ({ recordClaudeRateLimit: vi.fn() }));
 vi.mock("../../../shared/rateLimit.js", () => ({ detectRateLimit: vi.fn().mockReturnValue({ limited: false }) }));
 

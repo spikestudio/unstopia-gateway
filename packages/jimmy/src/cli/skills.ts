@@ -2,7 +2,7 @@ import { spawnSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { JINN_HOME, SKILLS_DIR } from "../shared/paths.js";
+import { GATEWAY_HOME, SKILLS_DIR } from "../shared/paths.js";
 
 const GREEN = "\x1b[32m";
 const YELLOW = "\x1b[33m";
@@ -10,7 +10,7 @@ const RED = "\x1b[31m";
 const DIM = "\x1b[2m";
 const RESET = "\x1b[0m";
 
-export const SKILLS_JSON = path.join(JINN_HOME, "skills.json");
+export const SKILLS_JSON = path.join(GATEWAY_HOME, "skills.json");
 
 /** Well-known directories where `npx skills add -g` may install skills. */
 const GLOBAL_SKILL_DIRS = [

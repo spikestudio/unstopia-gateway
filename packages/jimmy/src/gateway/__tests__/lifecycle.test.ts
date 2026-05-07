@@ -25,8 +25,8 @@ vi.mock("../../shared/logger.js", () => ({
 }));
 
 vi.mock("../../shared/paths.js", () => ({
-  JINN_HOME: "/fake/jinn",
-  PID_FILE: "/fake/jinn/gateway.pid",
+  GATEWAY_HOME: "/fake/gateway",
+  PID_FILE: "/fake/gateway/gateway.pid",
 }));
 
 vi.mock("../../shared/config.js", () => ({
@@ -71,7 +71,7 @@ afterEach(() => {
 describe("stop()", () => {
   describe("PID file exists and process is alive", () => {
     beforeEach(() => {
-      fsMock.existsSync.mockImplementation((p: string) => p === "/fake/jinn/gateway.pid");
+      fsMock.existsSync.mockImplementation((p: string) => p === "/fake/gateway/gateway.pid");
       fsMock.readFileSync.mockReturnValue("1234");
       process.kill = vi.fn() as unknown as typeof process.kill;
     });
@@ -79,14 +79,14 @@ describe("stop()", () => {
     it("should send SIGTERM and return true", () => {
       const result = stop();
       expect(process.kill).toHaveBeenCalledWith(1234, "SIGTERM");
-      expect(fsMock.unlinkSync).toHaveBeenCalledWith("/fake/jinn/gateway.pid");
+      expect(fsMock.unlinkSync).toHaveBeenCalledWith("/fake/gateway/gateway.pid");
       expect(result).toBe(true);
     });
   });
 
   describe("PID file exists but process is stale (ESRCH)", () => {
     beforeEach(() => {
-      fsMock.existsSync.mockImplementation((p: string) => p === "/fake/jinn/gateway.pid");
+      fsMock.existsSync.mockImplementation((p: string) => p === "/fake/gateway/gateway.pid");
       fsMock.readFileSync.mockReturnValue("5678");
       process.kill = vi.fn().mockImplementation(() => {
         const err = new Error("ESRCH") as NodeJS.ErrnoException;
@@ -102,14 +102,14 @@ describe("stop()", () => {
       fakeLoadConfig.mockReturnValue({ gateway: { port: 7777 } });
 
       const result = stop();
-      expect(fsMock.unlinkSync).toHaveBeenCalledWith("/fake/jinn/gateway.pid");
+      expect(fsMock.unlinkSync).toHaveBeenCalledWith("/fake/gateway/gateway.pid");
       expect(result).toBe(false);
     });
   });
 
   describe("PID file exists but kill throws non-ESRCH error", () => {
     beforeEach(() => {
-      fsMock.existsSync.mockImplementation((p: string) => p === "/fake/jinn/gateway.pid");
+      fsMock.existsSync.mockImplementation((p: string) => p === "/fake/gateway/gateway.pid");
       fsMock.readFileSync.mockReturnValue("9000");
       process.kill = vi.fn().mockImplementation(() => {
         const err = new Error("EPERM") as NodeJS.ErrnoException;
@@ -214,7 +214,7 @@ describe("getStatus()", () => {
 
   describe("PID file exists and process is alive", () => {
     it("should return running=true with the PID from file", () => {
-      fsMock.existsSync.mockImplementation((p: string) => p === "/fake/jinn/gateway.pid");
+      fsMock.existsSync.mockImplementation((p: string) => p === "/fake/gateway/gateway.pid");
       fsMock.readFileSync.mockReturnValue("2222");
       process.kill = vi.fn() as unknown as typeof process.kill;
 
@@ -226,7 +226,7 @@ describe("getStatus()", () => {
 
   describe("PID file exists but process is dead — port has process", () => {
     it("should return running=true with the port PID", () => {
-      fsMock.existsSync.mockImplementation((p: string) => p === "/fake/jinn/gateway.pid");
+      fsMock.existsSync.mockImplementation((p: string) => p === "/fake/gateway/gateway.pid");
       fsMock.readFileSync.mockReturnValue("3333");
       process.kill = vi.fn().mockImplementation(() => {
         const err = new Error("ESRCH") as NodeJS.ErrnoException;
@@ -244,7 +244,7 @@ describe("getStatus()", () => {
 
   describe("PID file exists but process is dead — port has nothing", () => {
     it("should return running=false", () => {
-      fsMock.existsSync.mockImplementation((p: string) => p === "/fake/jinn/gateway.pid");
+      fsMock.existsSync.mockImplementation((p: string) => p === "/fake/gateway/gateway.pid");
       fsMock.readFileSync.mockReturnValue("3333");
       process.kill = vi.fn().mockImplementation(() => {
         const err = new Error("ESRCH") as NodeJS.ErrnoException;
@@ -303,7 +303,7 @@ describe("startDaemon()", () => {
       [],
       expect.objectContaining({ detached: true, stdio: "ignore" }),
     );
-    expect(fsMock.writeFileSync).toHaveBeenCalledWith("/fake/jinn/gateway.pid", "9999");
+    expect(fsMock.writeFileSync).toHaveBeenCalledWith("/fake/gateway/gateway.pid", "9999");
     expect(mockChild.disconnect).toHaveBeenCalled();
     expect(mockChild.unref).toHaveBeenCalled();
   });

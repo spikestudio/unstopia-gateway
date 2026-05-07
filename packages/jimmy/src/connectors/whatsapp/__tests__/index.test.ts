@@ -60,7 +60,7 @@ vi.mock("../../../shared/logger.js", () => ({
 }));
 
 vi.mock("../../../shared/paths.js", () => ({
-  JINN_HOME: "/tmp/jinn-test",
+  GATEWAY_HOME: "/tmp/gateway-test",
 }));
 
 vi.mock("node:fs", () => ({

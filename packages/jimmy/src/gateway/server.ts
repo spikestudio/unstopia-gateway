@@ -26,7 +26,7 @@ import { configureLogger, logger } from "../shared/logger.js";
 import {
   type Connector,
   isInterruptibleEngine,
-  type JinnConfig,
+  type GatewayConfig,
   type SlackConnectorConfig,
   type TelegramConnectorConfig,
   type WhatsAppConnectorConfig,
@@ -98,7 +98,7 @@ function serveStatic(req: http.IncomingMessage, res: http.ServerResponse, webDir
 
 export type GatewayCleanup = () => Promise<void>;
 
-export async function startGateway(config: JinnConfig): Promise<GatewayCleanup> {
+export async function startGateway(config: GatewayConfig): Promise<GatewayCleanup> {
   const bootId = randomUUID().slice(0, 8);
 
   // Configure logging
@@ -108,7 +108,7 @@ export async function startGateway(config: JinnConfig): Promise<GatewayCleanup> 
     file: config.logging.file,
   });
 
-  const gatewayName = config.portal?.portalName || "Jinn";
+  const gatewayName = config.portal?.portalName || "Gateway";
   logger.info(`Starting ${gatewayName} gateway (boot ${bootId}, pid ${process.pid})...`);
 
   // Initialize database and recover any sessions stuck from a previous run

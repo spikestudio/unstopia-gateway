@@ -76,7 +76,7 @@ describe("migrate: additional AC tests", () => {
     const { runMigrate } = await import("../migrate.js");
     // Supply config.yaml content for stampVersion to parse
     vi.mocked(fs.readFileSync).mockReturnValue(
-      'jinn:\n  version: "1.0.0"\n' as unknown as ReturnType<typeof fs.readFileSync>,
+      'meta:\n  version: "1.0.0"\n' as unknown as ReturnType<typeof fs.readFileSync>,
     );
 
     await runMigrate({});
@@ -125,12 +125,12 @@ describe("migrate: additional AC tests", () => {
     await runMigrate({ check: true });
 
     const calls = vi.mocked(console.log).mock.calls.map((c) => c.join(" "));
-    expect(calls.some((c) => c.includes("Pending migrations") || c.includes("jinn migrate"))).toBe(true);
+    expect(calls.some((c) => c.includes("Pending migrations") || c.includes("gateway migrate"))).toBe(true);
     // execFileSync should not have been called
     expect(mockExecFileSync).not.toHaveBeenCalled();
   });
 
-  it("should exit(1) and not run AI session when JINN_HOME does not exist", async () => {
+  it("should exit(1) and not run AI session when GATEWAY_HOME does not exist", async () => {
     mockExistsSync.mockReturnValue(false);
 
     const { runMigrate } = await import("../migrate.js");
@@ -141,8 +141,8 @@ describe("migrate: additional AC tests", () => {
   it("should copy migrate skill when migrateSkillSrc exists and dest does not", async () => {
     mockExistsSync.mockImplementation((p: unknown) => {
       const ps = String(p);
-      // JINN_HOME exists
-      if (ps === "/fake/.jinn") return true;
+      // GATEWAY_HOME exists
+      if (ps === "/fake/.gateway") return true;
       // migrateSkillSrc: template/skills/migrate — exists
       if (ps.includes("skills/migrate") && ps.includes("template")) return true;
       // migrateSkillDest: skills/migrate in instance — does NOT exist
@@ -154,7 +154,7 @@ describe("migrate: additional AC tests", () => {
     });
 
     vi.mocked(fs.readFileSync).mockReturnValue(
-      'jinn:\n  version: "1.0.0"\n' as unknown as ReturnType<typeof fs.readFileSync>,
+      'meta:\n  version: "1.0.0"\n' as unknown as ReturnType<typeof fs.readFileSync>,
     );
 
     vi.spyOn(console, "log").mockImplementation(() => {});
@@ -170,7 +170,7 @@ describe("migrate: additional AC tests", () => {
   it("should log AI engine bin and run execFileSync for default AI flow", async () => {
     vi.spyOn(console, "log").mockImplementation(() => {});
     vi.mocked(fs.readFileSync).mockReturnValue(
-      'jinn:\n  version: "1.0.0"\n' as unknown as ReturnType<typeof fs.readFileSync>,
+      'meta:\n  version: "1.0.0"\n' as unknown as ReturnType<typeof fs.readFileSync>,
     );
     mockExecFileSync.mockImplementation(() => undefined as never);
 
@@ -184,7 +184,7 @@ describe("migrate: additional AC tests", () => {
     vi.spyOn(console, "log").mockImplementation(() => {});
     vi.spyOn(console, "error").mockImplementation(() => {});
     vi.mocked(fs.readFileSync).mockReturnValue(
-      'jinn:\n  version: "1.0.0"\n' as unknown as ReturnType<typeof fs.readFileSync>,
+      'meta:\n  version: "1.0.0"\n' as unknown as ReturnType<typeof fs.readFileSync>,
     );
     mockExecFileSync.mockImplementation(() => {
       throw new Error("engine crashed");
@@ -204,14 +204,14 @@ describe("migrate: applyAutoMigrations branch coverage", () => {
     mockGetPendingMigrations.mockReturnValue(["1.1.0"]);
     vi.spyOn(console, "log").mockImplementation(() => {});
     vi.mocked(fs.readFileSync).mockReturnValue(
-      'jinn:\n  version: "1.0.0"\n' as unknown as ReturnType<typeof fs.readFileSync>,
+      'meta:\n  version: "1.0.0"\n' as unknown as ReturnType<typeof fs.readFileSync>,
     );
   });
 
   it("logs 'no files to auto-apply' when filesDir does not exist", async () => {
     mockExistsSync.mockImplementation((p: unknown) => {
       const ps = String(p);
-      // JINN_HOME exists, but filesDir does not
+      // GATEWAY_HOME exists, but filesDir does not
       if (ps.includes("files")) return false;
       return true;
     });
@@ -225,14 +225,14 @@ describe("migrate: applyAutoMigrations branch coverage", () => {
   });
 
   it("copies new file and logs [new] when dest does not exist", async () => {
-    // filesDir must exist; dest file must NOT exist; JINN_HOME must exist
+    // filesDir must exist; dest file must NOT exist; GATEWAY_HOME must exist
     mockExistsSync.mockImplementation((p: unknown) => {
       const ps = String(p);
-      // The dest file path contains ".jinn" and the file name — return false (new)
+      // The dest file path contains ".gateway" and the file name — return false (new)
       if (ps.includes("some-file.yaml")) return false;
       // filesDir contains "files"
       if (ps.includes("files")) return true;
-      // JINN_HOME and its parent always exist
+      // GATEWAY_HOME and its parent always exist
       return true;
     });
 
@@ -265,8 +265,8 @@ describe("migrate: applyAutoMigrations branch coverage", () => {
       const ps = String(p);
       // filesDir exists
       if (ps.includes("files")) return true;
-      // JINN_HOME
-      if (ps.endsWith(".jinn")) return true;
+      // GATEWAY_HOME
+      if (ps.endsWith(".gateway")) return true;
       // symlink target — does not exist
       if (ps.includes("claude") || ps.includes("agents")) return false;
       // dest path for the skill file — does not exist (new)
@@ -340,12 +340,12 @@ describe("migrate: pending list and MIGRATION.md presence branches", () => {
     mockGetPendingMigrations.mockReturnValue(["1.1.0"]);
     vi.spyOn(console, "log").mockImplementation(() => {});
     vi.mocked(fs.readFileSync).mockReturnValue(
-      'jinn:\n  version: "1.0.0"\n' as unknown as ReturnType<typeof fs.readFileSync>,
+      'meta:\n  version: "1.0.0"\n' as unknown as ReturnType<typeof fs.readFileSync>,
     );
   });
 
   it("logs pending migration with MIGRATION.md present (hasMd=true branch)", async () => {
-    // existsSync: JINN_HOME true, MIGRATION.md true → hasMd=true branch (empty string in log)
+    // existsSync: GATEWAY_HOME true, MIGRATION.md true → hasMd=true branch (empty string in log)
     mockExistsSync.mockReturnValue(true);
     mockReaddirSync.mockReturnValue([]);
     vi.mocked(mockExecFileSync).mockImplementation(() => undefined as never);
@@ -359,7 +359,7 @@ describe("migrate: pending list and MIGRATION.md presence branches", () => {
   });
 
   it("logs pending migration with MIGRATION.md missing (hasMd=false branch)", async () => {
-    // existsSync: JINN_HOME true, but MIGRATION.md false → shows "(missing MIGRATION.md)"
+    // existsSync: GATEWAY_HOME true, but MIGRATION.md false → shows "(missing MIGRATION.md)"
     mockExistsSync.mockImplementation((p: unknown) => {
       const ps = String(p);
       if (ps.includes("MIGRATION.md")) return false;

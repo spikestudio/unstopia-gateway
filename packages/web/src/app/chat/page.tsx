@@ -21,7 +21,7 @@ import { cn } from "@/lib/utils";
 function getOnboardingPrompt(portalName: string, userMessage: string) {
   return `This is your first time being activated. The user just set up ${portalName} and opened the web dashboard for the first time.
 
-Read your CLAUDE.md instructions and the onboarding skill at ~/.jinn/skills/onboarding/SKILL.md, then follow the onboarding flow:
+Read your CLAUDE.md instructions and the onboarding skill at ~/.gateway/skills/onboarding/SKILL.md, then follow the onboarding flow:
 - Greet the user warmly and introduce yourself as ${portalName}
 - Briefly explain what you can do (manage cron jobs, hire AI employees, connect to Slack, etc.)
 - Ask the user what they'd like to set up first
@@ -82,7 +82,7 @@ export default function ChatPageWrapper() {
 
 function ChatPage() {
   const { settings } = useSettings();
-  const portalName = settings.portalName ?? "Jinn";
+  const portalName = settings.portalName ?? "Gateway";
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [mobileView, setMobileView] = useState<"sidebar" | "chat">("sidebar");
   const [sessionMeta, setSessionMeta] = useState<{
@@ -100,7 +100,7 @@ function ChatPage() {
   const newChatIntentRef = useRef(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
     if (typeof window !== "undefined") {
-      return localStorage.getItem("jinn-chat-sidebar-collapsed") === "true";
+      return localStorage.getItem("gateway-chat-sidebar-collapsed") === "true";
     }
     return false;
   });
@@ -112,7 +112,7 @@ function ChatPage() {
     } else {
       setSidebarCollapsed((prev) => {
         const next = !prev;
-        localStorage.setItem("jinn-chat-sidebar-collapsed", String(next));
+        localStorage.setItem("gateway-chat-sidebar-collapsed", String(next));
         return next;
       });
     }

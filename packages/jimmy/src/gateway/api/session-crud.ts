@@ -18,7 +18,7 @@ import {
   type updateSession,
 } from "../../sessions/registry.js";
 import { logger } from "../../shared/logger.js";
-import { JINN_HOME } from "../../shared/paths.js";
+import { GATEWAY_HOME } from "../../shared/paths.js";
 import type { JsonObject } from "../../shared/types.js";
 import { isInterruptibleEngine } from "../../shared/types.js";
 import type { ApiContext } from "../types.js";
@@ -215,7 +215,7 @@ export async function duplicateSessionHandler(
     const { session: newSession, messageCount } = deps.duplicateSession(sessionId);
     newSessionId = newSession.id;
 
-    const forkResult = deps.forkEngineSession(source.engine, source.engineSessionId, JINN_HOME);
+    const forkResult = deps.forkEngineSession(source.engine, source.engineSessionId, GATEWAY_HOME);
     deps.updateSession(newSession.id, { engineSessionId: forkResult.engineSessionId });
 
     const result = unwrapSession(deps.getSession(newSession.id));

@@ -1,7 +1,7 @@
 (() => {
   var t;
   try {
-    t = localStorage.getItem("jinn-theme") || "dark";
+    t = localStorage.getItem("gateway-theme") || "dark";
     if (t === "system") {
       t = window.matchMedia("(prefers-color-scheme:dark)").matches ? "dark" : "light";
     }
