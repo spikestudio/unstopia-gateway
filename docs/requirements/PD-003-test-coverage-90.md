@@ -38,7 +38,7 @@
 ### 成功基準
 
 - [x] branch カバレッジが全体で 80% 以上に到達する（unit test 上限）
-- [ ] 優先対象モジュール（mcp / stt / cli / gateway/api / gateway / sessions / engines）がそれぞれ 90% 以上を達成する
+- [~] 優先対象モジュール（mcp / stt / cli / gateway/api / gateway / sessions / engines）がそれぞれ 90% 以上を達成する（見送り: unit test 上限が 80% 全体であることが判明し、Phase 3 目標を 80% 全体に下方修正。個別モジュール 90% は Phase 4 以降で検討）
 
 ### 参照ドキュメント
 
