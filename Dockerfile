@@ -30,7 +30,13 @@ COPY --from=builder /app/package.json ./
 COPY docker/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
+# Run as non-root (Docker security best practice; claude requires non-root execution)
+RUN groupadd --gid 1001 jinn && useradd --uid 1001 --gid 1001 --create-home jinn
+RUN mkdir -p /data && chown jinn:jinn /data
+USER jinn
+
 ENV JINN_HOME=/data
+ENV HOME=/home/jinn
 ENV NODE_ENV=production
 
 VOLUME ["/data"]
