@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { Connector, CronJob, Employee, JinnConfig, SessionRouter } from "../../shared/types.js";
+import type { Connector, CronJob, Employee, GatewayConfig, SessionRouter } from "../../shared/types.js";
 
 // モックを import より前に宣言
 vi.mock("../jobs.js", () => ({
@@ -38,13 +38,13 @@ function makeSessionRouter(routeResult?: { sessionId: string }): SessionRouter {
   };
 }
 
-// 最小限の JinnConfig
-// NOTE: `as unknown as JinnConfig` は JinnConfig の必須フィールドを全て列挙せずに
+// 最小限の GatewayConfig
+// NOTE: `as unknown as GatewayConfig` は GatewayConfig の必須フィールドを全て列挙せずに
 // テスト用の部分的なオブジェクトを渡すための型キャスト。runCronJob が参照する
 // フィールド（gateway.port, cron, portal.portalName, engines.default 等）のみを
 // 定義し、テストに不要なフィールドは省略している。
 // overrides で特定フィールドを上書きする際も同じ理由でキャストが必要になる。
-function makeConfig(overrides: Partial<JinnConfig> = {}): JinnConfig {
+function makeConfig(overrides: Partial<GatewayConfig> = {}): GatewayConfig {
   return {
     gateway: { port: 7777, host: "0.0.0.0" },
     engines: {
@@ -54,9 +54,9 @@ function makeConfig(overrides: Partial<JinnConfig> = {}): JinnConfig {
     },
     connectors: {},
     logging: { file: false, stdout: true, level: "info" },
-    portal: { portalName: "jinn" },
+    portal: { portalName: "gateway" },
     ...overrides,
-  } as unknown as JinnConfig;
+  } as unknown as GatewayConfig;
 }
 
 // 最小限の CronJob
@@ -293,13 +293,13 @@ describe("AC-E003-03: runCronJob", () => {
   });
 
   describe("AC-E003-03: cooSlug フォールバック分岐", () => {
-    it("portal.portalName がない場合 cooSlug は 'jinn' になる", async () => {
+    it("portal.portalName がない場合 cooSlug は 'gateway' になる", async () => {
       const job = makeJob({
         delivery: { connector: "slack", channel: "#results" },
         employee: "alice",
       });
       const sessionManager = makeSessionRouter();
-      // portal なしの config → cooSlug = "jinn"、alice !== "jinn" なので debug ログ分岐に入る
+      // portal なしの config → cooSlug = "gateway"、alice !== "gateway" なので debug ログ分岐に入る
       const config = makeConfig({ portal: undefined } as never);
       const connectors = new Map<string, Connector>();
 

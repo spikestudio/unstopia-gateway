@@ -17,14 +17,14 @@ import {
   type updateSession,
 } from "../../sessions/registry.js";
 import { logger } from "../../shared/logger.js";
-import { JINN_HOME } from "../../shared/paths.js";
+import { GATEWAY_HOME } from "../../shared/paths.js";
 import {
   computeNextRetryDelayMs,
   computeRateLimitDeadlineMs,
   detectRateLimit as defaultDetectRateLimit,
   type detectRateLimit,
 } from "../../shared/rateLimit.js";
-import type { Employee, Engine, JinnConfig, Session } from "../../shared/types.js";
+import type { Employee, Engine, GatewayConfig, Session } from "../../shared/types.js";
 import { recordClaudeRateLimit } from "../../shared/usageAwareness.js";
 import type { ApiContext } from "../types.js";
 
@@ -129,7 +129,7 @@ export async function retryUntilDeadline(
   initialDelayMs: number,
   engine: Engine,
   runParams: RetryRunParams,
-  config: JinnConfig,
+  config: GatewayConfig,
   context: ApiContext,
 ): Promise<void> {
   const heartbeat = setInterval(() => {
@@ -157,7 +157,7 @@ export async function retryUntilDeadline(
         prompt: runParams.prompt,
         resumeSessionId: current.engineSessionId ?? undefined,
         systemPrompt: runParams.systemPrompt,
-        cwd: JINN_HOME,
+        cwd: GATEWAY_HOME,
         bin: runParams.engineConfig.bin,
         model: current.model ?? runParams.engineConfig.model,
         effortLevel: runParams.effortLevel,
@@ -223,7 +223,7 @@ export async function retryUntilDeadline(
 
       context.emit("session:completed", {
         sessionId: session.id,
-        employee: session.employee || config.portal?.portalName || "Jinn",
+        employee: session.employee || config.portal?.portalName || "Gateway",
         title: session.title,
         result: retryResult.result,
         error: retryResult.error || null,

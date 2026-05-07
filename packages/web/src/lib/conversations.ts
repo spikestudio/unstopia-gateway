@@ -1,5 +1,5 @@
 /**
- * Conversation storage and utility functions for the Jinn chat.
+ * Conversation storage and utility functions for the Gateway chat.
  * Conversations are keyed by sessionId (not agentId).
  */
 
@@ -36,7 +36,7 @@ export interface Conversation {
 
 export type ConversationStore = Record<string, Conversation>;
 
-const STORAGE_KEY = "jinn-conversations";
+const STORAGE_KEY = "gateway-conversations";
 
 export function loadConversations(): ConversationStore {
   if (typeof window === "undefined") return {};
@@ -78,7 +78,7 @@ export function addMessage(store: ConversationStore, sessionId: string, msg: Mes
  */
 // --- Intermediate message persistence (localStorage) ---
 
-const INTERMEDIATE_PREFIX = "jinn-intermediate-";
+const INTERMEDIATE_PREFIX = "gateway-intermediate-";
 
 export function saveIntermediateMessages(sessionId: string, messages: Message[]): void {
   if (typeof window === "undefined") return;

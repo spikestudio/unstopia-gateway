@@ -71,7 +71,7 @@ tasks:
       - pnpm status
 
   setup:
-    desc: 初回セットアップ（ビルド + jinn setup）
+    desc: 初回セットアップ（ビルド + gateway setup）
     cmds:
       - pnpm setup
 

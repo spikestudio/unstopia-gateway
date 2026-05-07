@@ -33,7 +33,7 @@
 
 **機能面（AC-ID 参照）:**
 
-- [ ] AC-E029-42: `runRemove("jinn", {})` を呼び出すと `console.error` で保護エラーが出力され `process.exit(1)` が呼ばれること
+- [ ] AC-E029-42: `runRemove("gateway", {})` を呼び出すと `console.error` で保護エラーが出力され `process.exit(1)` が呼ばれること
 - [ ] AC-E029-43: `runRemove("nonexistent", {})` を呼び出すと `console.error` で未発見エラーが出力され `process.exit(1)` が呼ばれること
 - [ ] AC-E029-44: `runRemove("atlas", {})` を呼び出し PID ファイルが存在し `process.kill(pid, 0)` が成功するとき、`console.error` で実行中エラーが出力され `process.exit(1)` が呼ばれること
 - [ ] AC-E029-45: `runRemove("atlas", {})` を呼び出しバリデーションが全て通るとき、インスタンスがレジストリから削除され成功メッセージが `console.log` で出力されること

@@ -8,8 +8,8 @@ const DIM = "\x1b[2m";
 const RESET = "\x1b[0m";
 
 export async function runRemove(name: string, opts: { force?: boolean }): Promise<void> {
-  if (name === "jinn") {
-    console.error(`${RED}Error:${RESET} Cannot remove the default "jinn" instance.`);
+  if (name === "gateway") {
+    console.error(`${RED}Error:${RESET} Cannot remove the default "gateway" instance.`);
     process.exit(1);
   }
 
@@ -30,7 +30,7 @@ export async function runRemove(name: string, opts: { force?: boolean }): Promis
       const pid = parseInt(fs.readFileSync(pidFile, "utf-8").trim(), 10);
       process.kill(pid, 0);
       console.error(
-        `${RED}Error:${RESET} Instance "${name}" is still running. Stop it first with: jinn -i ${name} stop`,
+        `${RED}Error:${RESET} Instance "${name}" is still running. Stop it first with: gateway -i ${name} stop`,
       );
       process.exit(1);
     } catch {

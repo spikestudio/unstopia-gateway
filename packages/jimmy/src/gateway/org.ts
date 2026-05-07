@@ -136,7 +136,7 @@ export function extractMention(text: string, registry: Map<string, Employee>): E
 }
 
 /**
- * Extract ALL mentioned employees from text (e.g. "@jinn-dev @jinn-qa do X").
+ * Extract ALL mentioned employees from text (e.g. "@gateway-dev @gateway-qa do X").
  * Returns an array of matched employees (can be empty).
  */
 export function extractMentions(text: string, registry: Map<string, Employee>): Employee[] {

@@ -34,7 +34,7 @@
 **機能面（AC-ID 参照）:**
 
 - [ ] AC-E029-47: `runNuke()` を呼び出し削除可能なインスタンスが0件のとき、"No removable instances" を含むメッセージが `console.log` で出力されること
-- [ ] AC-E029-48: `runNuke("jinn")` を呼び出すと `console.error` で保護エラーが出力され `process.exit(1)` が呼ばれること
+- [ ] AC-E029-48: `runNuke("gateway")` を呼び出すと `console.error` で保護エラーが出力され `process.exit(1)` が呼ばれること
 - [ ] AC-E029-49: `runNuke("nonexistent")` を呼び出すと `console.error` で未発見エラーが出力され `process.exit(1)` が呼ばれること
 - [ ] AC-E029-50: `runNuke("atlas")` を呼び出し `readline` モックで確認文字列が一致するとき、インスタンスがレジストリから削除され `fs.rmSync` で削除されること
 - [ ] AC-E029-51: `runNuke("atlas")` を呼び出し `readline` モックで確認文字列が不一致のとき、"Aborted" メッセージが `console.log` で出力され削除が行われないこと

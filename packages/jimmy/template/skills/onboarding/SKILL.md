@@ -29,7 +29,7 @@ Ask the following (all at once, not one by one):
 
 After the user responds, write the answers to the appropriate knowledge files:
 
-**`~/.jinn/knowledge/user-profile.md`**:
+**`~/.gateway/knowledge/user-profile.md`**:
 ```markdown
 # User Profile
 
@@ -39,7 +39,7 @@ After the user responds, write the answers to the appropriate knowledge files:
 - **Goals**: [what they want {{portalName}} to help with]
 ```
 
-**`~/.jinn/knowledge/preferences.md`**:
+**`~/.gateway/knowledge/preferences.md`**:
 ```markdown
 # Preferences
 
@@ -49,7 +49,7 @@ After the user responds, write the answers to the appropriate knowledge files:
 - **Other**: [any other preferences mentioned]
 ```
 
-**`~/.jinn/knowledge/projects.md`**:
+**`~/.gateway/knowledge/projects.md`**:
 ```markdown
 # Active Projects
 
@@ -101,6 +101,6 @@ Summarize what was set up and suggest next steps:
 
 ## Error Handling
 
-- If `~/.jinn/knowledge/` doesn't exist, create it
+- If `~/.gateway/knowledge/` doesn't exist, create it
 - If the user seems overwhelmed, simplify — suggest one department and one employee
 - If the user wants to skip onboarding, respect that and exit gracefully

@@ -13,8 +13,8 @@ export interface ChatTab {
   pinned?: boolean;
 }
 
-const STORAGE_KEY = "jinn-chat-tabs";
-const DRAFT_PREFIX = "jinn-chat-draft-";
+const STORAGE_KEY = "gateway-chat-tabs";
+const DRAFT_PREFIX = "gateway-chat-draft-";
 const MAX_TABS = 12;
 
 interface TabState {

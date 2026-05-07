@@ -22,14 +22,14 @@ vi.mock("../../gateway/services.js", () => ({
 
 // shared/paths を分離（ファイルシステムパスの実体アクセスを回避）
 vi.mock("../../shared/paths.js", () => ({
-  JINN_HOME: "/test-jinn-home",
-  ORG_DIR: "/test-jinn-home/org",
-  DOCS_DIR: "/test-jinn-home/docs",
-  CRON_JOBS: "/test-jinn-home/cron/jobs.json",
+  GATEWAY_HOME: "/test-gateway-home",
+  ORG_DIR: "/test-gateway-home/org",
+  DOCS_DIR: "/test-gateway-home/docs",
+  CRON_JOBS: "/test-gateway-home/cron/jobs.json",
 }));
 
 import { buildServiceRegistry } from "../../gateway/services.js";
-import type { JinnConfig, OrgHierarchy } from "../../shared/types.js";
+import type { GatewayConfig, OrgHierarchy } from "../../shared/types.js";
 import { buildContext } from "../context.js";
 
 describe("buildContext", () => {
@@ -89,8 +89,8 @@ describe("buildContext", () => {
         logging: { file: false, stdout: false, level: "info" },
       };
 
-      const largeConfig = { ...baseConfig, context: { maxChars: 100_000 } } as unknown as JinnConfig;
-      const tightConfig = { ...baseConfig, context: { maxChars: 500 } } as unknown as JinnConfig;
+      const largeConfig = { ...baseConfig, context: { maxChars: 100_000 } } as unknown as GatewayConfig;
+      const tightConfig = { ...baseConfig, context: { maxChars: 500 } } as unknown as GatewayConfig;
 
       const largeResult = buildContext({
         source: "slack",
@@ -215,7 +215,7 @@ describe("buildContext", () => {
           },
           connectors: {},
           logging: { file: false, stdout: false, level: "info" },
-        } as unknown as JinnConfig,
+        } as unknown as GatewayConfig,
       });
 
       expect(result).toContain("## Current configuration");
@@ -236,7 +236,7 @@ describe("buildContext", () => {
           },
           connectors: {},
           logging: { file: false, stdout: false, level: "info" },
-        } as unknown as JinnConfig,
+        } as unknown as GatewayConfig,
       });
 
       expect(result).toContain("gpt-4o");
@@ -256,7 +256,7 @@ describe("buildContext", () => {
           },
           connectors: {},
           logging: { file: false, stdout: false, level: "info" },
-        } as unknown as JinnConfig,
+        } as unknown as GatewayConfig,
       });
 
       expect(result).toContain("gemini-2.0-flash");
@@ -656,7 +656,7 @@ describe("buildContext", () => {
       };
       vi.mocked(fs.readdirSync).mockImplementation(((dir: unknown, opts?: unknown) => {
         const dirStr = String(dir);
-        // ORG_DIR (/test-jinn-home/org) の場合のみ yaml を返す
+        // ORG_DIR (/test-gateway-home/org) の場合のみ yaml を返す
         if (dirStr.includes("org")) {
           if (opts && (opts as Record<string, unknown>).withFileTypes) {
             return [mockEntry];
@@ -853,7 +853,7 @@ describe("buildContext", () => {
           },
           connectors: {},
           logging: { file: false, stdout: false, level: "info" },
-        } as unknown as JinnConfig,
+        } as unknown as GatewayConfig,
       });
 
       expect(result).toContain("childEffortOverride");
@@ -874,7 +874,7 @@ describe("buildContext", () => {
           },
           connectors: {},
           logging: { file: false, stdout: false, level: "info" },
-        } as unknown as JinnConfig,
+        } as unknown as GatewayConfig,
       });
 
       expect(result).toContain("childEffortOverride");
@@ -895,7 +895,7 @@ describe("buildContext", () => {
           },
           connectors: {},
           logging: { file: false, stdout: false, level: "info" },
-        } as unknown as JinnConfig,
+        } as unknown as GatewayConfig,
       });
 
       expect(result).toContain("childEffortOverride");
@@ -1055,7 +1055,7 @@ describe("buildContext", () => {
           },
           connectors: {},
           logging: { file: false, stdout: false, level: "info" },
-        } as unknown as JinnConfig,
+        } as unknown as GatewayConfig,
       });
 
       // Should use claude config as fallback → childEffortOverride "fallback-effort" shown

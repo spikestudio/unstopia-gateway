@@ -33,9 +33,9 @@
 
 **機能面（AC-ID 参照）:**
 
-- [ ] AC-E029-28: `detectProjectContext("jinn")` を呼び出し `~/Projects` が存在しないとき、`console.log` が呼ばれないこと
-- [ ] AC-E029-29: `detectProjectContext("jinn")` を呼び出し `~/Projects/foo/Dockerfile` が存在するとき、Docker に関するスキル提案メッセージが `console.log` で出力されること
-- [ ] AC-E029-30: `detectProjectContext("jinn")` を呼び出し `~/Projects/foo/package.json` に react/next 依存が含まれるとき、React に関するスキル提案が `console.log` で出力されること
+- [ ] AC-E029-28: `detectProjectContext("gateway")` を呼び出し `~/Projects` が存在しないとき、`console.log` が呼ばれないこと
+- [ ] AC-E029-29: `detectProjectContext("gateway")` を呼び出し `~/Projects/foo/Dockerfile` が存在するとき、Docker に関するスキル提案メッセージが `console.log` で出力されること
+- [ ] AC-E029-30: `detectProjectContext("gateway")` を呼び出し `~/Projects/foo/package.json` に react/next 依存が含まれるとき、React に関するスキル提案が `console.log` で出力されること
 - [ ] AC-E029-31: `defaultClaudeMd("Jinn")` を呼び出すと "Jinn" を含む文字列を返すこと
 - [ ] AC-E029-32: `defaultAgentsMd("Jinn")` を呼び出すと "Jinn" を含む文字列を返すこと
 - [ ] Epic 仕様書の AC チェックボックス更新

@@ -6,23 +6,23 @@ import pkg from "../package.json" with { type: "json" };
 
 const program = new Command();
 program
-  .name("jinn")
+  .name("gateway")
   .description("Lightweight AI gateway daemon")
   .version(pkg.version)
-  .option("-i, --instance <name>", "Target a specific instance (default: jinn)");
+  .option("-i, --instance <name>", "Target a specific instance (default: gateway)");
 
-// Pre-parse to set JINN_HOME before any module imports resolve paths
+// Pre-parse to set GATEWAY_HOME before any module imports resolve paths
 program.hook("preAction", (thisCommand) => {
   const opts = thisCommand.opts();
   if (opts.instance) {
-    process.env.JINN_INSTANCE = opts.instance;
-    process.env.JINN_HOME = path.join(os.homedir(), `.${opts.instance}`);
+    process.env.GATEWAY_INSTANCE = opts.instance;
+    process.env.GATEWAY_HOME = path.join(os.homedir(), `.${opts.instance}`);
   }
 });
 
 program
   .command("setup")
-  .description("Initialize Jinn and install dependencies")
+  .description("Initialize Gateway and install dependencies")
   .option("--force", "Delete existing home dir and reinitialize from scratch")
   .action(async (opts) => {
     const { runSetup } = await import("../src/cli/setup.js");
@@ -58,7 +58,7 @@ program
 
 program
   .command("create <name>")
-  .description("Create a new Jinn instance")
+  .description("Create a new Gateway instance")
   .option("-p, --port <port>", "Set gateway port (auto-assigned if omitted)")
   .action(async (name: string, opts: { port?: string }) => {
     const { runCreate } = await import("../src/cli/create.js");
@@ -67,7 +67,7 @@ program
 
 program
   .command("list")
-  .description("List all Jinn instances")
+  .description("List all Gateway instances")
   .action(async () => {
     const { runList } = await import("../src/cli/list.js");
     await runList();
@@ -75,7 +75,7 @@ program
 
 program
   .command("remove <name>")
-  .description("Remove a Jinn instance from the registry")
+  .description("Remove a Gateway instance from the registry")
   .option("--force", "Also delete the instance home directory")
   .action(async (name: string, opts: { force?: boolean }) => {
     const { runRemove } = await import("../src/cli/remove.js");
@@ -84,7 +84,7 @@ program
 
 program
   .command("nuke [name]")
-  .description("Permanently delete a Jinn instance and all its data")
+  .description("Permanently delete a Gateway instance and all its data")
   .action(async (name?: string) => {
     const { runNuke } = await import("../src/cli/nuke.js");
     await runNuke(name);
@@ -100,7 +100,7 @@ program
     await runMigrate(opts);
   });
 
-// Skills subcommands (jinn skills find|add|remove|list|update|restore)
+// Skills subcommands (gateway skills find|add|remove|list|update|restore)
 {
   const skillsCmd = program.command("skills").description("Manage skills from the skills.sh registry");
 

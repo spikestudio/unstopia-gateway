@@ -6,7 +6,7 @@ import { cleanupMcpConfigFile, resolveMcpServers, writeMcpConfigFile } from "../
 import { resolveEffort } from "../shared/effort.js";
 import { type AppError, appError } from "../shared/errors.js";
 import { logger } from "../shared/logger.js";
-import { JINN_HOME } from "../shared/paths.js";
+import { GATEWAY_HOME } from "../shared/paths.js";
 import {
   computeNextRetryDelayMs,
   computeRateLimitDeadlineMs,
@@ -19,7 +19,7 @@ import type {
   Employee,
   Engine,
   IncomingMessage,
-  JinnConfig,
+  GatewayConfig,
   JsonObject,
   Session,
   Target,
@@ -64,7 +64,7 @@ export function mergeTransportMeta(
 
   const merged: Record<string, unknown> = { ...baseExisting, ...baseIncoming };
 
-  // Preserve Jinn internal keys from being overwritten by transport adapters.
+  // Preserve Gateway internal keys from being overwritten by transport adapters.
   for (const key of ["engineOverride", "engineSessions", "claudeSyncSince"]) {
     if (baseExisting[key] !== undefined) merged[key] = baseExisting[key];
   }
@@ -79,7 +79,7 @@ export async function runSession(
   connector: Connector,
   target: Target,
   engines: Map<string, Engine>,
-  config: JinnConfig,
+  config: GatewayConfig,
   getConnectors: () => Map<string, Connector>,
   employee?: Employee,
   repos?: Repositories,
@@ -229,7 +229,7 @@ export async function runSession(
       prompt: promptToRun,
       resumeSessionId: session.engineSessionId ?? undefined,
       systemPrompt,
-      cwd: JINN_HOME,
+      cwd: GATEWAY_HOME,
       bin: engineConfig.bin,
       model: session.model ?? engineConfig.model,
       effortLevel,
@@ -338,7 +338,7 @@ export async function runSession(
             prompt: fallbackPrompt,
             resumeSessionId: codexResume,
             systemPrompt,
-            cwd: JINN_HOME,
+            cwd: GATEWAY_HOME,
             bin: fallbackConfig.bin,
             model: session.model ?? fallbackConfig.model,
             effortLevel: fallbackEffort,
@@ -501,7 +501,7 @@ export async function runSession(
             prompt: msg.text,
             resumeSessionId: currentSession.engineSessionId ?? undefined,
             systemPrompt,
-            cwd: JINN_HOME,
+            cwd: GATEWAY_HOME,
             bin: engineConfig.bin,
             model: currentSession.model ?? engineConfig.model,
             effortLevel,

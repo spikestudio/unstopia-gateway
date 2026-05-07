@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 // vi.mock factory is hoisted — cannot reference local variables.
 // Use a fixed path that the mock can resolve at hoist time.
 vi.mock("../paths.js", () => ({
-  JINN_HOME: path.join(import.meta.dirname || __dirname, ".tmp-usage-test"),
+  GATEWAY_HOME: path.join(import.meta.dirname || __dirname, ".tmp-usage-test"),
 }));
 
 import {

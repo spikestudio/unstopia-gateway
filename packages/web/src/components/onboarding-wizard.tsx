@@ -85,7 +85,7 @@ export function OnboardingWizard({ forceOpen, onClose }: OnboardingWizardProps) 
       return;
     }
     // If localStorage says onboarded, trust it (fast path)
-    if (typeof window !== "undefined" && localStorage.getItem("jinn-onboarded")) {
+    if (typeof window !== "undefined" && localStorage.getItem("gateway-onboarded")) {
       return;
     }
     // Otherwise check server — the onboarded flag persists across browsers
@@ -93,14 +93,14 @@ export function OnboardingWizard({ forceOpen, onClose }: OnboardingWizardProps) 
       .getOnboarding()
       .then((data) => {
         if (data.onboarded) {
-          localStorage.setItem("jinn-onboarded", "true");
+          localStorage.setItem("gateway-onboarded", "true");
         } else if (data.needed) {
           setVisible(true);
         }
       })
       .catch(() => {
         // Fallback: show wizard if we can't reach the server and no localStorage flag
-        if (!localStorage.getItem("jinn-onboarded")) {
+        if (!localStorage.getItem("gateway-onboarded")) {
           setVisible(true);
         }
       });
@@ -129,7 +129,7 @@ export function OnboardingWizard({ forceOpen, onClose }: OnboardingWizardProps) 
           // Best-effort: localStorage still has the values
         });
       if (!forceOpen) {
-        localStorage.setItem("jinn-onboarded", "true");
+        localStorage.setItem("gateway-onboarded", "true");
       }
       setVisible(false);
       onClose?.();
@@ -194,7 +194,7 @@ export function OnboardingWizard({ forceOpen, onClose }: OnboardingWizardProps) 
             <div key="step-0" className="animate-fade-in text-center">
               <div className="text-[56px] mb-[var(--space-3)] leading-none">{"\ud83e\udd16"}</div>
               <h2 className="text-[length:var(--text-large-title)] font-[var(--weight-bold)] tracking-[var(--tracking-tight)] text-[var(--text-primary)] mb-[var(--space-2)]">
-                Welcome to {localName || "Jinn"}
+                Welcome to {localName || "Gateway"}
               </h2>
               <p className="text-[length:var(--text-body)] text-[var(--text-secondary)] leading-[var(--leading-relaxed)] max-w-[400px] mx-auto mb-[var(--space-5)]">
                 Your AI team management portal. Let&apos;s get you set up.
@@ -212,7 +212,7 @@ export function OnboardingWizard({ forceOpen, onClose }: OnboardingWizardProps) 
                     id="onboarding-portal-name"
                     type="text"
                     className="apple-input w-full bg-[var(--bg-secondary)] border border-[var(--separator)] rounded-[var(--radius-sm)] px-3 py-2 text-[length:var(--text-body)] text-[var(--text-primary)]"
-                    placeholder="Jinn"
+                    placeholder="Gateway"
                     value={localName}
                     onChange={(e) => setLocalName(e.target.value)}
                   />

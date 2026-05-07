@@ -1,6 +1,6 @@
 import type { ServerResponse } from "node:http";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { JinnConfig } from "../../../shared/types.js";
+import type { GatewayConfig } from "../../../shared/types.js";
 import type { ApiContext } from "../../types.js";
 
 // ── Mocks ──────────────────────────────────────────────────────────────────
@@ -16,7 +16,7 @@ vi.mock("../../../shared/logger.js", () => ({
 }));
 vi.mock("../../../shared/paths.js", () => ({
   CONFIG_PATH: "/fake/config.yaml",
-  JINN_HOME: "/fake/jinn",
+  GATEWAY_HOME: "/fake/gateway",
   LOGS_DIR: "/fake/logs",
   ORG_DIR: "/fake/org",
 }));
@@ -72,7 +72,7 @@ const makeReq = (bodyObj: unknown = {}): never => {
   } as never;
 };
 
-const makeConfig = (overrides: Partial<JinnConfig> = {}): JinnConfig =>
+const makeConfig = (overrides: Partial<GatewayConfig> = {}): GatewayConfig =>
   ({
     gateway: { port: 7777, host: "localhost" },
     engines: {
@@ -83,7 +83,7 @@ const makeConfig = (overrides: Partial<JinnConfig> = {}): JinnConfig =>
     connectors: {},
     logging: { file: false, stdout: true, level: "info" },
     ...overrides,
-  }) as JinnConfig;
+  }) as GatewayConfig;
 
 const makeQueue = () => ({
   getPendingCount: vi.fn().mockReturnValue(0),
@@ -93,7 +93,7 @@ const makeQueue = () => ({
   resumeQueue: vi.fn(),
 });
 
-const makeContext = (configOverrides: Partial<JinnConfig> = {}): ApiContext => {
+const makeContext = (configOverrides: Partial<GatewayConfig> = {}): ApiContext => {
   const config = makeConfig(configOverrides);
   return {
     config,
@@ -701,7 +701,7 @@ describe("POST /api/onboarding", () => {
     const fs = await import("node:fs");
     vi.mocked(fs.default.existsSync).mockImplementation((p: unknown) => String(p).endsWith("CLAUDE.md"));
     vi.mocked(fs.default.readFileSync).mockReturnValue(
-      "You are Jinn, the COO of the user's AI organization.\n" as never,
+      "You are Gateway, the COO of the user's AI organization.\n" as never,
     );
     const context = makeContext();
     const res = makeRes();
@@ -717,7 +717,7 @@ describe("POST /api/onboarding", () => {
     const fs = await import("node:fs");
     vi.mocked(fs.default.existsSync).mockImplementation((p: unknown) => String(p).endsWith("CLAUDE.md"));
     vi.mocked(fs.default.readFileSync).mockReturnValue(
-      "You are Jinn, the COO of the user's AI organization.\n" as never,
+      "You are Gateway, the COO of the user's AI organization.\n" as never,
     );
     const yaml = await import("js-yaml");
     vi.mocked(yaml.default.dump).mockReturnValue("dumped:");
@@ -738,7 +738,7 @@ describe("POST /api/onboarding", () => {
   it("updates AGENTS.md when it exists", async () => {
     const fs = await import("node:fs");
     vi.mocked(fs.default.existsSync).mockImplementation((p: unknown) => String(p).endsWith("AGENTS.md"));
-    vi.mocked(fs.default.readFileSync).mockReturnValue("You are **Jinn**\n" as never);
+    vi.mocked(fs.default.readFileSync).mockReturnValue("You are **Gateway**\n" as never);
     const context = makeContext();
     const res = makeRes();
     const req = makeReq({ portalName: "Nova", operatorName: "Admin", language: "English" });
@@ -764,7 +764,7 @@ describe("POST /api/onboarding", () => {
     vi.mocked(fs.default.writeFileSync).mockImplementation(() => {});
     // AGENTS.md exists
     vi.mocked(fs.default.existsSync).mockImplementation((p: unknown) => String(p).endsWith("AGENTS.md"));
-    vi.mocked(fs.default.readFileSync).mockReturnValue("You are **Jinn** — details here\n" as never);
+    vi.mocked(fs.default.readFileSync).mockReturnValue("You are **Gateway** — details here\n" as never);
     const context = makeContext();
     const res = makeRes();
     const req = makeReq({ portalName: "Nova", operatorName: "Admin", language: "French" });

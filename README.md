@@ -5,47 +5,27 @@ jinn v0.9.3 をベースにした独自フォーク。AI gateway daemon とし�
 > **Base:** [jinn](https://github.com/hristo2612/jinn) — Lightweight AI gateway daemon orchestrating Claude Code, Codex, and Gemini CLI.
 
 <p align="center">
-  <img src="assets/jinn-showcase.gif" alt="Jinn Web Dashboard" width="800" />
+  <img src="assets/jinn-showcase.gif" alt="unstopia-gateway Web Dashboard" width="800" />
 </p>
 
-## What is Jinn?
+## What is unstopia-gateway?
 
-Jinn is an open-source AI gateway that wraps the Claude Code CLI, Codex SDK,
+unstopia-gateway is an open-source AI gateway that wraps the Claude Code CLI, Codex SDK,
 and Gemini CLI behind a unified daemon process. It routes tasks to AI engines,
-manages connectors like Slack, and schedules background work via cron. Jinn is
+manages connectors like Slack, and schedules background work via cron. It's
 a bus, not a brain.
 
-## 💡 Why Jinn?
+## 💡 Why unstopia-gateway?
 
 Most AI agent frameworks reinvent the wheel — custom tool-calling loops, brittle context management, hand-rolled retry logic. Then they charge you per API call on top.
 
-**Jinn takes a different approach.** It wraps battle-tested professional CLI tools (Claude Code, Codex, Gemini CLI) and adds only what they're missing: routing, scheduling, connectors, and an org system.
+**unstopia-gateway takes a different approach.** It wraps battle-tested professional CLI tools (Claude Code, Codex, Gemini CLI) and adds only what they're missing: routing, scheduling, connectors, and an org system.
 
 ### 🔑 Works with your Anthropic Max subscription
 
-Because Jinn uses **Claude Code CLI under the hood** — Anthropic's own first-party tool — it works with the [$200/mo Max subscription](https://www.anthropic.com/pricing). No per-token API billing. No surprise $500 invoices. Flat rate, unlimited usage.
+Because unstopia-gateway uses **Claude Code CLI under the hood** — Anthropic's own first-party tool — it works with the [$200/mo Max subscription](https://www.anthropic.com/pricing). No per-token API billing. No surprise $500 invoices. Flat rate, unlimited usage.
 
-Other frameworks can't do this. Anthropic [banned third-party tools from using Max subscription OAuth tokens](https://docs.anthropic.com/en/docs/claude-code/bedrock-vertex#max-plan) in January 2026. Since Jinn delegates to the official CLI, it's fully supported.
-
-### 🧞 Jinn vs OpenClaw
-
-| | Jinn | OpenClaw |
-|---|---|---|
-| **Architecture** | Wraps professional CLIs (Claude Code, Codex, Gemini) | Custom agentic loop |
-| **Max subscription** | ✅ Works (uses official Claude Code CLI) | ❌ Banned since Jan 2026 |
-| **Typical cost** | $200/mo flat (Max) or pay-per-use | $300–750/mo API bills ([reported by users](https://www.reddit.com/r/OpenClaw/)) |
-| **Security** | Inherits Claude Code's security model | 512 vulnerabilities found by CrowdStrike |
-| **Memory & context** | Handled natively by Claude Code | Custom implementation with [known context-drop bugs](https://github.com/openclaw/openclaw/issues/5429) |
-| **Cron scheduling** | ✅ Built-in, hot-reloadable | ❌ [Fires in wrong agent context](https://github.com/openclaw/openclaw/issues/16053) |
-| **Slack integration** | ✅ Thread-aware, reaction workflow | ❌ [Drops agent-to-agent messages](https://github.com/openclaw/openclaw/issues/15836) |
-| **Multi-agent org** | Departments, ranks, managers, boards | Flat agent list |
-| **Self-modification** | Agents can edit their own config at runtime | Limited |
-
-### 🧠 The "bus, not brain" philosophy
-
-Jinn adds **zero custom AI logic**. No prompt engineering layer. No opinions on how agents should think. All intelligence comes from the engines themselves — Claude Code already handles tool use, file editing, multi-step reasoning, and memory. Jinn just connects it to the outside world.
-
-When Claude Code gets better, Jinn gets better — automatically.
+Other frameworks can't do this. Anthropic [banned third-party tools from using Max subscription OAuth tokens](https://docs.anthropic.com/en/docs/claude-code/bedrock-vertex#max-plan) in January 2026. Since unstopia-gateway delegates to the official CLI, it's fully supported.
 
 ## ✨ Features
 
@@ -59,24 +39,15 @@ When Claude Code gets better, Jinn gets better — automatically.
 - 🔄 **Hot-reload** — change config, cron, or org files without restarting
 - 🛠️ **Self-modification** — agents can edit their own config, skills, and org at runtime
 - 📦 **Skills system** — reusable markdown playbooks that engines follow natively
-- 🏢 **Multi-instance** — run multiple isolated Jinn instances side by side
+- 🏢 **Multi-instance** — run multiple isolated gateway instances side by side
 - 🔗 **MCP support** — connect to any MCP server
 
 ## 🚀 Quick Start
 
 ```bash
-npm install -g jinn-cli
-jinn setup
-jinn start
-```
-
-Or install via Homebrew:
-
-```bash
-brew tap hristo2612/jinn https://github.com/hristo2612/jinn
-brew install jinn
-jinn setup
-jinn start
+npm install -g unstopia-gateway-cli
+gateway setup
+gateway start
 ```
 
 Then open [http://localhost:7777](http://localhost:7777).
@@ -85,7 +56,7 @@ Then open [http://localhost:7777](http://localhost:7777).
 
 ```
                           +----------------+
-                          |   jinn CLI     |
+                          | gateway CLI    |
                           +-------+--------+
                                   |
                           +-------v--------+
@@ -112,7 +83,7 @@ scheduled cron jobs, and serves the web dashboard.
 
 ## ⚙️ Configuration
 
-Jinn reads its configuration from `~/.jinn/config.yaml`. An example:
+unstopia-gateway reads its configuration from `~/.gateway/config.yaml`. An example:
 
 ```yaml
 gateway:
@@ -145,7 +116,7 @@ org:
 ## 📁 Project Structure
 
 ```
-jinn/
+unstopia-gateway/
   packages/
     jimmy/          # Core gateway daemon + CLI
     web/            # Web dashboard (frontend)
@@ -157,10 +128,10 @@ jinn/
 ## 🧑‍💻 Development
 
 ```bash
-git clone https://github.com/hristo2612/jinn.git
-cd jinn
+git clone https://github.com/spikestudio/unstopia-gateway.git
+cd unstopia-gateway
 pnpm install
-pnpm setup   # one-time: builds all packages and creates ~/.jinn
+pnpm setup   # one-time: builds all packages and creates ~/.gateway
 pnpm dev     # starts gateway + Next.js dev server with hot reload
 ```
 
@@ -179,21 +150,21 @@ before running `pnpm dev`.
 
 ### Available Scripts
 
-| Command            | Description                                                         |
-| ------------------ | ------------------------------------------------------------------- |
-| `pnpm setup`       | Build all packages and initialize `~/.jinn` (one-time)              |
+| Command            | Description                                                            |
+| ------------------ | ---------------------------------------------------------------------- |
+| `pnpm setup`       | Build all packages and initialize `~/.gateway` (one-time)              |
 | `pnpm dev`         | Start gateway (`:7777`) + Next.js dev server (`:3000`) with hot reload |
-| `pnpm start`       | Production-style clean build + start gateway on `:7777`             |
-| `pnpm stop`        | Stop the running gateway daemon                                     |
-| `pnpm status`      | Check if the gateway daemon is running                              |
-| `pnpm build`       | Build all packages                                                  |
-| `pnpm typecheck`   | Run TypeScript type checking                                        |
-| `pnpm lint`        | Lint all packages                                                   |
-| `pnpm clean`       | Clean build artifacts                                               |
+| `pnpm start`       | Production-style clean build + start gateway on `:7777`                |
+| `pnpm stop`        | Stop the running gateway daemon                                        |
+| `pnpm status`      | Check if the gateway daemon is running                                 |
+| `pnpm build`       | Build all packages                                                     |
+| `pnpm typecheck`   | Run TypeScript type checking                                           |
+| `pnpm lint`        | Lint all packages                                                      |
+| `pnpm clean`       | Clean build artifacts                                                  |
 
 ## 🗺️ Roadmap
 
-Jinn is under active development. Here's what's coming:
+unstopia-gateway is under active development. Here's what's coming:
 
 ### 🔌 Connectors
 - [x] **Discord** — bot integration via discord.js
@@ -232,11 +203,11 @@ Jinn is under active development. Here's what's coming:
 - [ ] **Skill versioning** — pin skill versions, auto-update with changelogs
 - [ ] **Skill templates** — scaffolding for common patterns (blog pipeline, support inbox, etc.)
 
-Want to suggest a feature? [Open an issue](https://github.com/hristo2612/jinn/issues).
+Want to suggest a feature? [Open an issue](https://github.com/spikestudio/unstopia-gateway/issues).
 
 ## 🙏 Acknowledgments
 
-The web dashboard UI is built on components from [ClawPort UI](https://github.com/JohnRiceML/clawport-ui) by John Rice, adapted for Jinn's architecture. ClawPort provides the foundation for the theme system, shadcn components, org map, kanban board, cost dashboard, and activity console.
+The web dashboard UI is built on components from [ClawPort UI](https://github.com/JohnRiceML/clawport-ui) by John Rice, adapted for this project's architecture. ClawPort provides the foundation for the theme system, shadcn components, org map, kanban board, cost dashboard, and activity console.
 
 ## 📄 License
 

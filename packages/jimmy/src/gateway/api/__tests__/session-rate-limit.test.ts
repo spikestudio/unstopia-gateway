@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { Engine, JinnConfig, Session } from "../../../shared/types.js";
+import type { Engine, GatewayConfig, Session } from "../../../shared/types.js";
 import type { ApiContext } from "../../types.js";
 import type { RateLimitDeps, RetryRunParams } from "../session-rate-limit.js";
 import { handleRateLimit, retryUntilDeadline } from "../session-rate-limit.js";
@@ -43,8 +43,8 @@ const makeRunParams = (overrides: Partial<RetryRunParams> = {}): RetryRunParams 
   ...overrides,
 });
 
-const makeConfig = (): JinnConfig =>
-  ({ engines: { default: "claude", claude: {} }, portal: { portalName: "Jinn" } }) as unknown as JinnConfig;
+const makeConfig = (): GatewayConfig =>
+  ({ engines: { default: "claude", claude: {} }, portal: { portalName: "Gateway" } }) as unknown as GatewayConfig;
 
 // ── handleRateLimit ───────────────────────────────────────────────────────────
 

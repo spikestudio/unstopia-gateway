@@ -32,7 +32,7 @@ import { useOrg } from "@/hooks/use-employees";
 import { useSessions } from "@/hooks/use-sessions";
 import { useSkills } from "@/hooks/use-skills";
 
-const RECENT_KEY = "jinn-command-recent";
+const RECENT_KEY = "gateway-command-recent";
 const MAX_RECENT = 5;
 
 interface RecentItem {
@@ -72,7 +72,7 @@ const STATIC_PAGES = [
 
 export function GlobalSearch() {
   const { settings } = useSettings();
-  const portalName = settings.portalName ?? "Jinn";
+  const portalName = settings.portalName ?? "Gateway";
   const [open, setOpen] = useState(false);
   const [recents, setRecents] = useState<RecentItem[]>([]);
   const router = useRouter();

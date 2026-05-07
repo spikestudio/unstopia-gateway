@@ -149,11 +149,11 @@ describe("ensureFile", () => {
 describe("applyTemplateReplacements", () => {
   it("should replace all occurrences of placeholders with values", () => {
     const content = "Hello {{NAME}}, your port is {{PORT}}!";
-    const replacements = { "{{NAME}}": "jinn", "{{PORT}}": "7777" };
+    const replacements = { "{{NAME}}": "gateway", "{{PORT}}": "7777" };
 
     const result = applyTemplateReplacements(content, replacements);
 
-    expect(result).toBe("Hello jinn, your port is 7777!");
+    expect(result).toBe("Hello gateway, your port is 7777!");
   });
 
   it("should return the content unchanged when no replacements are provided", () => {

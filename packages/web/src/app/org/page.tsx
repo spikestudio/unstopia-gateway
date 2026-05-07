@@ -39,8 +39,8 @@ export default function OrgPage() {
       .getOrg()
       .then((data: OrgData) => {
         const coo: Employee = {
-          name: (settings.portalName ?? "Jinn").toLowerCase(),
-          displayName: settings.portalName ?? "Jinn",
+          name: (settings.portalName ?? "Gateway").toLowerCase(),
+          displayName: settings.portalName ?? "Gateway",
           department: "",
           rank: "executive",
           engine: "claude",

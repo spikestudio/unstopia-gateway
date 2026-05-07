@@ -33,7 +33,7 @@
 
 **機能面（AC-ID 参照）:**
 
-- [ ] AC-E029-63: `runMigrate({ check: true })` を呼び出し pending マイグレーションが存在するとき、`execFileSync` が呼ばれず "Run jinn migrate" を含むメッセージが `console.log` で出力されること
+- [ ] AC-E029-63: `runMigrate({ check: true })` を呼び出し pending マイグレーションが存在するとき、`execFileSync` が呼ばれず "Run gateway migrate" を含むメッセージが `console.log` で出力されること
 - [ ] AC-E029-64: `runMigrate({})` を呼び出し pending マイグレーションが0件のとき、バージョンスタンプが更新され "Up to date" または "No migration scripts" のメッセージが `console.log` で出力されること
 - [ ] AC-E029-65: `runMigrate({ auto: true })` を呼び出すと `execFileSync` が呼ばれず auto マイグレーションが実行されること
 - [ ] AC-E029-66: `runMigrate({})` を呼び出し `compareSemver` が 0 以上を返すとき（既に最新）、"Up to date." が `console.log` で出力されること

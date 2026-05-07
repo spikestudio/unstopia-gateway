@@ -10,7 +10,7 @@ import {
   type updateSession,
 } from "../../sessions/registry.js";
 import { logger } from "../../shared/logger.js";
-import type { Engine, JinnConfig } from "../../shared/types.js";
+import type { Engine, GatewayConfig } from "../../shared/types.js";
 import { isInterruptibleEngine } from "../../shared/types.js";
 import {
   getClaudeExpectedResetAt as defaultGetClaudeExpectedResetAt,
@@ -45,7 +45,7 @@ export interface PostMessageDeps {
   dispatchWebSessionRun: typeof dispatchWebSessionRun;
   resolveAttachmentPaths: typeof resolveAttachmentPaths;
   getEngine: (name: string) => Engine | null;
-  getConfig: () => JinnConfig;
+  getConfig: () => GatewayConfig;
 }
 
 export async function handlePostMessage(

@@ -4,7 +4,7 @@ import path from "node:path";
 import { getPackageVersion } from "../shared/version.js";
 import { DIM, RESET } from "./setup-ui.js";
 
-export const DEFAULT_CONFIG = `jinn:
+export const DEFAULT_CONFIG = `meta:
   version: "${getPackageVersion()}"
 
 gateway:
@@ -135,7 +135,7 @@ export function detectProjectContext(portalSlug: string): void {
 export function defaultClaudeMd(portalName: string): string {
   return `# ${portalName} AI Gateway
 
-This is the ${portalName} home directory (~/.jinn).
+This is the ${portalName} home directory (~/.gateway).
 ${portalName} orchestrates Claude Code and Codex as AI engines.
 `;
 }

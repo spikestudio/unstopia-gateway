@@ -1,5 +1,5 @@
 import { logger } from "../shared/logger.js";
-import type { Connector, Engine, IncomingMessage, JinnConfig, RouteOptions, Session } from "../shared/types.js";
+import type { Connector, Engine, IncomingMessage, GatewayConfig, RouteOptions, Session } from "../shared/types.js";
 import { getClaudeExpectedResetAt } from "../shared/usageAwareness.js";
 import { handleCronCommand } from "./cron-command-handler.js";
 import { mergeTransportMeta, runSession } from "./engine-runner.js";
@@ -55,13 +55,13 @@ function maybeRevertEngineOverride(session: Session, sessionRepo: ISessionReposi
 }
 
 export class SessionManager {
-  private config: JinnConfig;
+  private config: GatewayConfig;
   private engines: Map<string, Engine>;
   private queue = new SessionQueue();
   private connectorProvider: () => Map<string, Connector> = () => new Map();
   private repos: Repositories;
 
-  constructor(config: JinnConfig, engines: Map<string, Engine>, _connectorNames: string[] = [], repos: Repositories) {
+  constructor(config: GatewayConfig, engines: Map<string, Engine>, _connectorNames: string[] = [], repos: Repositories) {
     this.config = config;
     this.engines = engines;
     this.repos = repos;

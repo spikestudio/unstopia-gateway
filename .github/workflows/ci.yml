@@ -43,7 +43,7 @@ jobs:
       - run: pnpm build
       - run: pnpm test
       - name: Coverage check (packages/jimmy)
-        run: pnpm --filter jinn-cli exec vitest run --coverage
+        run: pnpm --filter unstopia-gateway-cli exec vitest run --coverage
 
   build:
     runs-on: ubuntu-latest

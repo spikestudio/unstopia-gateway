@@ -1,12 +1,12 @@
-class Jinn < Formula
+class Gateway < Formula
   desc "Lightweight AI gateway daemon orchestrating Claude Code and Codex"
-  homepage "https://github.com/hristo2612/jinn"
-  url "https://registry.npmjs.org/jinn-cli/-/jinn-cli-0.8.0.tgz"
+  homepage "https://github.com/spikestudio/unstopia-gateway"
+  url "https://registry.npmjs.org/unstopia-gateway-cli/-/unstopia-gateway-cli-0.9.3.tgz"
   sha256 "2caec0e0e05f1e06142749e357dfad361baa2c85b3489be3552faa17503d22b2"
   license "MIT"
 
   livecheck do
-    url "https://registry.npmjs.org/jinn-cli"
+    url "https://registry.npmjs.org/unstopia-gateway-cli"
     regex(/"latest":\s*"(\d+(?:\.\d+)+)"/)
   end
 
@@ -21,20 +21,20 @@ class Jinn < Formula
   def caveats
     <<~EOS
       To get started, run:
-        jinn setup
+        gateway setup
 
       Then start the gateway daemon:
-        jinn start
+        gateway start
 
       The web dashboard will be available at http://localhost:7777
     EOS
   end
 
   test do
-    assert_match version.to_s, shell_output("#{bin}/jinn --version")
-    assert_match "Usage", shell_output("#{bin}/jinn --help")
+    assert_match version.to_s, shell_output("#{bin}/gateway --version")
+    assert_match "Usage", shell_output("#{bin}/gateway --help")
 
-    cd libexec/"lib/node_modules/jinn-cli" do
+    cd libexec/"lib/node_modules/unstopia-gateway-cli" do
       system "node", "-e", "require('better-sqlite3')"
       system "node", "-e", "require('classic-level')"
     end

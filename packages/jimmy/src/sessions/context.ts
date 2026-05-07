@@ -2,8 +2,8 @@ import fs from "node:fs";
 import path from "node:path";
 import { scanOrg } from "../gateway/org.js";
 import { buildServiceRegistry } from "../gateway/services.js";
-import { CRON_JOBS, DOCS_DIR, JINN_HOME, ORG_DIR } from "../shared/paths.js";
-import type { Employee, JinnConfig } from "../shared/types.js";
+import { CRON_JOBS, DOCS_DIR, GATEWAY_HOME, ORG_DIR } from "../shared/paths.js";
+import type { Employee, GatewayConfig } from "../shared/types.js";
 
 /**
  * Token budget strategy:
@@ -40,7 +40,7 @@ interface Section {
 
 /**
  * Build a rich system prompt for engine sessions.
- * This is what makes Jinn "smart" — the engine sees all of this context
+ * This is what makes Gateway "smart" — the engine sees all of this context
  * before responding to the user.
  */
 export function buildContext(opts: {
@@ -50,7 +50,7 @@ export function buildContext(opts: {
   user: string;
   employee?: Employee;
   connectors?: string[];
-  config?: JinnConfig;
+  config?: GatewayConfig;
   sessionId?: string;
   portalName?: string;
   operatorName?: string;
@@ -67,7 +67,7 @@ export function buildContext(opts: {
     : "http://127.0.0.1:7777";
 
   // Resolve personalized names from config
-  const portalName = opts.portalName || opts.config?.portal?.portalName || "Jinn";
+  const portalName = opts.portalName || opts.config?.portal?.portalName || "Gateway";
   const operatorName = opts.operatorName || opts.config?.portal?.operatorName;
   const language = opts.language || opts.config?.portal?.language || "English";
 
@@ -90,7 +90,7 @@ export function buildContext(opts: {
       tier: Tier.ESSENTIAL,
       marker: "# You are",
       content: buildIdentity(portalName, operatorName, language),
-      summary: `# You are ${portalName}\nYour working directory is \`~/.jinn\` (${JINN_HOME}).`,
+      summary: `# You are ${portalName}\nYour working directory is \`~/.gateway\` (${GATEWAY_HOME}).`,
     });
   }
 
@@ -100,7 +100,7 @@ export function buildContext(opts: {
       tier: Tier.STANDARD,
       marker: "## Self-evolution",
       content: buildEvolutionContext(portalName),
-      summary: `## Self-evolution\nUpdate knowledge files in \`~/.jinn/knowledge/\` when you learn new info about the user or their projects.`,
+      summary: `## Self-evolution\nUpdate knowledge files in \`~/.gateway/knowledge/\` when you learn new info about the user or their projects.`,
     });
   }
 
@@ -153,7 +153,7 @@ export function buildContext(opts: {
       tier: Tier.STANDARD,
       marker: "## Scheduled cron",
       content: cronCtx,
-      summary: "## Scheduled cron jobs\nCron definitions are in `~/.jinn/cron/jobs.json`. Read directly when needed.",
+      summary: "## Scheduled cron jobs\nCron definitions are in `~/.gateway/cron/jobs.json`. Read directly when needed.",
     });
   }
 
@@ -165,7 +165,7 @@ export function buildContext(opts: {
       marker: "## Knowledge base",
       content: knowledgeCtx,
       summary:
-        "## Knowledge base\nKnowledge files are in `~/.jinn/knowledge/` and `~/.jinn/docs/`. Read them directly when needed.",
+        "## Knowledge base\nKnowledge files are in `~/.gateway/knowledge/` and `~/.gateway/docs/`. Read them directly when needed.",
     });
   }
 
@@ -256,7 +256,7 @@ ${languageInstruction}
 - **Model**: ${employee.model}
 ${chainOfCommand}
 ## System context
-You are part of the ${portalName} AI gateway — a system that orchestrates AI workers. You have access to the filesystem, can run commands, call APIs, and send messages via connectors. Your working directory is \`~/.jinn\` (${JINN_HOME}).
+You are part of the ${portalName} AI gateway — a system that orchestrates AI workers. You have access to the filesystem, can run commands, call APIs, and send messages via connectors. Your working directory is \`~/.gateway\` (${GATEWAY_HOME}).
 
 You can:
 - Read and write files in the home directory
@@ -370,7 +370,7 @@ ${portalName} is a personal AI assistant and gateway daemon. You are proactive, 
 - **Remember context**: You're part of a persistent system. Sessions can be resumed. Build on previous work.
 ${languageInstruction}
 ## Your home directory
-Your working directory is \`~/.jinn\` (${JINN_HOME}). This contains:
+Your working directory is \`~/.gateway\` (${GATEWAY_HOME}). This contains:
 - \`config.yaml\` — your configuration (engines, connectors, logging)
 - \`org/\` — employee definitions (YAML files defining AI workers)
 - \`skills/\` — reusable skill prompts
@@ -405,11 +405,11 @@ function buildSessionContext(opts: {
   }
   if (opts.thread) ctx += `- Thread: ${opts.thread}\n`;
   ctx += `- User: ${opts.user}\n`;
-  ctx += `- Working directory: ${JINN_HOME}`;
+  ctx += `- Working directory: ${GATEWAY_HOME}`;
   return ctx;
 }
 
-function buildConfigContext(config: JinnConfig, gatewayUrl: string): string {
+function buildConfigContext(config: GatewayConfig, gatewayUrl: string): string {
   const lines: string[] = [`## Current configuration`];
   lines.push(`- Gateway: ${gatewayUrl}`);
   lines.push(`- Default engine: ${config.engines.default}`);
@@ -516,7 +516,7 @@ function buildCronContext(): string | null {
       lines.push(`- **${job.name}**: \`${job.schedule}\`${job.employee ? ` → ${job.employee}` : ""}`);
     }
     if (disabledCount > 0) {
-      lines.push(`\n_${disabledCount} disabled jobs not shown. See \`~/.jinn/cron/jobs.json\` for the full list._`);
+      lines.push(`\n_${disabledCount} disabled jobs not shown. See \`~/.gateway/cron/jobs.json\` for the full list._`);
     }
     return lines.join("\n");
   } catch {
@@ -531,7 +531,7 @@ function buildCronContext(): string | null {
 function buildKnowledgeContext(): string | null {
   const dirs = [
     { dir: DOCS_DIR, label: "docs" },
-    { dir: path.join(JINN_HOME, "knowledge"), label: "knowledge" },
+    { dir: path.join(GATEWAY_HOME, "knowledge"), label: "knowledge" },
   ];
   const entries: { name: string; dir: string; sizeKb: string }[] = [];
 
@@ -559,7 +559,7 @@ function buildKnowledgeContext(): string | null {
 
   const lines: string[] = [
     `## Knowledge base`,
-    `Knowledge files are in \`~/.jinn/knowledge/\` and \`~/.jinn/docs/\`. Read them directly when needed.`,
+    `Knowledge files are in \`~/.gateway/knowledge/\` and \`~/.gateway/docs/\`. Read them directly when needed.`,
     ``,
   ];
 
@@ -594,7 +594,7 @@ function buildConnectorContext(connectors: string[], gatewayUrl: string, portalN
   }
 
   lines.push(`\n- **List all connectors**: \`curl ${gatewayUrl}/api/connectors\``);
-  lines.push(`- Channel IDs and connector config can be found in \`~/.jinn/config.yaml\``);
+  lines.push(`- Channel IDs and connector config can be found in \`~/.gateway/config.yaml\``);
   return lines.join("\n");
 }
 
@@ -659,7 +659,7 @@ function buildEnvironmentContext(): string | null {
 }
 
 function buildEvolutionContext(portalName: string): string {
-  const profilePath = path.join(JINN_HOME, "knowledge", "user-profile.md");
+  const profilePath = path.join(GATEWAY_HOME, "knowledge", "user-profile.md");
   let profileContent = "";
   try {
     profileContent = fs.readFileSync(profilePath, "utf-8").trim();
@@ -677,18 +677,18 @@ function buildEvolutionContext(portalName: string): string {
     lines.push(`3. Communication preferences — emoji style, verbosity (concise vs detailed), language`);
     lines.push(`4. Any active projects ${portalName} should know about?`);
     lines.push(
-      `\nAfter the user responds, write their answers to \`~/.jinn/knowledge/user-profile.md\` and \`~/.jinn/knowledge/preferences.md\`.`,
+      `\nAfter the user responds, write their answers to \`~/.gateway/knowledge/user-profile.md\` and \`~/.gateway/knowledge/preferences.md\`.`,
     );
     lines.push(`Then proceed to help with their original request.`);
   } else {
     lines.push(
       `You learn and evolve over time. When you discover new information about the user, their projects, or their preferences:`,
     );
-    lines.push(`- Update \`~/.jinn/knowledge/user-profile.md\` with business/identity info`);
-    lines.push(`- Update \`~/.jinn/knowledge/preferences.md\` with style/communication preferences`);
-    lines.push(`- Update \`~/.jinn/knowledge/projects.md\` with project details`);
+    lines.push(`- Update \`~/.gateway/knowledge/user-profile.md\` with business/identity info`);
+    lines.push(`- Update \`~/.gateway/knowledge/preferences.md\` with style/communication preferences`);
+    lines.push(`- Update \`~/.gateway/knowledge/projects.md\` with project details`);
     lines.push(
-      `- If the user gives you persistent feedback (e.g. "always do X", "never do Y"), update \`~/.jinn/CLAUDE.md\``,
+      `- If the user gives you persistent feedback (e.g. "always do X", "never do Y"), update \`~/.gateway/CLAUDE.md\``,
     );
     lines.push(`\nDo this silently — don't announce every file update. Just evolve.`);
   }
@@ -700,7 +700,7 @@ function buildEvolutionContext(portalName: string): string {
  * Delegation protocol: condensed version focusing on the essential API patterns.
  * Verbose examples and multi-paragraph explanations have been trimmed.
  */
-function buildDelegationProtocol(gatewayUrl: string, _portalName: string, config?: JinnConfig): string {
+function buildDelegationProtocol(gatewayUrl: string, _portalName: string, config?: GatewayConfig): string {
   const defaultEngine = config?.engines.default || "claude";
   const engineConfig =
     defaultEngine === "codex"

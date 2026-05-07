@@ -1,20 +1,20 @@
 import { CronConnector } from "../connectors/cron/index.js";
 import { findEmployee, scanOrg } from "../gateway/org.js";
 import { logger } from "../shared/logger.js";
-import type { Connector, CronJob, Employee, JinnConfig, SessionRouter } from "../shared/types.js";
+import type { Connector, CronJob, Employee, GatewayConfig, SessionRouter } from "../shared/types.js";
 import { appendRunLog } from "./jobs.js";
 
 export async function runCronJob(
   job: CronJob,
   sessionManager: SessionRouter,
-  config: JinnConfig,
+  config: GatewayConfig,
   connectors: Map<string, Connector>,
 ): Promise<void> {
   const startTime = Date.now();
   logger.info(`Cron job "${job.name}" (${job.id}) starting`);
 
   const delivery = job.delivery || config.cron?.defaultDelivery;
-  const cooSlug = config.portal?.portalName?.toLowerCase() || "jinn";
+  const cooSlug = config.portal?.portalName?.toLowerCase() || "gateway";
   if (delivery && job.employee && job.employee !== cooSlug) {
     logger.debug(`Cron job "${job.name}" targets employee "${job.employee}" directly (skipping COO delegation).`);
   }

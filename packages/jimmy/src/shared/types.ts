@@ -13,7 +13,7 @@ export interface Engine {
 }
 
 export interface InterruptibleEngine extends Engine {
-  /** Kill a running engine process for a specific Jinn session. */
+  /** Kill a running engine process for a specific Gateway session. */
   kill(sessionId: string, reason?: string): void;
   /** Check if a live engine process is still running for this session. */
   isAlive(sessionId: string): boolean;
@@ -39,7 +39,7 @@ export interface EngineRunOpts {
   /** Path to MCP config JSON file (passed as --mcp-config to Claude Code) */
   mcpConfigPath?: string;
   onStream?: (delta: StreamDelta) => void;
-  /** Unique Jinn session ID for tracking the spawned process. */
+  /** Unique Gateway session ID for tracking the spawned process. */
   sessionId?: string;
 }
 
@@ -333,9 +333,9 @@ export interface DiscordConnectorConfig {
   guildId?: string;
   /** Only respond to messages in this channel */
   channelId?: string;
-  /** Route messages from specific channels to remote Jinn instances */
+  /** Route messages from specific channels to remote Gateway instances */
   channelRouting?: Record<string, string>;
-  /** URL of the primary Jinn instance to proxy Discord I/O through (secondary/remote mode) */
+  /** URL of the primary Gateway instance to proxy Discord I/O through (secondary/remote mode) */
   proxyVia?: string;
 }
 
@@ -354,7 +354,7 @@ export interface WhatsAppConnectorConfig {
   id?: string;
   /** Employee to handle messages from this connector instance */
   employee?: string;
-  /** Where to store session credentials (default: JINN_HOME/.whatsapp-auth) */
+  /** Where to store session credentials (default: GATEWAY_HOME/.whatsapp-auth) */
   authDir?: string;
   /** Allowed phone numbers in JID format (e.g. "447700900000@s.whatsapp.net") — empty = allow all */
   allowFrom?: string[];
@@ -379,8 +379,8 @@ export interface PortalConfig {
   onboarded?: boolean;
 }
 
-export interface JinnConfig {
-  jinn?: { version?: string };
+export interface GatewayConfig {
+  meta?: { version?: string };
   gateway: { port: number; host: string; streaming?: boolean };
   engines: {
     default: "claude" | "codex" | "gemini";

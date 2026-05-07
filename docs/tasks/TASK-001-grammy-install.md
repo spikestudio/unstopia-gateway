@@ -20,10 +20,10 @@
 
 ```bash
 # grammy 追加
-pnpm add grammy --filter jinn-cli
+pnpm add grammy --filter unstopia-gateway-cli
 
 # node-telegram-bot-api / @types/node-telegram-bot-api 削除
-pnpm remove node-telegram-bot-api @types/node-telegram-bot-api --filter jinn-cli
+pnpm remove node-telegram-bot-api @types/node-telegram-bot-api --filter unstopia-gateway-cli
 
 # lockfile 確認
 pnpm install

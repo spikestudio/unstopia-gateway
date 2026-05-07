@@ -34,9 +34,9 @@ describe("ChatEmployeePicker", () => {
 
   it("renders COO at the top, highlighted as default", () => {
     render(
-      <ChatEmployeePicker employees={mockEmployees} selectedEmployee={null} onSelect={onChange} portalName="Jinn" />,
+      <ChatEmployeePicker employees={mockEmployees} selectedEmployee={null} onSelect={onChange} portalName="Gateway" />,
     );
-    const cooRow = screen.getByRole("option", { name: /jinn/i });
+    const cooRow = screen.getByRole("option", { name: /gateway/i });
     expect(cooRow).toBeDefined();
     expect(cooRow.getAttribute("aria-selected")).toBe("true");
   });
@@ -47,10 +47,10 @@ describe("ChatEmployeePicker", () => {
         employees={mockEmployees}
         selectedEmployee="jimmy-dev"
         onSelect={onChange}
-        portalName="Jinn"
+        portalName="Gateway"
       />,
     );
-    fireEvent.click(screen.getByRole("option", { name: /jinn/i }));
+    fireEvent.click(screen.getByRole("option", { name: /gateway/i }));
     expect(onChange).toHaveBeenCalledWith(null);
   });
 
@@ -58,7 +58,7 @@ describe("ChatEmployeePicker", () => {
 
   it("groups employees by department with section headers", () => {
     render(
-      <ChatEmployeePicker employees={mockEmployees} selectedEmployee={null} onSelect={onChange} portalName="Jinn" />,
+      <ChatEmployeePicker employees={mockEmployees} selectedEmployee={null} onSelect={onChange} portalName="Gateway" />,
     );
     // Department headers should be present
     expect(screen.getByText("platform")).toBeDefined();
@@ -70,7 +70,7 @@ describe("ChatEmployeePicker", () => {
 
   it("renders employees within their department groups", () => {
     render(
-      <ChatEmployeePicker employees={mockEmployees} selectedEmployee={null} onSelect={onChange} portalName="Jinn" />,
+      <ChatEmployeePicker employees={mockEmployees} selectedEmployee={null} onSelect={onChange} portalName="Gateway" />,
     );
     // All employees should be visible (no more/less toggle)
     expect(screen.getByText("Jimmy Dev")).toBeDefined();
@@ -84,7 +84,7 @@ describe("ChatEmployeePicker", () => {
 
   it("calls onSelect with employee name when row is clicked", () => {
     render(
-      <ChatEmployeePicker employees={mockEmployees} selectedEmployee={null} onSelect={onChange} portalName="Jinn" />,
+      <ChatEmployeePicker employees={mockEmployees} selectedEmployee={null} onSelect={onChange} portalName="Gateway" />,
     );
     fireEvent.click(screen.getByText("Jimmy Dev"));
     expect(onChange).toHaveBeenCalledWith("jimmy-dev");
@@ -96,11 +96,11 @@ describe("ChatEmployeePicker", () => {
         employees={mockEmployees}
         selectedEmployee="jimmy-dev"
         onSelect={onChange}
-        portalName="Jinn"
+        portalName="Gateway"
       />,
     );
     // COO should NOT be selected
-    const cooRow = screen.getByRole("option", { name: /jinn/i });
+    const cooRow = screen.getByRole("option", { name: /gateway/i });
     expect(cooRow.getAttribute("aria-selected")).toBe("false");
 
     // Jimmy Dev should be selected
@@ -113,7 +113,7 @@ describe("ChatEmployeePicker", () => {
 
   it("has a search input that filters employees by name", () => {
     render(
-      <ChatEmployeePicker employees={mockEmployees} selectedEmployee={null} onSelect={onChange} portalName="Jinn" />,
+      <ChatEmployeePicker employees={mockEmployees} selectedEmployee={null} onSelect={onChange} portalName="Gateway" />,
     );
     const searchInput = screen.getByPlaceholderText(/search/i);
     expect(searchInput).toBeDefined();
@@ -127,7 +127,7 @@ describe("ChatEmployeePicker", () => {
 
   it("filters employees by department name", () => {
     render(
-      <ChatEmployeePicker employees={mockEmployees} selectedEmployee={null} onSelect={onChange} portalName="Jinn" />,
+      <ChatEmployeePicker employees={mockEmployees} selectedEmployee={null} onSelect={onChange} portalName="Gateway" />,
     );
     const searchInput = screen.getByPlaceholderText(/search/i);
     fireEvent.change(searchInput, { target: { value: "pravko" } });
@@ -141,7 +141,7 @@ describe("ChatEmployeePicker", () => {
 
   it("shows empty state when search matches nothing", () => {
     render(
-      <ChatEmployeePicker employees={mockEmployees} selectedEmployee={null} onSelect={onChange} portalName="Jinn" />,
+      <ChatEmployeePicker employees={mockEmployees} selectedEmployee={null} onSelect={onChange} portalName="Gateway" />,
     );
     const searchInput = screen.getByPlaceholderText(/search/i);
     fireEvent.change(searchInput, { target: { value: "zzzzzzz" } });
@@ -151,20 +151,20 @@ describe("ChatEmployeePicker", () => {
 
   it("COO row is always visible regardless of search", () => {
     render(
-      <ChatEmployeePicker employees={mockEmployees} selectedEmployee={null} onSelect={onChange} portalName="Jinn" />,
+      <ChatEmployeePicker employees={mockEmployees} selectedEmployee={null} onSelect={onChange} portalName="Gateway" />,
     );
     const searchInput = screen.getByPlaceholderText(/search/i);
     fireEvent.change(searchInput, { target: { value: "jimmy" } });
 
     // COO always visible
-    expect(screen.getByRole("option", { name: /jinn/i })).toBeDefined();
+    expect(screen.getByRole("option", { name: /gateway/i })).toBeDefined();
   });
 
   // --- Scrollable container ---
 
   it("renders a scrollable list container", () => {
     render(
-      <ChatEmployeePicker employees={mockEmployees} selectedEmployee={null} onSelect={onChange} portalName="Jinn" />,
+      <ChatEmployeePicker employees={mockEmployees} selectedEmployee={null} onSelect={onChange} portalName="Gateway" />,
     );
     const listbox = screen.getByRole("listbox");
     expect(listbox).toBeDefined();
@@ -176,7 +176,7 @@ describe("ChatEmployeePicker", () => {
 
   it("displays rank badges for managers and seniors", () => {
     render(
-      <ChatEmployeePicker employees={mockEmployees} selectedEmployee={null} onSelect={onChange} portalName="Jinn" />,
+      <ChatEmployeePicker employees={mockEmployees} selectedEmployee={null} onSelect={onChange} portalName="Gateway" />,
     );
     // Managers get "Mgr" badge, seniors get "Sr"
     const badges = screen.getAllByText(/^(Mgr|Sr)$/);
@@ -191,7 +191,7 @@ describe("ChatEmployeePicker", () => {
         employees={mockEmployees.slice(0, 3)}
         selectedEmployee={null}
         onSelect={onChange}
-        portalName="Jinn"
+        portalName="Gateway"
       />,
     );
     expect(screen.getByTestId("avatar-jimmy-dev")).toBeDefined();
@@ -202,7 +202,7 @@ describe("ChatEmployeePicker", () => {
 
   it("navigates with arrow keys and selects with Enter", () => {
     render(
-      <ChatEmployeePicker employees={mockEmployees} selectedEmployee={null} onSelect={onChange} portalName="Jinn" />,
+      <ChatEmployeePicker employees={mockEmployees} selectedEmployee={null} onSelect={onChange} portalName="Gateway" />,
     );
     const listbox = screen.getByRole("listbox");
 
@@ -214,7 +214,7 @@ describe("ChatEmployeePicker", () => {
 
   it("ArrowUp from first employee goes to COO", () => {
     render(
-      <ChatEmployeePicker employees={mockEmployees} selectedEmployee={null} onSelect={onChange} portalName="Jinn" />,
+      <ChatEmployeePicker employees={mockEmployees} selectedEmployee={null} onSelect={onChange} portalName="Gateway" />,
     );
     const listbox = screen.getByRole("listbox");
 
@@ -228,8 +228,8 @@ describe("ChatEmployeePicker", () => {
   // --- Empty state ---
 
   it("renders only COO when employees array is empty", () => {
-    render(<ChatEmployeePicker employees={[]} selectedEmployee={null} onSelect={onChange} portalName="Jinn" />);
-    expect(screen.getByRole("option", { name: /jinn/i })).toBeDefined();
+    render(<ChatEmployeePicker employees={[]} selectedEmployee={null} onSelect={onChange} portalName="Gateway" />);
+    expect(screen.getByRole("option", { name: /gateway/i })).toBeDefined();
     const allOptions = screen.getAllByRole("option");
     expect(allOptions).toHaveLength(1);
   });

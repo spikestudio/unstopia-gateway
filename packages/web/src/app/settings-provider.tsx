@@ -7,7 +7,7 @@ import {
   type EmployeeOverride,
   hexToAccentFill,
   hexToContrastText,
-  type JinnSettings,
+  type GatewaySettings,
   loadSettings,
   saveSettings,
 } from "@/lib/settings";
@@ -19,7 +19,7 @@ interface EmployeeDisplay {
 }
 
 interface SettingsContextValue {
-  settings: JinnSettings;
+  settings: GatewaySettings;
   setAccentColor: (color: string | null) => void;
   setPortalName: (name: string | null) => void;
   setPortalSubtitle: (subtitle: string | null) => void;
@@ -66,7 +66,7 @@ const SettingsContext = createContext<SettingsContextValue>({
 export function SettingsProvider({ children }: { children: React.ReactNode }) {
   // Initialize with defaults so server and client render the same HTML.
   // Hydrate from localStorage after mount to avoid hydration mismatch.
-  const [settings, setSettings] = useState<JinnSettings>({ ...DEFAULTS });
+  const [settings, setSettings] = useState<GatewaySettings>({ ...DEFAULTS });
 
   // Hydrate from localStorage first, then always sync portalName/operatorName
   // from backend config (source of truth). This ensures the correct COO name
@@ -107,7 +107,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
     }
   }, [settings.accentColor]);
 
-  const update = useCallback((updater: (prev: JinnSettings) => JinnSettings) => {
+  const update = useCallback((updater: (prev: GatewaySettings) => GatewaySettings) => {
     setSettings((prev) => {
       const next = updater(prev);
       saveSettings(next);
@@ -265,7 +265,7 @@ export function DocumentTitle() {
 
   useEffect(() => {
     function applyTitle() {
-      const name = nameRef.current || "Jinn";
+      const name = nameRef.current || "Gateway";
       const desired = `${name} - AI Gateway`;
       if (document.title !== desired) {
         document.title = desired;

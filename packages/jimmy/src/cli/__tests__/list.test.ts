@@ -123,7 +123,7 @@ describe("runList", () => {
     process.env.USERPROFILE = "/home/winuser";
 
     mockLoadInstances.mockReturnValue([
-      { name: "win-inst", port: 7779, home: "/home/winuser/.jinn", createdAt: "2024-01-01T00:00:00.000Z" },
+      { name: "win-inst", port: 7779, home: "/home/winuser/.gateway", createdAt: "2024-01-01T00:00:00.000Z" },
     ]);
     mockExistsSync.mockReturnValue(false);
 
@@ -151,7 +151,7 @@ describe("runList", () => {
     delete process.env.USERPROFILE;
 
     mockLoadInstances.mockReturnValue([
-      { name: "nohome-inst", port: 7780, home: "/some/path/.jinn", createdAt: "2024-01-01T00:00:00.000Z" },
+      { name: "nohome-inst", port: 7780, home: "/some/path/.gateway", createdAt: "2024-01-01T00:00:00.000Z" },
     ]);
     mockExistsSync.mockReturnValue(false);
 

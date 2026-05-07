@@ -40,7 +40,7 @@ export function Sidebar() {
   const [showSwitcher, setShowSwitcher] = useState(false);
 
   const emoji = settings.portalEmoji ?? "\u{1F9DE}";
-  const portalName = settings.portalName ?? "Jinn";
+  const portalName = settings.portalName ?? "Gateway";
 
   // Fetch available instances
   useEffect(() => {

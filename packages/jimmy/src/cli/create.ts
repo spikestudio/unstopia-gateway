@@ -18,8 +18,8 @@ export async function runCreate(name: string, port?: number): Promise<void> {
     process.exit(1);
   }
 
-  if (name === "jinn") {
-    console.error(`${RED}Error:${RESET} "jinn" is the default instance. Use "jinn setup" instead.`);
+  if (name === "gateway") {
+    console.error(`${RED}Error:${RESET} "gateway" is the default instance. Use "gateway setup" instead.`);
     process.exit(1);
   }
 
@@ -39,12 +39,12 @@ export async function runCreate(name: string, port?: number): Promise<void> {
     process.exit(1);
   }
 
-  // Run setup in a subprocess with JINN_HOME set so paths.ts resolves correctly.
+  // Run setup in a subprocess with GATEWAY_HOME set so paths.ts resolves correctly.
   // This avoids Node module caching issues — paths.ts evaluates fresh in the child.
-  const jinnBin = process.argv[1];
+  const gatewayBin = process.argv[1];
   try {
-    execFileSync(process.execPath, [jinnBin, "setup"], {
-      env: { ...process.env, JINN_HOME: home, JINN_INSTANCE: name },
+    execFileSync(process.execPath, [gatewayBin, "setup"], {
+      env: { ...process.env, GATEWAY_HOME: home, GATEWAY_INSTANCE: name },
       stdio: "inherit",
     });
   } catch {
@@ -78,6 +78,6 @@ export async function runCreate(name: string, port?: number): Promise<void> {
   console.log(`\n${GREEN}Instance "${name}" created successfully.${RESET}`);
   console.log(`  Home: ${DIM}${home}${RESET}`);
   console.log(`  Port: ${DIM}${assignedPort}${RESET}`);
-  console.log(`\nStart with: ${DIM}jinn -i ${name} start${RESET}`);
-  console.log(`Or:         ${DIM}jinn -i ${name} start --daemon${RESET}\n`);
+  console.log(`\nStart with: ${DIM}gateway -i ${name} start${RESET}`);
+  console.log(`Or:         ${DIM}gateway -i ${name} start --daemon${RESET}\n`);
 }

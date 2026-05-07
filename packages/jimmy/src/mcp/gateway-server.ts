@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 /**
- * Jinn Gateway MCP Server
+ * Gateway Gateway MCP Server
  *
  * A Model Context Protocol (MCP) server that gives AI employees
- * first-class access to the Jinn gateway API. Instead of crafting
+ * first-class access to the Gateway gateway API. Instead of crafting
  * curl commands, employees get typed tools for messaging, org queries,
  * session management, and cron control.
  *
@@ -12,7 +12,7 @@
 
 import { createInterface } from "node:readline";
 
-const GATEWAY_URL = process.env.JINN_GATEWAY_URL || "http://127.0.0.1:7777";
+const GATEWAY_URL = process.env.GATEWAY_URL || "http://127.0.0.1:7777";
 
 // ─── MCP Protocol Types ───
 
@@ -51,7 +51,7 @@ export const TOOLS = [
   {
     name: "list_sessions",
     description:
-      "List all active sessions in the Jinn gateway. Returns session IDs, employees, status, and timestamps.",
+      "List all active sessions in the Gateway gateway. Returns session IDs, employees, status, and timestamps.",
     inputSchema: {
       type: "object" as const,
       properties: {
@@ -342,7 +342,7 @@ export async function handleRequest(request: JsonRpcRequest): Promise<void> {
             tools: {},
           },
           serverInfo: {
-            name: "jinn-gateway",
+            name: "unstopia-gateway",
             version: "0.1.0",
           },
         },

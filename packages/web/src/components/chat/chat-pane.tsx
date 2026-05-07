@@ -61,7 +61,7 @@ export function ChatPane({
   onSessionCreated,
   onSessionMetaChange,
   onRefresh,
-  portalName = "Jinn",
+  portalName = "Gateway",
   subscribe,
   connectionSeq,
   skillsVersion,

@@ -5,7 +5,7 @@ export {
   CRON_JOBS,
   CRON_RUNS,
   DOCS_DIR,
-  JINN_HOME,
+  GATEWAY_HOME,
   LOGS_DIR,
   ORG_DIR,
   PID_FILE,
@@ -25,7 +25,7 @@ export type {
   EngineResult,
   EngineRunOpts,
   IncomingMessage,
-  JinnConfig,
+  GatewayConfig,
   Session,
   Target,
 } from "./shared/types.js";

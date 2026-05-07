@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import type { Engine, JinnConfig, Session } from "../../../shared/types.js";
+import type { Engine, GatewayConfig, Session } from "../../../shared/types.js";
 import type { ApiContext } from "../../types.js";
 import type { FallbackDeps, FallbackRunParams } from "../session-fallback.js";
 import { switchToFallback } from "../session-fallback.js";
@@ -33,11 +33,11 @@ const makeEngine = (): Engine =>
 const makeContext = (): ApiContext =>
   ({ emit: vi.fn(), sessionManager: { getEngine: vi.fn() } }) as unknown as ApiContext;
 
-const makeConfig = (): JinnConfig =>
+const makeConfig = (): GatewayConfig =>
   ({
     engines: { default: "claude", claude: {}, codex: {} },
-    portal: { portalName: "Jinn" },
-  }) as unknown as JinnConfig;
+    portal: { portalName: "Gateway" },
+  }) as unknown as GatewayConfig;
 
 const makeRunParams = (overrides: Partial<FallbackRunParams> = {}): FallbackRunParams => ({
   prompt: "hello",
@@ -232,11 +232,11 @@ describe("switchToFallback", () => {
   });
 
   it("uses portalName when session.employee is falsy (line 184)", async () => {
-    // Cover line 184: session.employee || config.portal?.portalName || "Jinn"
+    // Cover line 184: session.employee || config.portal?.portalName || "Gateway"
     const context = makeContext();
     const session = makeSession({ employee: undefined as never });
     await switchToFallback(makeDeps(), session, makeEngine(), "codex", makeRunParams(), makeConfig(), context);
-    expect(context.emit).toHaveBeenCalledWith("session:completed", expect.objectContaining({ employee: "Jinn" }));
+    expect(context.emit).toHaveBeenCalledWith("session:completed", expect.objectContaining({ employee: "Gateway" }));
   });
 
   it("should trigger onStream callback when engine emits delta events (line 137)", async () => {
@@ -297,12 +297,12 @@ describe("switchToFallback", () => {
     expect(sessions?.codex).toBeUndefined();
   });
 
-  it("falls back to literal Jinn when both session.employee and portalName are absent (line 184)", async () => {
-    // Cover: session.employee || config.portal?.portalName || "Jinn"
+  it("falls back to literal Gateway when both session.employee and portalName are absent (line 184)", async () => {
+    // Cover: session.employee || config.portal?.portalName || "Gateway"
     const context = makeContext();
     const session = makeSession({ employee: undefined as never });
-    const config = { engines: { default: "claude", claude: {}, codex: {} } } as unknown as JinnConfig;
+    const config = { engines: { default: "claude", claude: {}, codex: {} } } as unknown as GatewayConfig;
     await switchToFallback(makeDeps(), session, makeEngine(), "codex", makeRunParams(), config, context);
-    expect(context.emit).toHaveBeenCalledWith("session:completed", expect.objectContaining({ employee: "Jinn" }));
+    expect(context.emit).toHaveBeenCalledWith("session:completed", expect.objectContaining({ employee: "Gateway" }));
   });
 });

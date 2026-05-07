@@ -9,7 +9,7 @@ import {
   SqliteQueueRepository,
   SqliteSessionRepository,
 } from "../sessions/repositories/index.js";
-import type { Engine, JinnConfig } from "../shared/types.js";
+import type { Engine, GatewayConfig } from "../shared/types.js";
 
 export type { Repositories };
 
@@ -22,7 +22,7 @@ export function buildRepositories(db: Database.Database): Repositories {
   };
 }
 
-/** Build the engine map. Each key matches JinnConfig.engines keys. */
+/** Build the engine map. Each key matches GatewayConfig.engines keys. */
 export function buildEngines(): Map<string, Engine> {
   const engines = new Map<string, Engine>();
   engines.set("claude", new ClaudeEngine());
@@ -32,7 +32,7 @@ export function buildEngines(): Map<string, Engine> {
 }
 
 /** Derive the list of active connector names from config. */
-export function buildConnectorNames(config: JinnConfig): string[] {
+export function buildConnectorNames(config: GatewayConfig): string[] {
   const names: string[] = [];
   if (config.connectors?.slack?.appToken && config.connectors?.slack?.botToken) {
     names.push("slack");

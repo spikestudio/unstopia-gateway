@@ -23,7 +23,7 @@ export function BreadcrumbProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (items.length > 0) {
       const trail = items.map((i) => i.label).join(" > ");
-      document.title = `${trail} - Jinn`;
+      document.title = `${trail} - Gateway`;
     }
   }, [items]);
 

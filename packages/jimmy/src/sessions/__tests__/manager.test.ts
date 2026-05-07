@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Result } from "../../shared/result.js";
-import type { Connector, Engine, JinnConfig } from "../../shared/types.js";
+import type { Connector, Engine, GatewayConfig } from "../../shared/types.js";
 import { InMemoryFileRepository } from "../repositories/InMemoryFileRepository.js";
 import { InMemoryMessageRepository } from "../repositories/InMemoryMessageRepository.js";
 import { InMemoryQueueRepository } from "../repositories/InMemoryQueueRepository.js";
@@ -33,13 +33,13 @@ import { handleCronCommand } from "../cron-command-handler.js";
 import { runSession } from "../engine-runner.js";
 import { SessionManager } from "../manager.js";
 
-function makeConfig(): JinnConfig {
+function makeConfig(): GatewayConfig {
   return {
     gateway: { port: 7777, host: "0.0.0.0" },
     engines: { default: "claude", claude: { bin: "claude", model: "sonnet" }, codex: { bin: "codex", model: "" } },
     connectors: {},
     logging: { file: false, stdout: false, level: "info" },
-  } as unknown as JinnConfig;
+  } as unknown as GatewayConfig;
 }
 
 function makeEngine(): Engine {
@@ -467,7 +467,7 @@ describe("SessionManager", () => {
           codex: { bin: "codex", model: "" },
           gemini: { bin: "gemini", model: "gemini-2.5-flash" },
         },
-      } as unknown as import("../../shared/types.js").JinnConfig;
+      } as unknown as import("../../shared/types.js").GatewayConfig;
       const geminiManager = new SessionManager(configWithGemini, engines, [], makeRepos(sessionRepo));
       const connector = makeConnector();
 

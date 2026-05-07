@@ -16,13 +16,13 @@ const makeWASocket = ((makeWASocketImport as unknown as { default?: typeof makeW
 import fs from "node:fs";
 import path from "node:path";
 import { logger } from "../../shared/logger.js";
-import { JINN_HOME } from "../../shared/paths.js";
+import { GATEWAY_HOME } from "../../shared/paths.js";
 import { exponentialBackoffMs } from "../../shared/retry.js";
 import type { Connector, ConnectorCapabilities, ConnectorHealth, IncomingMessage, Target } from "../../shared/types.js";
 import { formatResponse } from "./format.js";
 
 export interface WhatsAppConnectorConfig {
-  /** Where to store session credentials (default: JINN_HOME/.whatsapp-auth) */
+  /** Where to store session credentials (default: GATEWAY_HOME/.whatsapp-auth) */
   authDir?: string;
   /** Allowed phone numbers in JID format (e.g. "447700900000@s.whatsapp.net") — empty = allow all */
   allowFrom?: string[];
@@ -64,7 +64,7 @@ export class WhatsAppConnector implements Connector {
 
   constructor(config: WhatsAppConnectorConfig) {
     this.config = config;
-    this.authDir = config.authDir ?? path.join(JINN_HOME, ".whatsapp-auth");
+    this.authDir = config.authDir ?? path.join(GATEWAY_HOME, ".whatsapp-auth");
     this.allowedJids = new Set(config.allowFrom ?? []);
     fs.mkdirSync(this.authDir, { recursive: true });
   }
@@ -280,7 +280,7 @@ export class WhatsAppConnector implements Connector {
         );
         const ext = message.message?.imageMessage ? "jpg" : message.message?.audioMessage ? "ogg" : "bin";
         const filename = `wa-attachment-${message.key.id}.${ext}`;
-        const tmpDir = path.join(JINN_HOME, "tmp");
+        const tmpDir = path.join(GATEWAY_HOME, "tmp");
         const localPath = path.join(tmpDir, filename);
         fs.mkdirSync(tmpDir, { recursive: true });
         fs.writeFileSync(localPath, buffer as Buffer);

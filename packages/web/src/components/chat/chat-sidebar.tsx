@@ -81,9 +81,9 @@ interface FlatItem {
   pinKey: string;
 }
 
-const COLLAPSE_STORAGE_KEY = "jinn-sidebar-collapsed";
-const EXPANDED_STORAGE_KEY = "jinn-sidebar-expanded";
-const PINNED_STORAGE_KEY = "jinn-pinned-sessions";
+const COLLAPSE_STORAGE_KEY = "gateway-sidebar-collapsed";
+const EXPANDED_STORAGE_KEY = "gateway-sidebar-expanded";
+const PINNED_STORAGE_KEY = "gateway-pinned-sessions";
 
 function formatTime(dateStr?: string): string {
   if (!dateStr) return "";
@@ -101,7 +101,7 @@ function formatTime(dateStr?: string): string {
 
 function getReadSessions(): Set<string> {
   try {
-    const raw = localStorage.getItem("jinn-read-sessions");
+    const raw = localStorage.getItem("gateway-read-sessions");
     return raw ? new Set(JSON.parse(raw)) : new Set();
   } catch {
     return new Set();
@@ -113,7 +113,7 @@ function markSessionRead(id: string) {
   read.add(id);
   const arr = Array.from(read);
   if (arr.length > 500) arr.splice(0, arr.length - 500);
-  localStorage.setItem("jinn-read-sessions", JSON.stringify(arr));
+  localStorage.setItem("gateway-read-sessions", JSON.stringify(arr));
 }
 
 function markAllReadForEmployee(sessions: Session[]) {
@@ -121,7 +121,7 @@ function markAllReadForEmployee(sessions: Session[]) {
   for (const s of sessions) read.add(s.id);
   const arr = Array.from(read);
   if (arr.length > 500) arr.splice(0, arr.length - 500);
-  localStorage.setItem("jinn-read-sessions", JSON.stringify(arr));
+  localStorage.setItem("gateway-read-sessions", JSON.stringify(arr));
 }
 
 function getPinnedSessions(): Set<string> {
@@ -237,12 +237,12 @@ export function ChatSidebar({
   onOrderComputed,
 }: ChatSidebarProps) {
   const { settings } = useSettings();
-  const portalName = settings.portalName ?? "Jinn";
+  const portalName = settings.portalName ?? "Gateway";
   const portalSlug = portalName.toLowerCase();
 
   const fixTitle = (title: string | undefined, employee: string | undefined) => {
     if (!title) return employee || portalName;
-    if (portalName !== "Jinn" && title.startsWith("Jinn - ")) {
+    if (portalName !== "Gateway" && title.startsWith("Gateway - ")) {
       return portalName + title.slice(4);
     }
     return title;

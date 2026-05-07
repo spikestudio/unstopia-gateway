@@ -32,7 +32,7 @@ describe("detectProjectContext", () => {
   it("should do nothing when ~/Projects directory does not exist", () => {
     mockExistsSync.mockReturnValue(false);
 
-    detectProjectContext("jinn");
+    detectProjectContext("gateway");
 
     expect(console.log).not.toHaveBeenCalled();
   });
@@ -54,7 +54,7 @@ describe("detectProjectContext", () => {
       return [] as unknown as ReturnType<typeof fs.readdirSync>;
     });
 
-    detectProjectContext("jinn");
+    detectProjectContext("gateway");
 
     expect(console.log).toHaveBeenCalled();
     const calls = vi.mocked(console.log).mock.calls.map((c) => String(c[0]));
@@ -81,7 +81,7 @@ describe("detectProjectContext", () => {
       JSON.stringify({ dependencies: { react: "^18.0.0" } }) as unknown as ReturnType<typeof fs.readFileSync>,
     );
 
-    detectProjectContext("jinn");
+    detectProjectContext("gateway");
 
     expect(console.log).toHaveBeenCalled();
     const calls = vi.mocked(console.log).mock.calls.map((c) => String(c[0]));
@@ -105,7 +105,7 @@ describe("detectProjectContext", () => {
       JSON.stringify({ dependencies: { next: "14.0.0" } }) as unknown as ReturnType<typeof fs.readFileSync>,
     );
 
-    detectProjectContext("jinn");
+    detectProjectContext("gateway");
 
     const calls = vi.mocked(console.log).mock.calls.map((c) => String(c[0]));
     expect(calls.some((c) => c.includes("React"))).toBe(true);
@@ -128,7 +128,7 @@ describe("detectProjectContext", () => {
       JSON.stringify({ dependencies: { lodash: "4.0.0" } }) as unknown as ReturnType<typeof fs.readFileSync>,
     );
 
-    detectProjectContext("jinn");
+    detectProjectContext("gateway");
 
     // No React detected, so no suggestion for React
     expect(vi.mocked(console.log)).not.toHaveBeenCalled();
@@ -174,7 +174,7 @@ describe("detectProjectContext", () => {
       return [] as unknown as ReturnType<typeof fs.readdirSync>;
     });
 
-    detectProjectContext("jinn");
+    detectProjectContext("gateway");
 
     // No indicator found, should not print suggestions
     expect(console.log).not.toHaveBeenCalled();
@@ -195,7 +195,7 @@ describe("detectProjectContext", () => {
     });
 
     // Should not throw
-    expect(() => detectProjectContext("jinn")).not.toThrow();
+    expect(() => detectProjectContext("gateway")).not.toThrow();
   });
 
   it("should return false from React indicator when readFileSync/JSON.parse throws (line 85 branch)", () => {
@@ -216,7 +216,7 @@ describe("detectProjectContext", () => {
       throw new Error("EACCES: permission denied");
     });
 
-    expect(() => detectProjectContext("jinn")).not.toThrow();
+    expect(() => detectProjectContext("gateway")).not.toThrow();
     // No suggestions since React check failed
     expect(vi.mocked(console.log)).not.toHaveBeenCalled();
   });
@@ -239,7 +239,7 @@ describe("detectProjectContext", () => {
       return [] as unknown as ReturnType<typeof fs.readdirSync>;
     });
 
-    detectProjectContext("jinn");
+    detectProjectContext("gateway");
 
     // At least one Docker suggestion because sub-project/Dockerfile exists
     const calls = vi.mocked(console.log).mock.calls.map((c) => String(c[0]));
@@ -257,7 +257,7 @@ describe("detectProjectContext", () => {
     });
 
     // Should not throw — catch at line 121 returns
-    expect(() => detectProjectContext("jinn")).not.toThrow();
+    expect(() => detectProjectContext("gateway")).not.toThrow();
     expect(vi.mocked(console.log)).not.toHaveBeenCalled();
   });
 
@@ -275,7 +275,7 @@ describe("detectProjectContext", () => {
       throw new Error("EACCES");
     });
 
-    expect(() => detectProjectContext("jinn")).not.toThrow();
+    expect(() => detectProjectContext("gateway")).not.toThrow();
   });
 });
 
@@ -287,7 +287,7 @@ describe("defaultClaudeMd", () => {
   });
 
   it("should return a non-empty string", () => {
-    const result = defaultClaudeMd("jinn");
+    const result = defaultClaudeMd("gateway");
 
     expect(result.length).toBeGreaterThan(0);
   });
@@ -301,7 +301,7 @@ describe("defaultAgentsMd", () => {
   });
 
   it("should return a non-empty string", () => {
-    const result = defaultAgentsMd("jinn");
+    const result = defaultAgentsMd("gateway");
 
     expect(result.length).toBeGreaterThan(0);
   });

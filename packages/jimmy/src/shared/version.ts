@@ -16,7 +16,7 @@ export function compareSemver(a: string, b: string): number {
   return 0;
 }
 
-/** Read the package version from jinn-cli's package.json. */
+/** Read the package version from gateway-cli's package.json. */
 export function getPackageVersion(): string {
   const pkgPath = path.join(TEMPLATE_DIR, "..", "package.json");
   return JSON.parse(fs.readFileSync(pkgPath, "utf-8")).version;
@@ -27,9 +27,9 @@ export function getInstanceVersion(): string {
   if (!fs.existsSync(CONFIG_PATH)) return "0.0.0";
   try {
     const config = yaml.load(fs.readFileSync(CONFIG_PATH, "utf-8")) as Record<string, unknown>;
-    const jinn = config?.jinn;
-    if (jinn && typeof jinn === "object" && "version" in jinn) {
-      return String((jinn as Record<string, unknown>).version ?? "0.0.0");
+    const meta = config?.meta;
+    if (meta && typeof meta === "object" && "version" in meta) {
+      return String((meta as Record<string, unknown>).version ?? "0.0.0");
     }
     return "0.0.0";
   } catch {

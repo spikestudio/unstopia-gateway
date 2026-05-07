@@ -90,7 +90,7 @@ vi.mock("node:crypto", () => ({ randomUUID: vi.fn().mockReturnValue("test-uuid")
 vi.mock("../sessions/registry.js", () => ({ initDb: vi.fn().mockReturnValue(mockDb) }))
 vi.mock("../shared/config.js", () => ({ loadConfig: vi.fn().mockReturnValue({ remotes: [] }) }))
 vi.mock("../shared/logger.js", () => ({ logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() } }))
-vi.mock("../shared/paths.js", () => ({ FILES_DIR: "/tmp/test-files", JINN_HOME: "/tmp" }))
+vi.mock("../shared/paths.js", () => ({ FILES_DIR: "/tmp/test-files", GATEWAY_HOME: "/tmp" }))
 ```
 
 **DB モックの構成（SQLite の prepare.get 形式）:**

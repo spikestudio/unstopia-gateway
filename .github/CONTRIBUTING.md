@@ -1,4 +1,4 @@
-# Contributing to Jinn
+# Contributing to unstopia-gateway
 
 Thanks for your interest in contributing. This guide covers the basics.
 
@@ -15,7 +15,7 @@ Thanks for your interest in contributing. This guide covers the basics.
    ```bash
    pnpm install
    ```
-3. Initialize Jinn (one-time — builds all packages and creates `~/.jinn`):
+3. Initialize gateway (one-time — builds all packages and creates `~/.gateway`):
    ```bash
    pnpm setup
    ```

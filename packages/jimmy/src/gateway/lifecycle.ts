@@ -4,11 +4,11 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { loadConfig } from "../shared/config.js";
 import { logger } from "../shared/logger.js";
-import { JINN_HOME, PID_FILE } from "../shared/paths.js";
-import type { JinnConfig } from "../shared/types.js";
+import { GATEWAY_HOME, PID_FILE } from "../shared/paths.js";
+import type { GatewayConfig } from "../shared/types.js";
 import { startGateway } from "./server.js";
 
-export async function startForeground(config: JinnConfig): Promise<void> {
+export async function startForeground(config: GatewayConfig): Promise<void> {
   const cleanup = await startGateway(config);
 
   let shuttingDown = false;
@@ -35,7 +35,7 @@ export async function startForeground(config: JinnConfig): Promise<void> {
   process.on("SIGTERM", shutdown);
 }
 
-export function startDaemon(_config: JinnConfig): void {
+export function startDaemon(_config: GatewayConfig): void {
   const __filename = fileURLToPath(import.meta.url);
   const candidateEntryScripts = [
     // When running from a built bundle, __filename is dist/src/gateway/lifecycle.js
@@ -49,7 +49,7 @@ export function startDaemon(_config: JinnConfig): void {
   const child = fork(entryScript, [], {
     detached: true,
     stdio: "ignore",
-    env: { ...process.env, JINN_HOME },
+    env: { ...process.env, GATEWAY_HOME },
   });
 
   if (child.pid) {

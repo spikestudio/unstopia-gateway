@@ -39,9 +39,9 @@
 - [ ] AC-E029-04: `saveInstances(instances)` を呼び出すと `fs.mkdirSync` と `fs.writeFileSync` が適切な引数で呼ばれること
 - [ ] AC-E029-05: `nextAvailablePort([])` を呼び出すと `7777` を返すこと
 - [ ] AC-E029-06: `nextAvailablePort([{port: 7777, ...}])` を呼び出すと `7778` を返すこと
-- [ ] AC-E029-07: `ensureDefaultInstance()` を呼び出し既に "jinn" インスタンスが存在するとき、`saveInstances` が呼ばれないこと
-- [ ] AC-E029-08: `ensureDefaultInstance()` を呼び出し "jinn" が存在しないとき、"jinn" インスタンスを先頭に追加して `saveInstances` が呼ばれること
-- [ ] AC-E029-09: `findInstance("jinn")` を呼び出し該当するインスタンスが存在するとき、そのインスタンスオブジェクトを返すこと
+- [ ] AC-E029-07: `ensureDefaultInstance()` を呼び出し既に "gateway" インスタンスが存在するとき、`saveInstances` が呼ばれないこと
+- [ ] AC-E029-08: `ensureDefaultInstance()` を呼び出し "gateway" が存在しないとき、"gateway" インスタンスを先頭に追加して `saveInstances` が呼ばれること
+- [ ] AC-E029-09: `findInstance("gateway")` を呼び出し該当するインスタンスが存在するとき、そのインスタンスオブジェクトを返すこと
 - [ ] AC-E029-10: `findInstance("nonexistent")` を呼び出したとき、`undefined` を返すこと
 - [ ] Epic 仕様書の AC チェックボックス更新
 

@@ -19,10 +19,10 @@ function ask(question: string): Promise<string> {
 }
 
 export async function runNuke(name?: string): Promise<void> {
-  const instances = loadInstances().filter((i) => i.name !== "jinn");
+  const instances = loadInstances().filter((i) => i.name !== "gateway");
 
   if (instances.length === 0) {
-    console.log('No removable instances found. The default "jinn" instance cannot be nuked.');
+    console.log('No removable instances found. The default "gateway" instance cannot be nuked.');
     return;
   }
 
@@ -47,8 +47,8 @@ export async function runNuke(name?: string): Promise<void> {
     }
   }
 
-  if (name === "jinn") {
-    console.error(`${RED}Error:${RESET} Cannot nuke the default "jinn" instance.`);
+  if (name === "gateway") {
+    console.error(`${RED}Error:${RESET} Cannot nuke the default "gateway" instance.`);
     process.exit(1);
   }
 

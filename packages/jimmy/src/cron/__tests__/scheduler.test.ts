@@ -38,7 +38,7 @@ vi.mock("../../shared/logger.js", () => ({
   },
 }));
 
-import type { CronJob, JinnConfig } from "../../shared/types.js";
+import type { CronJob, GatewayConfig } from "../../shared/types.js";
 import { loadJobs, saveJobs } from "../jobs.js";
 import { runCronJob } from "../runner.js";
 import { reloadScheduler, setCronJobEnabled, startScheduler, stopScheduler, triggerCronJob } from "../scheduler.js";
@@ -55,7 +55,7 @@ function makeJob(overrides: Partial<CronJob> = {}): CronJob {
 }
 
 const mockSessionManager = {} as Parameters<typeof startScheduler>[1];
-const mockConfig = { engines: { default: "claude" } } as unknown as JinnConfig;
+const mockConfig = { engines: { default: "claude" } } as unknown as GatewayConfig;
 const mockConnectors = new Map<string, Parameters<typeof startScheduler>[3] extends Map<string, infer V> ? V : never>();
 
 describe("AC-E003-04: startScheduler / scheduleJobs", () => {

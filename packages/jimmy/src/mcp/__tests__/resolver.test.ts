@@ -2,14 +2,14 @@ import fs from "node:fs";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const { tmpJinnHomeForModule } = vi.hoisted(() => {
+const { tmpGatewayHomeForModule } = vi.hoisted(() => {
   // eslint-disable-next-line @typescript-eslint/no-require-imports suppress-approved: vi.hoisted()内のrequireはESMとの競合回避のため技術的必要性あり
   const fss = require("node:fs") as typeof import("node:fs");
   // eslint-disable-next-line @typescript-eslint/no-require-imports suppress-approved: vi.hoisted()内のrequireはESMとの競合回避のため技術的必要性あり
   const oss = require("node:os") as typeof import("node:os");
   // eslint-disable-next-line @typescript-eslint/no-require-imports suppress-approved: vi.hoisted()内のrequireはESMとの競合回避のため技術的必要性あり
   const ps = require("node:path") as typeof import("node:path");
-  return { tmpJinnHomeForModule: fss.mkdtempSync(ps.join(oss.tmpdir(), "jinn-paths-")) };
+  return { tmpGatewayHomeForModule: fss.mkdtempSync(ps.join(oss.tmpdir(), "gateway-paths-")) };
 });
 
 import { logger } from "../../shared/logger.js";
@@ -20,7 +20,7 @@ vi.mock("../../shared/logger.js", () => ({
 }));
 
 vi.mock("../../shared/paths.js", () => ({
-  JINN_HOME: tmpJinnHomeForModule,
+  GATEWAY_HOME: tmpGatewayHomeForModule,
 }));
 
 // ── resolveEnvVar ─────────────────────────────────────────────────────────────
@@ -71,12 +71,12 @@ describe("writeMcpConfigFile / cleanupMcpConfigFile", () => {
 
   afterEach(() => {
     // Clean up any written files
-    const filePath = path.join(tmpJinnHomeForModule, "tmp", "mcp", `${testSessionId}.json`);
+    const filePath = path.join(tmpGatewayHomeForModule, "tmp", "mcp", `${testSessionId}.json`);
     if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
   });
 
   // AC-E027-31
-  it("should create JINN_HOME/tmp/mcp/{sessionId}.json with correct content", () => {
+  it("should create GATEWAY_HOME/tmp/mcp/{sessionId}.json with correct content", () => {
     const config = { mcpServers: { gateway: { command: "node", args: ["gateway-server.js"] } } };
 
     const filePath = writeMcpConfigFile(config, testSessionId);
@@ -88,7 +88,7 @@ describe("writeMcpConfigFile / cleanupMcpConfigFile", () => {
   });
 
   // AC-E027-32
-  it("should delete JINN_HOME/tmp/mcp/{sessionId}.json on cleanup", () => {
+  it("should delete GATEWAY_HOME/tmp/mcp/{sessionId}.json on cleanup", () => {
     const config = { mcpServers: {} };
     const filePath = writeMcpConfigFile(config, testSessionId);
     expect(fs.existsSync(filePath)).toBe(true);

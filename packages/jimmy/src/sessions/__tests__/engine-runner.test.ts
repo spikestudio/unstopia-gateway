@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { Connector, Engine, IncomingMessage, JinnConfig, Session, Target } from "../../shared/types.js";
+import type { Connector, Engine, IncomingMessage, GatewayConfig, Session, Target } from "../../shared/types.js";
 
 // 外部依存を vi.mock で分離
 vi.mock("../../gateway/budgets.js", () => ({
@@ -39,10 +39,10 @@ vi.mock("../../shared/logger.js", () => ({
 }));
 
 vi.mock("../../shared/paths.js", () => ({
-  JINN_HOME: "/test-jinn-home",
-  ORG_DIR: "/test-jinn-home/org",
-  DOCS_DIR: "/test-jinn-home/docs",
-  CRON_JOBS: "/test-jinn-home/cron/jobs.json",
+  GATEWAY_HOME: "/test-gateway-home",
+  ORG_DIR: "/test-gateway-home/org",
+  DOCS_DIR: "/test-gateway-home/docs",
+  CRON_JOBS: "/test-gateway-home/cron/jobs.json",
 }));
 
 vi.mock("../../shared/effort.js", () => ({
@@ -83,7 +83,7 @@ function unwrap<T, E>(result: Result<T | null, E>): T | undefined {
   return result.ok ? (result.value ?? undefined) : undefined;
 }
 
-function makeConfig(): JinnConfig {
+function makeConfig(): GatewayConfig {
   return {
     gateway: { port: 7777, host: "127.0.0.1" },
     engines: {
@@ -93,7 +93,7 @@ function makeConfig(): JinnConfig {
     },
     connectors: {},
     logging: { file: false, stdout: false, level: "info" },
-  } as unknown as JinnConfig;
+  } as unknown as GatewayConfig;
 }
 
 function makeEngine(resultOverrides: Partial<{ result: string; error: string; sessionId: string }> = {}): Engine {
@@ -262,7 +262,7 @@ describe("runSession", () => {
       const config = {
         ...makeConfig(),
         budgets: { employees: { alice: 10 } },
-      } as unknown as JinnConfig;
+      } as unknown as GatewayConfig;
 
       await runSession(
         sessionWithId,
@@ -298,7 +298,7 @@ describe("runSession", () => {
       const config = {
         ...makeConfig(),
         budgets: { employees: { alice: 10 } },
-      } as unknown as JinnConfig;
+      } as unknown as GatewayConfig;
 
       await runSession(
         sessionWithId,
@@ -724,7 +724,7 @@ describe("runSession", () => {
       const config = {
         ...makeConfig(),
         budgets: { employees: { alice: 10 } }, // bob は未設定
-      } as unknown as JinnConfig;
+      } as unknown as GatewayConfig;
 
       await runSession(
         session,
@@ -760,7 +760,7 @@ describe("runSession", () => {
       const config = {
         ...makeConfig(),
         sessions: { rateLimitStrategy: "fallback", fallbackEngine: "codex" as const },
-      } as unknown as JinnConfig;
+      } as unknown as GatewayConfig;
 
       await runSession(
         session,
@@ -816,7 +816,7 @@ describe("runSession", () => {
       const config = {
         ...makeConfig(),
         sessions: { rateLimitStrategy: "fallback", fallbackEngine: "codex" as const },
-      } as unknown as JinnConfig;
+      } as unknown as GatewayConfig;
 
       await runSession(
         session,
@@ -851,7 +851,7 @@ describe("runSession", () => {
       const config = {
         ...makeConfig(),
         sessions: { rateLimitStrategy: "fallback", fallbackEngine: "codex" as const },
-      } as unknown as JinnConfig;
+      } as unknown as GatewayConfig;
 
       await runSession(
         session,
@@ -904,7 +904,7 @@ describe("runSession", () => {
       const config = {
         ...makeConfig(),
         sessions: { rateLimitStrategy: "fallback", fallbackEngine: "codex" as const },
-      } as unknown as JinnConfig;
+      } as unknown as GatewayConfig;
 
       await runSession(
         session,
@@ -956,7 +956,7 @@ describe("runSession", () => {
       const config = {
         ...makeConfig(),
         sessions: { rateLimitStrategy: "fallback", fallbackEngine: "codex" as const },
-      } as unknown as JinnConfig;
+      } as unknown as GatewayConfig;
 
       await runSession(
         session,
@@ -1013,7 +1013,7 @@ describe("runSession", () => {
       const config = {
         ...makeConfig(),
         sessions: { rateLimitStrategy: "fallback", fallbackEngine: "codex" as const },
-      } as unknown as JinnConfig;
+      } as unknown as GatewayConfig;
 
       await runSession(
         session,
@@ -1049,7 +1049,7 @@ describe("runSession", () => {
       const config = {
         ...makeConfig(),
         sessions: { rateLimitStrategy: "wait" }, // fallback を使わない
-      } as unknown as JinnConfig;
+      } as unknown as GatewayConfig;
 
       await runSession(
         session,
@@ -1133,7 +1133,7 @@ describe("runSession", () => {
             claude: { bin: "claude", model: "claude-opus-4" },
             codex: { bin: "codex", model: "" },
           },
-        } as unknown as JinnConfig,
+        } as unknown as GatewayConfig,
         () => new Map(),
         undefined,
         undefined,
@@ -1161,7 +1161,7 @@ describe("runSession", () => {
           claude: { bin: "claude", model: "claude-opus-4" }, // opus = heavy model
           codex: { bin: "codex", model: "" },
         },
-      } as unknown as JinnConfig;
+      } as unknown as GatewayConfig;
 
       await runSession(
         session,
@@ -1353,7 +1353,7 @@ describe("runSession", () => {
       const config = {
         ...makeConfig(),
         sessions: { rateLimitStrategy: "wait" },
-      } as unknown as JinnConfig;
+      } as unknown as GatewayConfig;
 
       await runSession(
         session,
@@ -1405,7 +1405,7 @@ describe("runSession", () => {
       const config = {
         ...makeConfig(),
         sessions: { rateLimitStrategy: "wait" },
-      } as unknown as JinnConfig;
+      } as unknown as GatewayConfig;
 
       await runSession(
         session,
@@ -1454,7 +1454,7 @@ describe("runSession", () => {
       const config = {
         ...makeConfig(),
         sessions: { rateLimitStrategy: "wait" },
-      } as unknown as JinnConfig;
+      } as unknown as GatewayConfig;
 
       await runSession(
         session,
@@ -1510,7 +1510,7 @@ describe("runSession", () => {
       const config = {
         ...makeConfig(),
         sessions: { rateLimitStrategy: "wait" },
-      } as unknown as JinnConfig;
+      } as unknown as GatewayConfig;
 
       await runSession(
         session,
@@ -1556,7 +1556,7 @@ describe("runSession", () => {
       const config = {
         ...makeConfig(),
         sessions: { rateLimitStrategy: "wait" },
-      } as unknown as JinnConfig;
+      } as unknown as GatewayConfig;
 
       await runSession(
         session,
@@ -1593,7 +1593,7 @@ describe("runSession", () => {
       const config = {
         ...makeConfig(),
         sessions: { rateLimitStrategy: "wait" },
-      } as unknown as JinnConfig;
+      } as unknown as GatewayConfig;
 
       await runSession(
         session,
@@ -1642,7 +1642,7 @@ describe("runSession", () => {
       const config = {
         ...makeConfig(),
         sessions: { rateLimitStrategy: "wait" },
-      } as unknown as JinnConfig;
+      } as unknown as GatewayConfig;
 
       await runSession(
         session,
@@ -1806,7 +1806,7 @@ describe("runSession", () => {
       const config = {
         ...makeConfig(),
         sessions: { rateLimitStrategy: "wait" },
-      } as unknown as JinnConfig;
+      } as unknown as GatewayConfig;
 
       // Should complete without throwing — the null currentSession → early return
       await expect(
@@ -1845,7 +1845,7 @@ describe("runSession", () => {
       const config = {
         ...makeConfig(),
         sessions: { rateLimitStrategy: "wait" },
-      } as unknown as JinnConfig;
+      } as unknown as GatewayConfig;
 
       // Run normally — setInterval created internally for heartbeat
       // Even without fake timers, the interval is created and refs repos.sessions.updateSession
@@ -1881,7 +1881,7 @@ describe("runSession", () => {
       const config = {
         ...makeConfig(),
         sessions: { rateLimitStrategy: "wait" },
-      } as unknown as JinnConfig;
+      } as unknown as GatewayConfig;
 
       // Pass repos=undefined → repos?.sessions.getSessionBySessionKey returns undefined (line 484 false branch)
       await expect(

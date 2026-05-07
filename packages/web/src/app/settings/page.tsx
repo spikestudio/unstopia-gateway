@@ -761,7 +761,7 @@ export default function SettingsPage() {
                   id="settings-portal-name"
                   type="text"
                   className="apple-input w-full bg-[var(--bg-secondary)] border border-[var(--separator)] rounded-[var(--radius-sm)] px-[10px] py-[6px] text-[length:var(--text-footnote)] text-[var(--text-primary)]"
-                  placeholder="Jinn"
+                  placeholder="Gateway"
                   value={nameValue}
                   onChange={(e) => setNameValue(e.target.value)}
                   onBlur={() => {
@@ -1189,7 +1189,7 @@ export default function SettingsPage() {
                   <SettingsInput
                     value={config.connectors?.whatsapp?.authDir ?? ""}
                     onChange={(v) => updateConfig(["connectors", "whatsapp", "authDir"], v.trim() || undefined)}
-                    placeholder="Default: ~/.jinn/.whatsapp-auth"
+                    placeholder="Default: ~/.gateway/.whatsapp-auth"
                   />
                 </FieldRow>
                 <FieldRow label="Allow From">
@@ -1442,7 +1442,7 @@ export default function SettingsPage() {
                               instances[idx] = { ...instances[idx], authDir: v.trim() || undefined };
                               updateConfig(["connectors", "instances"], instances);
                             }}
-                            placeholder="Default: ~/.jinn/.whatsapp-auth"
+                            placeholder="Default: ~/.gateway/.whatsapp-auth"
                           />
                         </FieldRow>
                         <FieldRow label="Allow From">
@@ -1573,7 +1573,7 @@ export default function SettingsPage() {
               <button
                 type="button"
                 onClick={() => {
-                  localStorage.removeItem("jinn-onboarded");
+                  localStorage.removeItem("gateway-onboarded");
                   window.location.reload();
                 }}
                 className="px-[var(--space-5)] py-[var(--space-2)] rounded-[var(--radius-md)] bg-[var(--accent)] text-[var(--accent-contrast)] border-none cursor-pointer text-[length:var(--text-footnote)] font-[var(--weight-semibold)] transition-all duration-150 ease-[var(--ease-spring)] inline-flex items-center gap-[var(--space-2)]"
@@ -1585,8 +1585,8 @@ export default function SettingsPage() {
                 type="button"
                 onClick={() => {
                   if (window.confirm("Reset all settings to defaults?")) {
-                    localStorage.removeItem("jinn-settings");
-                    localStorage.removeItem("jinn-theme");
+                    localStorage.removeItem("gateway-settings");
+                    localStorage.removeItem("gateway-theme");
                     resetAll();
                     window.location.reload();
                   }

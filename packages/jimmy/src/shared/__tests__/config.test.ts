@@ -10,7 +10,7 @@ vi.mock("../paths.js", () => ({
   get CONFIG_PATH() {
     return configPath;
   },
-  get JINN_HOME() {
+  get GATEWAY_HOME() {
     return tmpDir;
   },
 }));

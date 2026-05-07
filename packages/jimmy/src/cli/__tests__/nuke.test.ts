@@ -64,9 +64,9 @@ describe("runNuke", () => {
     mockLoadInstances.mockReturnValue([sampleInstance]);
   });
 
-  it("should print 'No instances to nuke' when there are no non-jinn instances (AC-47)", async () => {
+  it("should print 'No instances to nuke' when there are no non-gateway instances (AC-47)", async () => {
     mockLoadInstances.mockReturnValue([
-      { name: "jinn", port: 7777, home: "/home/user/.jinn", createdAt: "2024-01-01T00:00:00.000Z" },
+      { name: "gateway", port: 7777, home: "/home/user/.gateway", createdAt: "2024-01-01T00:00:00.000Z" },
     ]);
     const mockConsoleLog = vi.spyOn(console, "log").mockImplementation(() => {});
 
@@ -77,15 +77,15 @@ describe("runNuke", () => {
     mockConsoleLog.mockRestore();
   });
 
-  it("should exit with error when trying to nuke 'jinn' (AC-48)", async () => {
+  it("should exit with error when trying to nuke 'gateway' (AC-48)", async () => {
     const mockExit = vi.spyOn(process, "exit").mockImplementation(() => {
       throw new Error("process.exit called");
     });
     const mockConsoleError = vi.spyOn(console, "error").mockImplementation(() => {});
 
-    await expect(runNuke("jinn")).rejects.toThrow("process.exit called");
+    await expect(runNuke("gateway")).rejects.toThrow("process.exit called");
 
-    expect(mockConsoleError).toHaveBeenCalledWith(expect.stringContaining('Cannot nuke the default "jinn" instance'));
+    expect(mockConsoleError).toHaveBeenCalledWith(expect.stringContaining('Cannot nuke the default "gateway" instance'));
     expect(mockExit).toHaveBeenCalledWith(1);
 
     mockExit.mockRestore();

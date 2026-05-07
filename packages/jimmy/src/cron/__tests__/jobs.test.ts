@@ -12,8 +12,8 @@ vi.mock("node:fs", () => ({
 
 // Mock shared/paths to avoid filesystem side effects
 vi.mock("../../shared/paths.js", () => ({
-  CRON_JOBS: "/mock/.jinn/cron/jobs.json",
-  CRON_RUNS: "/mock/.jinn/cron/runs",
+  CRON_JOBS: "/mock/.gateway/cron/jobs.json",
+  CRON_RUNS: "/mock/.gateway/cron/runs",
 }));
 
 import fs from "node:fs";
@@ -46,7 +46,7 @@ describe("AC-E003-04: loadJobs", () => {
 
     const result = loadJobs();
 
-    expect(fs.readFileSync).toHaveBeenCalledWith("/mock/.jinn/cron/jobs.json", "utf-8");
+    expect(fs.readFileSync).toHaveBeenCalledWith("/mock/.gateway/cron/jobs.json", "utf-8");
     expect(result).toEqual(mockJobs);
   });
 
@@ -77,9 +77,9 @@ describe("AC-E003-04: saveJobs", () => {
   it("creates directory and writes jobs as formatted JSON", () => {
     saveJobs(mockJobs);
 
-    expect(fs.mkdirSync).toHaveBeenCalledWith("/mock/.jinn/cron", { recursive: true });
+    expect(fs.mkdirSync).toHaveBeenCalledWith("/mock/.gateway/cron", { recursive: true });
     expect(fs.writeFileSync).toHaveBeenCalledWith(
-      "/mock/.jinn/cron/jobs.json",
+      "/mock/.gateway/cron/jobs.json",
       `${JSON.stringify(mockJobs, null, 2)}\n`,
       "utf-8",
     );
@@ -89,7 +89,7 @@ describe("AC-E003-04: saveJobs", () => {
     saveJobs([]);
 
     expect(fs.writeFileSync).toHaveBeenCalledWith(
-      "/mock/.jinn/cron/jobs.json",
+      "/mock/.gateway/cron/jobs.json",
       `${JSON.stringify([], null, 2)}\n`,
       "utf-8",
     );
@@ -106,9 +106,9 @@ describe("AC-E003-04: appendRunLog", () => {
 
     appendRunLog("job-1", entry);
 
-    expect(fs.mkdirSync).toHaveBeenCalledWith("/mock/.jinn/cron/runs", { recursive: true });
+    expect(fs.mkdirSync).toHaveBeenCalledWith("/mock/.gateway/cron/runs", { recursive: true });
     expect(fs.appendFileSync).toHaveBeenCalledWith(
-      "/mock/.jinn/cron/runs/job-1.jsonl",
+      "/mock/.gateway/cron/runs/job-1.jsonl",
       `${JSON.stringify(entry)}\n`,
       "utf-8",
     );

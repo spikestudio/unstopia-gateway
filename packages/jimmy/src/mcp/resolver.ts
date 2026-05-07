@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { logger } from "../shared/logger.js";
-import { JINN_HOME } from "../shared/paths.js";
+import { GATEWAY_HOME } from "../shared/paths.js";
 import type { Employee, McpGlobalConfig, McpServerConfig, McpServerUrlConfig } from "../shared/types.js";
 
 export interface ResolvedMcpConfig {
@@ -109,7 +109,7 @@ export function buildAvailableServers(config: McpGlobalConfig): Record<string, M
       command: "node",
       args: [scriptPath],
       env: {
-        JINN_GATEWAY_URL: `http://127.0.0.1:${process.env.JINN_PORT || "7777"}`,
+        GATEWAY_URL: `http://127.0.0.1:${process.env.GATEWAY_PORT || "7777"}`,
       },
     };
   }
@@ -145,7 +145,7 @@ export function buildAvailableServers(config: McpGlobalConfig): Record<string, M
  * Claude Code reads this via --mcp-config <path>.
  */
 export function writeMcpConfigFile(config: ResolvedMcpConfig, sessionId: string): string {
-  const tmpDir = path.join(JINN_HOME, "tmp", "mcp");
+  const tmpDir = path.join(GATEWAY_HOME, "tmp", "mcp");
   fs.mkdirSync(tmpDir, { recursive: true });
   const filePath = path.join(tmpDir, `${sessionId}.json`);
   fs.writeFileSync(filePath, JSON.stringify(config, null, 2));
@@ -156,7 +156,7 @@ export function writeMcpConfigFile(config: ResolvedMcpConfig, sessionId: string)
  * Clean up a temp MCP config file.
  */
 export function cleanupMcpConfigFile(sessionId: string): void {
-  const filePath = path.join(JINN_HOME, "tmp", "mcp", `${sessionId}.json`);
+  const filePath = path.join(GATEWAY_HOME, "tmp", "mcp", `${sessionId}.json`);
   try {
     if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
   } catch {
