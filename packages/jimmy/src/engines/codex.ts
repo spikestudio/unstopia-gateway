@@ -215,7 +215,7 @@ export class CodexEngine implements InterruptibleEngine {
 
   private buildResumeArgs(opts: EngineRunOpts, prompt: string): string[] {
     const args = ["exec", "resume"];
-    if (opts.model) args.push("-c", `model="${opts.model}"`);
+    if (opts.model) args.push("--model", opts.model);
     if (opts.effortLevel && opts.effortLevel !== "default")
       args.push("-c", `model_reasoning_effort="${opts.effortLevel}"`);
     args.push("--json", "--dangerously-bypass-approvals-and-sandbox", "--skip-git-repo-check");

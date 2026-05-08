@@ -159,11 +159,10 @@ describe("CodexEngine", () => {
       expect(() => bra({ prompt: "q", cwd: "/tmp" }, "q")).toThrow("resumeSessionId is required");
     });
 
-    it("includes -c model when specified", () => {
+    it("includes --model when specified", () => {
       const args = bra({ prompt: "q", cwd: "/tmp", resumeSessionId: "t1", model: "o4" }, "q");
-      expect(args).toContain("-c");
-      expect(args).toContain('model="o4"');
-      expect(args).not.toContain("--model");
+      expect(args).toContain("--model");
+      expect(args).toContain("o4");
     });
   });
 
