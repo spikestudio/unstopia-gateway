@@ -69,13 +69,35 @@ function expandPath(p: string): string {
 /**
  * Expand and validate that the path stays within GATEWAY_HOME.
  * Throws if the resolved path escapes the allowed directory.
+ * Resolves symlinks on the nearest existing ancestor to prevent symlink attacks.
  */
 function safeExpandPath(p: string): string {
   const expanded = path.resolve(expandPath(p));
   const base = path.resolve(GATEWAY_HOME);
+
   if (!expanded.startsWith(base + path.sep) && expanded !== base) {
     throw new Error(`Path outside allowed directory: ${p}`);
   }
+
+  // Resolve symlinks on the nearest existing ancestor to catch symlink-based escapes.
+  // Walk up until we find an existing path (ENOENT = path doesn't exist yet, keep going up).
+  let ancestor = expanded;
+  while (ancestor !== path.dirname(ancestor)) {
+    try {
+      const real = fs.realpathSync(ancestor);
+      if (!real.startsWith(base + path.sep) && real !== base) {
+        throw new Error(`Path outside allowed directory: ${p}`);
+      }
+      break;
+    } catch (err) {
+      if ((err as NodeJS.ErrnoException).code === "ENOENT") {
+        ancestor = path.dirname(ancestor);
+      } else {
+        throw err;
+      }
+    }
+  }
+
   return expanded;
 }
 

@@ -25,6 +25,7 @@ const {
     unlinkSync: vi.fn(),
     rmSync: vi.fn(),
     createReadStream: vi.fn(),
+    realpathSync: vi.fn((p: string) => p),
   };
   const mockSpawn = vi.fn().mockReturnValue({ unref: vi.fn() });
   const mockInsertFile = vi.fn();
@@ -321,6 +322,34 @@ describe("POST /api/files (JSON upload)", () => {
     expect(written().status).toBe(201);
     // Two writeFileSync calls: managed storage + custom path
     expect(fsMock.writeFileSync).toHaveBeenCalledTimes(2);
+  });
+
+  it("should return 500 when customPath escapes GATEWAY_HOME via ../", async () => {
+    mockInsertFile.mockReturnValue(sampleMeta);
+    const req = makeJsonReq(
+      JSON.stringify({
+        filename: "hello.txt",
+        content: Buffer.from("hello").toString("base64"),
+        path: "/fake/../etc/passwd",
+      }),
+    );
+    const { res, written } = makeRes();
+    await handleFilesRequest(req, res, "/api/files", "POST", makeContext());
+    expect(written().status).toBe(500);
+  });
+
+  it("should return 500 when customPath is an absolute path outside GATEWAY_HOME", async () => {
+    mockInsertFile.mockReturnValue(sampleMeta);
+    const req = makeJsonReq(
+      JSON.stringify({
+        filename: "hello.txt",
+        content: Buffer.from("hello").toString("base64"),
+        path: "/etc/passwd",
+      }),
+    );
+    const { res, written } = makeRes();
+    await handleFilesRequest(req, res, "/api/files", "POST", makeContext());
+    expect(written().status).toBe(500);
   });
 
   it("should spawn 'open' when open flag is true", async () => {
