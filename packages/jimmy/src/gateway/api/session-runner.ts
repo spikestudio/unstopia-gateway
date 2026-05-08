@@ -220,7 +220,6 @@ export function dispatchWebSessionRun(
           context.emit("queue:updated", { sessionId: session.id, sessionKey });
         }
       },
-      opts?.queueItemId,
     );
   };
 

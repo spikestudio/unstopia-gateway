@@ -154,17 +154,13 @@ describe("AC-E003-03: SessionQueue — cancel and pause", () => {
     await new Promise((r) => setTimeout(r, 50));
   });
 
-  it("calls queueRepo.markQueueItemRunning and markQueueItemCompleted when provided (lines 84, 88)", async () => {
+  it("executes fn (lifecycle tracking handled in fn)", async () => {
     const queue = new SessionQueue();
-    const queueRepo = {
-      markQueueItemRunning: vi.fn(),
-      markQueueItemCompleted: vi.fn(),
-    };
+    let executed = false;
 
-    await queue.enqueue("key-repo", async () => {}, "item-001", queueRepo as never);
+    await queue.enqueue("key-repo", async () => { executed = true; });
 
-    expect(queueRepo.markQueueItemRunning).toHaveBeenCalledWith("item-001");
-    expect(queueRepo.markQueueItemCompleted).toHaveBeenCalledWith("item-001");
+    expect(executed).toBe(true);
   });
 
   it("paused session resumes and runs task after resumeQueue (line 82 branch)", async () => {
