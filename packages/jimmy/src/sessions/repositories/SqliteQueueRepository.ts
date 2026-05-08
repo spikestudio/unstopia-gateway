@@ -57,10 +57,16 @@ export class SqliteQueueRepository implements IQueueRepository {
   }
 
   recoverStaleQueueItems(): number {
-    const result = this.db
+    // Cancel items that were just waiting (never started) — re-dispatching stale
+    // pending items on every restart causes unintended duplicate execution
+    this.db
+      .prepare("UPDATE queue_items SET status = 'cancelled' WHERE status = 'pending' AND started_at IS NULL")
+      .run();
+    // Items that were actively running get reset to pending for re-dispatch
+    const reset = this.db
       .prepare("UPDATE queue_items SET status = 'pending', started_at = NULL WHERE status = 'running'")
       .run();
-    return result.changes;
+    return reset.changes;
   }
 
   listAllPendingQueueItems(): QueueItem[] {

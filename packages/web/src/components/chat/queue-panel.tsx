@@ -45,7 +45,7 @@ export function QueuePanel({ sessionId, events, paused: initialPaused = false }:
 
   if (!sessionId || pendingItems.length === 0) return null;
 
-  async function _handleCancel(itemId: string) {
+  async function handleCancel(itemId: string) {
     if (!sessionId) return;
     try {
       await api.cancelQueueItem(sessionId, itemId);
@@ -55,7 +55,7 @@ export function QueuePanel({ sessionId, events, paused: initialPaused = false }:
     }
   }
 
-  async function _handleClear() {
+  async function handleClear() {
     if (!sessionId) return;
     try {
       await api.clearSessionQueue(sessionId);
@@ -65,7 +65,7 @@ export function QueuePanel({ sessionId, events, paused: initialPaused = false }:
     }
   }
 
-  async function _handlePauseResume() {
+  async function handlePauseResume() {
     if (!sessionId) return;
     try {
       if (paused) {
@@ -91,6 +91,7 @@ export function QueuePanel({ sessionId, events, paused: initialPaused = false }:
             type="button"
             title={paused ? "Resume queue" : "Pause queue"}
             className="bg-transparent border-none cursor-pointer text-[var(--text-secondary)] p-0.5 flex items-center"
+            onClick={handlePauseResume}
           >
             {paused ? <Play size={13} /> : <Pause size={13} />}
           </button>
@@ -98,6 +99,7 @@ export function QueuePanel({ sessionId, events, paused: initialPaused = false }:
             type="button"
             title="Clear all queued messages"
             className="bg-transparent border-none cursor-pointer text-[var(--text-secondary)] p-0.5 flex items-center"
+            onClick={handleClear}
           >
             <Trash2 size={13} />
           </button>
@@ -119,6 +121,7 @@ export function QueuePanel({ sessionId, events, paused: initialPaused = false }:
               type="button"
               title="Cancel this message"
               className="bg-transparent border-none cursor-pointer text-[var(--text-tertiary)] p-px flex items-center shrink-0"
+              onClick={() => handleCancel(item.id)}
             >
               <X size={11} />
             </button>
