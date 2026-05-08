@@ -16,8 +16,11 @@ RUN pnpm build
 FROM node:22-slim AS runner
 WORKDIR /app
 
-# Install claude CLI
-RUN npm install -g @anthropic-ai/claude-code
+# Install AI engine CLIs
+RUN npm install -g \
+    @anthropic-ai/claude-code \
+    @openai/codex \
+    @google/gemini-cli
 
 # Copy build artifacts and dependencies
 COPY --from=builder /app/packages/jimmy/dist ./packages/jimmy/dist
