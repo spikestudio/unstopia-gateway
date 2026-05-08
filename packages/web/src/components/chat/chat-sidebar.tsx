@@ -567,7 +567,7 @@ export function ChatSidebar({
     return empSessions.some((s) => s.id === selectedId);
   }
 
-  function _handleEmployeeClick(item: FlatItem) {
+  function handleEmployeeClick(item: FlatItem) {
     const empName = item.employeeName ?? "";
     const empSessions = item.sessions ?? [];
     if (empSessions.length > 1) {
@@ -754,7 +754,7 @@ export function ChatSidebar({
                   ? "border-l-[var(--accent)] bg-[var(--fill-secondary)]"
                   : "border-l-transparent hover:bg-accent",
               )}
-              onClick={() => _handleEmployeeClick(item)}
+              onClick={() => handleEmployeeClick(item)}
             >
               <div className="relative flex size-9 shrink-0 items-center justify-center">
                 <EmployeeAvatar name={empName} size={36} />
