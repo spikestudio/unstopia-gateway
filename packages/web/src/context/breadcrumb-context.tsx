@@ -33,9 +33,10 @@ export function BreadcrumbProvider({ children }: { children: ReactNode }) {
 export function useBreadcrumbs(items?: BreadcrumbItem[]) {
   const ctx = useContext(BreadcrumbContext);
   const { setItems } = ctx;
+  // BreadcrumbItem has only string fields — JSON.stringify is always safe here
   const itemsKey = items ? JSON.stringify(items) : "";
   const itemsRef = useRef(items);
-  itemsRef.current = items;
+  itemsRef.current = items; // keep latest without triggering effect
 
   useEffect(() => {
     if (itemsRef.current) setItems(itemsRef.current);
