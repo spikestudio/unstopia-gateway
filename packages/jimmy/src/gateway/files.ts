@@ -6,7 +6,7 @@ import path from "node:path";
 import Busboy from "busboy";
 import { deleteFile, type FileMeta, getFile, insertFile, listFiles } from "../sessions/registry.js";
 import { logger } from "../shared/logger.js";
-import { FILES_DIR } from "../shared/paths.js";
+import { FILES_DIR, GATEWAY_HOME } from "../shared/paths.js";
 import type { ApiContext } from "./types.js";
 
 // Ensure managed files directory exists
@@ -66,6 +66,41 @@ function expandPath(p: string): string {
   return p;
 }
 
+/**
+ * Expand and validate that the path stays within GATEWAY_HOME.
+ * Throws if the resolved path escapes the allowed directory.
+ * Resolves symlinks on the nearest existing ancestor to prevent symlink attacks.
+ */
+function safeExpandPath(p: string): string {
+  const expanded = path.resolve(expandPath(p));
+  const base = path.resolve(GATEWAY_HOME);
+
+  if (!expanded.startsWith(base + path.sep) && expanded !== base) {
+    throw new Error(`Path outside allowed directory: ${p}`);
+  }
+
+  // Resolve symlinks on the nearest existing ancestor to catch symlink-based escapes.
+  // Walk up until we find an existing path (ENOENT = path doesn't exist yet, keep going up).
+  let ancestor = expanded;
+  while (ancestor !== path.dirname(ancestor)) {
+    try {
+      const real = fs.realpathSync(ancestor);
+      if (!real.startsWith(base + path.sep) && real !== base) {
+        throw new Error(`Path outside allowed directory: ${p}`);
+      }
+      break;
+    } catch (err) {
+      if ((err as NodeJS.ErrnoException).code === "ENOENT") {
+        ancestor = path.dirname(ancestor);
+      } else {
+        throw err;
+      }
+    }
+  }
+
+  return expanded;
+}
+
 function readBody(req: HttpRequest): Promise<string> {
   return new Promise((resolve, reject) => {
     const chunks: Buffer[] = [];
@@ -118,14 +153,14 @@ async function saveFile(result: UploadResult, context: ApiContext): Promise<File
 
   // Write to custom path if provided
   if (result.customPath) {
-    const expanded = expandPath(result.customPath);
+    const expanded = safeExpandPath(result.customPath);
     fs.mkdirSync(path.dirname(expanded), { recursive: true });
     fs.writeFileSync(expanded, result.buffer);
   }
 
   // Open file if requested
   if (result.open) {
-    const targetPath = result.customPath ? expandPath(result.customPath) : storagePath;
+    const targetPath = result.customPath ? safeExpandPath(result.customPath) : storagePath;
     const { spawn } = await import("node:child_process");
     spawn("open", [targetPath], { stdio: "ignore", detached: true }).unref();
   }

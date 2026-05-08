@@ -1,6 +1,6 @@
 import type { ServerResponse } from "node:http";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { InterruptibleEngine, GatewayConfig, Session } from "../../../shared/types.js";
+import type { GatewayConfig, InterruptibleEngine, Session } from "../../../shared/types.js";
 import type { ApiContext } from "../../types.js";
 import type { PostMessageDeps } from "../session-message.js";
 import { handlePostMessage } from "../session-message.js";

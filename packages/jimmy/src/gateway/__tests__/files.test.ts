@@ -25,6 +25,7 @@ const {
     unlinkSync: vi.fn(),
     rmSync: vi.fn(),
     createReadStream: vi.fn(),
+    realpathSync: vi.fn((p: string) => p),
   };
   const mockSpawn = vi.fn().mockReturnValue({ unref: vi.fn() });
   const mockInsertFile = vi.fn();
@@ -58,6 +59,7 @@ vi.mock("../../shared/logger.js", () => ({
 
 vi.mock("../../shared/paths.js", () => ({
   FILES_DIR: "/fake/files",
+  GATEWAY_HOME: "/fake",
 }));
 
 vi.mock("../../sessions/registry.js", () => ({
@@ -310,7 +312,7 @@ describe("POST /api/files (JSON upload)", () => {
       JSON.stringify({
         filename: "hello.txt",
         content: Buffer.from("hello").toString("base64"),
-        path: "/tmp/custom/hello.txt",
+        path: "/fake/custom/hello.txt",
       }),
     );
     const { res, written } = makeRes();
@@ -320,6 +322,34 @@ describe("POST /api/files (JSON upload)", () => {
     expect(written().status).toBe(201);
     // Two writeFileSync calls: managed storage + custom path
     expect(fsMock.writeFileSync).toHaveBeenCalledTimes(2);
+  });
+
+  it("should return 500 when customPath escapes GATEWAY_HOME via ../", async () => {
+    mockInsertFile.mockReturnValue(sampleMeta);
+    const req = makeJsonReq(
+      JSON.stringify({
+        filename: "hello.txt",
+        content: Buffer.from("hello").toString("base64"),
+        path: "/fake/../etc/passwd",
+      }),
+    );
+    const { res, written } = makeRes();
+    await handleFilesRequest(req, res, "/api/files", "POST", makeContext());
+    expect(written().status).toBe(500);
+  });
+
+  it("should return 500 when customPath is an absolute path outside GATEWAY_HOME", async () => {
+    mockInsertFile.mockReturnValue(sampleMeta);
+    const req = makeJsonReq(
+      JSON.stringify({
+        filename: "hello.txt",
+        content: Buffer.from("hello").toString("base64"),
+        path: "/etc/passwd",
+      }),
+    );
+    const { res, written } = makeRes();
+    await handleFilesRequest(req, res, "/api/files", "POST", makeContext());
+    expect(written().status).toBe(500);
   });
 
   it("should spawn 'open' when open flag is true", async () => {
@@ -891,7 +921,7 @@ describe("POST /api/files (multipart upload)", () => {
     mockBusboyInstance.emit("file", "file", fileEmitter, { filename: "doc.txt" });
     fileEmitter.emit("data", Buffer.from("content"));
     fileEmitter.emit("end");
-    mockBusboyInstance.emit("field", "path", "/tmp/custom/doc.txt");
+    mockBusboyInstance.emit("field", "path", "/fake/custom/doc.txt");
     mockBusboyInstance.emit("field", "open", "true");
     mockBusboyInstance.emit("finish");
 

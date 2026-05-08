@@ -158,7 +158,9 @@ describe("AC-E003-03: SessionQueue — cancel and pause", () => {
     const queue = new SessionQueue();
     let executed = false;
 
-    await queue.enqueue("key-repo", async () => { executed = true; });
+    await queue.enqueue("key-repo", async () => {
+      executed = true;
+    });
 
     expect(executed).toBe(true);
   });
