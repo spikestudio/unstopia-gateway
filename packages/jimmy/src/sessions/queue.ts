@@ -1,4 +1,3 @@
-
 export class SessionQueue {
   private queues = new Map<string, Promise<void>>();
   /** Track which sessions are currently running */
@@ -65,10 +64,7 @@ export class SessionQueue {
   /**
    * Enqueue a task for a session. Tasks are serialized per session key.
    */
-  async enqueue(
-    sessionKey: string,
-    fn: () => Promise<void>,
-  ): Promise<void> {
+  async enqueue(sessionKey: string, fn: () => Promise<void>): Promise<void> {
     this.pending.set(sessionKey, (this.pending.get(sessionKey) || 0) + 1);
     const prev = this.queues.get(sessionKey) || Promise.resolve();
     const runTask = async () => {

@@ -41,7 +41,9 @@ describe("loadInstances", () => {
 
   it("should return parsed array when file contains valid JSON", () => {
     mockExistsSync.mockReturnValue(true);
-    const instances = [{ name: "gateway", port: 7777, home: "/home/user/.gateway", createdAt: "2024-01-01T00:00:00.000Z" }];
+    const instances = [
+      { name: "gateway", port: 7777, home: "/home/user/.gateway", createdAt: "2024-01-01T00:00:00.000Z" },
+    ];
     mockReadFileSync.mockReturnValue(JSON.stringify(instances) as unknown as ReturnType<typeof fs.readFileSync>);
 
     const result = loadInstances();
@@ -65,7 +67,9 @@ describe("saveInstances", () => {
   });
 
   it("should call mkdirSync and writeFileSync when saving instances", () => {
-    const instances = [{ name: "gateway", port: 7777, home: "/home/user/.gateway", createdAt: "2024-01-01T00:00:00.000Z" }];
+    const instances = [
+      { name: "gateway", port: 7777, home: "/home/user/.gateway", createdAt: "2024-01-01T00:00:00.000Z" },
+    ];
 
     saveInstances(instances);
 
@@ -85,7 +89,9 @@ describe("nextAvailablePort", () => {
   });
 
   it("should return 7778 when port 7777 is already used", () => {
-    const instances = [{ name: "gateway", port: 7777, home: "/home/user/.gateway", createdAt: "2024-01-01T00:00:00.000Z" }];
+    const instances = [
+      { name: "gateway", port: 7777, home: "/home/user/.gateway", createdAt: "2024-01-01T00:00:00.000Z" },
+    ];
 
     const result = nextAvailablePort(instances);
 
@@ -100,7 +106,9 @@ describe("ensureDefaultInstance", () => {
 
   it("should NOT call saveInstances when 'gateway' instance already exists", () => {
     mockExistsSync.mockReturnValue(true);
-    const instances = [{ name: "gateway", port: 7777, home: "/home/user/.gateway", createdAt: "2024-01-01T00:00:00.000Z" }];
+    const instances = [
+      { name: "gateway", port: 7777, home: "/home/user/.gateway", createdAt: "2024-01-01T00:00:00.000Z" },
+    ];
     mockReadFileSync.mockReturnValue(JSON.stringify(instances) as unknown as ReturnType<typeof fs.readFileSync>);
 
     ensureDefaultInstance();
@@ -130,7 +138,12 @@ describe("findInstance", () => {
 
   it("should return the matching instance when searching for 'gateway'", () => {
     mockExistsSync.mockReturnValue(true);
-    const gatewayInstance = { name: "gateway", port: 7777, home: "/home/user/.gateway", createdAt: "2024-01-01T00:00:00.000Z" };
+    const gatewayInstance = {
+      name: "gateway",
+      port: 7777,
+      home: "/home/user/.gateway",
+      createdAt: "2024-01-01T00:00:00.000Z",
+    };
     const instances = [
       gatewayInstance,
       { name: "other", port: 7778, home: "/home/user/.other", createdAt: "2024-01-01T00:00:00.000Z" },
@@ -144,7 +157,9 @@ describe("findInstance", () => {
 
   it("should return undefined when instance name does not exist", () => {
     mockExistsSync.mockReturnValue(true);
-    const instances = [{ name: "gateway", port: 7777, home: "/home/user/.gateway", createdAt: "2024-01-01T00:00:00.000Z" }];
+    const instances = [
+      { name: "gateway", port: 7777, home: "/home/user/.gateway", createdAt: "2024-01-01T00:00:00.000Z" },
+    ];
     mockReadFileSync.mockReturnValue(JSON.stringify(instances) as unknown as ReturnType<typeof fs.readFileSync>);
 
     const result = findInstance("nonexistent");

@@ -936,7 +936,11 @@ describe("runSetup", () => {
     it("copies docs, skills, and org template dirs", async () => {
       await runSetup();
 
-      expect(mockCopyTemplateDir).toHaveBeenCalledWith("/mock/template/docs", "/mock/.gateway/docs", expect.any(Object));
+      expect(mockCopyTemplateDir).toHaveBeenCalledWith(
+        "/mock/template/docs",
+        "/mock/.gateway/docs",
+        expect.any(Object),
+      );
       expect(mockCopyTemplateDir).toHaveBeenCalledWith(
         "/mock/template/skills",
         "/mock/.gateway/skills",

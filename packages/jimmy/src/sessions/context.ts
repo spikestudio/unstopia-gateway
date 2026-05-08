@@ -153,7 +153,8 @@ export function buildContext(opts: {
       tier: Tier.STANDARD,
       marker: "## Scheduled cron",
       content: cronCtx,
-      summary: "## Scheduled cron jobs\nCron definitions are in `~/.gateway/cron/jobs.json`. Read directly when needed.",
+      summary:
+        "## Scheduled cron jobs\nCron definitions are in `~/.gateway/cron/jobs.json`. Read directly when needed.",
     });
   }
 

@@ -25,8 +25,8 @@ import { loadConfig } from "../shared/config.js";
 import { configureLogger, logger } from "../shared/logger.js";
 import {
   type Connector,
-  isInterruptibleEngine,
   type GatewayConfig,
+  isInterruptibleEngine,
   type SlackConnectorConfig,
   type TelegramConnectorConfig,
   type WhatsAppConnectorConfig,

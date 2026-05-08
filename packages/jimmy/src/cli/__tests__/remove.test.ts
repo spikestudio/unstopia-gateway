@@ -50,7 +50,9 @@ describe("runRemove", () => {
 
     await expect(runRemove("gateway", {})).rejects.toThrow("process.exit called");
 
-    expect(mockConsoleError).toHaveBeenCalledWith(expect.stringContaining('Cannot remove the default "gateway" instance'));
+    expect(mockConsoleError).toHaveBeenCalledWith(
+      expect.stringContaining('Cannot remove the default "gateway" instance'),
+    );
     expect(mockExit).toHaveBeenCalledWith(1);
 
     mockExit.mockRestore();

@@ -5,9 +5,9 @@ import { api } from "@/lib/api";
 import {
   DEFAULTS,
   type EmployeeOverride,
+  type GatewaySettings,
   hexToAccentFill,
   hexToContrastText,
-  type GatewaySettings,
   loadSettings,
   saveSettings,
 } from "@/lib/settings";

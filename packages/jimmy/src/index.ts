@@ -24,8 +24,8 @@ export type {
   Engine,
   EngineResult,
   EngineRunOpts,
-  IncomingMessage,
   GatewayConfig,
+  IncomingMessage,
   Session,
   Target,
 } from "./shared/types.js";

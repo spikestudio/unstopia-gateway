@@ -85,7 +85,9 @@ describe("runNuke", () => {
 
     await expect(runNuke("gateway")).rejects.toThrow("process.exit called");
 
-    expect(mockConsoleError).toHaveBeenCalledWith(expect.stringContaining('Cannot nuke the default "gateway" instance'));
+    expect(mockConsoleError).toHaveBeenCalledWith(
+      expect.stringContaining('Cannot nuke the default "gateway" instance'),
+    );
     expect(mockExit).toHaveBeenCalledWith(1);
 
     mockExit.mockRestore();

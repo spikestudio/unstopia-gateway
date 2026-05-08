@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { Connector, Engine, IncomingMessage, GatewayConfig, Session, Target } from "../../shared/types.js";
+import type { Connector, Engine, GatewayConfig, IncomingMessage, Session, Target } from "../../shared/types.js";
 
 // 外部依存を vi.mock で分離
 vi.mock("../../gateway/budgets.js", () => ({
