@@ -58,6 +58,7 @@ vi.mock("../../shared/logger.js", () => ({
 
 vi.mock("../../shared/paths.js", () => ({
   FILES_DIR: "/fake/files",
+  GATEWAY_HOME: "/fake",
 }));
 
 vi.mock("../../sessions/registry.js", () => ({
@@ -310,7 +311,7 @@ describe("POST /api/files (JSON upload)", () => {
       JSON.stringify({
         filename: "hello.txt",
         content: Buffer.from("hello").toString("base64"),
-        path: "/tmp/custom/hello.txt",
+        path: "/fake/custom/hello.txt",
       }),
     );
     const { res, written } = makeRes();
@@ -891,7 +892,7 @@ describe("POST /api/files (multipart upload)", () => {
     mockBusboyInstance.emit("file", "file", fileEmitter, { filename: "doc.txt" });
     fileEmitter.emit("data", Buffer.from("content"));
     fileEmitter.emit("end");
-    mockBusboyInstance.emit("field", "path", "/tmp/custom/doc.txt");
+    mockBusboyInstance.emit("field", "path", "/fake/custom/doc.txt");
     mockBusboyInstance.emit("field", "open", "true");
     mockBusboyInstance.emit("finish");
 
