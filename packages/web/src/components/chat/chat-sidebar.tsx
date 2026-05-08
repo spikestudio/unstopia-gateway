@@ -194,6 +194,7 @@ function sortSessionsByActivity(sessions: Session[]): Session[] {
 
 function getStatusDotColor(session: Session, readSet: Set<string>): string {
   if (session.status === "running") return "var(--system-blue)";
+  if (session.status === "queued") return "var(--system-yellow)";
   if (session.status === "error") return "var(--system-red)";
   if (readSet.has(session.id)) return "var(--text-quaternary)";
   return "var(--system-green)";
@@ -566,7 +567,7 @@ export function ChatSidebar({
     return empSessions.some((s) => s.id === selectedId);
   }
 
-  function _handleEmployeeClick(item: FlatItem) {
+  function handleEmployeeClick(item: FlatItem) {
     const empName = item.employeeName ?? "";
     const empSessions = item.sessions ?? [];
     if (empSessions.length > 1) {
@@ -753,6 +754,7 @@ export function ChatSidebar({
                   ? "border-l-[var(--accent)] bg-[var(--fill-secondary)]"
                   : "border-l-transparent hover:bg-accent",
               )}
+              onClick={() => handleEmployeeClick(item)}
             >
               <div className="relative flex size-9 shrink-0 items-center justify-center">
                 <EmployeeAvatar name={empName} size={36} />

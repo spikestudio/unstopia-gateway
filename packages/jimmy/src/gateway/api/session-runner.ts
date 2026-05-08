@@ -2,7 +2,7 @@ import fs, { type Dirent } from "node:fs";
 import path from "node:path";
 import { notifyParentSession } from "../../sessions/callbacks.js";
 import { buildContext } from "../../sessions/context.js";
-import { getMessages, getSession, insertMessage, updateSession } from "../../sessions/registry.js";
+import { getMessages, getSession, insertMessage, markQueueItemCompleted, markQueueItemRunning, updateSession } from "../../sessions/registry.js";
 import { resolveEffort } from "../../shared/effort.js";
 import { logger } from "../../shared/logger.js";
 import { GATEWAY_HOME } from "../../shared/paths.js";
@@ -208,13 +208,18 @@ export function dispatchWebSessionRun(
   opts?: { delayMs?: number; queueItemId?: string; attachments?: string[] },
 ): void {
   const run = async () => {
+    const sessionKey = session.sessionKey || session.sourceRef;
     await context.sessionManager.getQueue().enqueue(
-      session.sessionKey || session.sourceRef,
+      sessionKey,
       async () => {
+        if (opts?.queueItemId) markQueueItemRunning(opts.queueItemId);
         context.emit("session:started", { sessionId: session.id });
         await runWebSession(session, prompt, engine, config, context, opts?.attachments);
+        if (opts?.queueItemId) {
+          markQueueItemCompleted(opts.queueItemId);
+          context.emit("queue:updated", { sessionId: session.id, sessionKey });
+        }
       },
-      opts?.queueItemId,
     );
   };
 

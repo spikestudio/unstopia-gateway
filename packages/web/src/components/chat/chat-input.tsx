@@ -140,6 +140,7 @@ export function ChatInput({
   const [pendingAttachments, setPendingAttachments] = useState<MediaAttachment[]>([]);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const isComposingRef = useRef(false);
 
   // Focus textarea when focusTrigger changes (e.g. "+ New" chat button clicked)
   useEffect(() => {
@@ -318,7 +319,7 @@ export function ChatInput({
         return;
       }
     }
-    if (e.key === "Enter" && !e.shiftKey) {
+    if (e.key === "Enter" && !e.shiftKey && !isComposingRef.current) {
       e.preventDefault();
       handleSubmit();
     }
@@ -539,6 +540,8 @@ export function ChatInput({
           value={value}
           onChange={handleChange}
           onKeyDown={handleKeyDown}
+          onCompositionStart={() => { isComposingRef.current = true; }}
+          onCompositionEnd={() => { isComposingRef.current = false; }}
           onPaste={handlePaste}
           placeholder={disabled ? "Waiting for response..." : "Type a message..."}
           rows={1}

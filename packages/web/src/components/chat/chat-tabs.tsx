@@ -32,7 +32,7 @@ export function ChatTabBar({
   activeIndex,
   onSwitch,
   onClose,
-  onNew: _onNew,
+  onNew,
   onPin,
   onMove,
   toolbarActions,
@@ -156,6 +156,7 @@ export function ChatTabBar({
         type="button"
         className="flex size-10 shrink-0 items-center justify-center text-[var(--text-tertiary)] transition-colors hover:bg-[var(--fill-quaternary)] hover:text-foreground"
         title="New Chat (N)"
+        onClick={onNew}
       >
         <Plus size={14} />
       </button>

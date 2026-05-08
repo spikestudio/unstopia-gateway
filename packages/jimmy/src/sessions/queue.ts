@@ -1,4 +1,3 @@
-import type { IQueueRepository } from "./repositories/index.js";
 
 export class SessionQueue {
   private queues = new Map<string, Promise<void>>();
@@ -69,8 +68,6 @@ export class SessionQueue {
   async enqueue(
     sessionKey: string,
     fn: () => Promise<void>,
-    queueItemId?: string,
-    queueRepo?: IQueueRepository,
   ): Promise<void> {
     this.pending.set(sessionKey, (this.pending.get(sessionKey) || 0) + 1);
     const prev = this.queues.get(sessionKey) || Promise.resolve();
@@ -81,11 +78,9 @@ export class SessionQueue {
         while (this.paused.has(sessionKey)) {
           await new Promise((resolve) => setTimeout(resolve, 500));
         }
-        if (queueItemId && queueRepo) queueRepo.markQueueItemRunning(queueItemId);
         if (!this.cancelled.has(sessionKey)) {
           await fn();
         }
-        if (queueItemId && queueRepo) queueRepo.markQueueItemCompleted(queueItemId);
       } finally {
         this.running.delete(sessionKey);
         this.decrementPending(sessionKey);
