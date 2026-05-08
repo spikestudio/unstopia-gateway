@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, type ReactNode, useContext, useEffect, useState } from "react";
+import { createContext, type ReactNode, useContext, useEffect, useRef, useState } from "react";
 
 interface BreadcrumbItem {
   label: string;
@@ -32,13 +32,15 @@ export function BreadcrumbProvider({ children }: { children: ReactNode }) {
 
 export function useBreadcrumbs(items?: BreadcrumbItem[]) {
   const ctx = useContext(BreadcrumbContext);
-
-  // Serialize items for stable dependency comparison
-  const _itemsKey = items ? JSON.stringify(items) : "";
+  const { setItems } = ctx;
+  // BreadcrumbItem has only string fields — JSON.stringify is always safe here
+  const itemsKey = items ? JSON.stringify(items) : "";
+  const itemsRef = useRef(items);
+  itemsRef.current = items; // keep latest without triggering effect
 
   useEffect(() => {
-    if (items) ctx.setItems(items);
-  }, [items, ctx.setItems]); // eslint-disable-line react-hooks/exhaustive-deps
+    if (itemsRef.current) setItems(itemsRef.current);
+  }, [itemsKey, setItems]);
 
   return ctx;
 }
