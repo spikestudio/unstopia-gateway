@@ -145,8 +145,10 @@ gateway auto-restarts when you edit backend source files via Node's built-in
 `--watch` mode. To use a non-default gateway port, set `GATEWAY_PORT=<port>`
 before running `pnpm dev`.
 
-> **Prerequisites:** Node.js 22+, pnpm 10+, and the
-> [Claude Code CLI](https://docs.anthropic.com/en/docs/claude-code) (`npm install -g @anthropic-ai/claude-code`).
+> **Prerequisites:** Node.js 22+, pnpm 10+, and at least one engine CLI:
+> - [Claude Code CLI](https://docs.anthropic.com/en/docs/claude-code) — `npm install -g @anthropic-ai/claude-code`
+> - [Codex CLI](https://github.com/openai/codex) — `npm install -g @openai/codex` *(optional)*
+> - [Gemini CLI](https://github.com/google-gemini/gemini-cli) — `npm install -g @google/gemini-cli` *(optional)*
 
 ### Available Scripts
 

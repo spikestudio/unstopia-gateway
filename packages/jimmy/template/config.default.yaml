@@ -15,6 +15,10 @@ engines:
     bin: codex
     model: gpt-5.4
     effortLevel: high
+  # gemini:
+  #   bin: gemini
+  #   model: gemini-2.5-pro
+  #   effortLevel: high
 
 connectors:
   slack:
