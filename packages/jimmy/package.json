@@ -23,7 +23,7 @@
   },
   "dependencies": {
     "@slack/bolt": "^4.3.0",
-    "@whiskeysockets/baileys": "7.0.0-rc.9",
+    "@whiskeysockets/baileys": "7.0.0-rc12",
     "better-sqlite3": "^11.8.0",
     "busboy": "^1.6.0",
     "chokidar": "^4.0.0",
